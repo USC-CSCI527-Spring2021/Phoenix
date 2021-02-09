@@ -45,4 +45,4 @@ def _init_logging(debug=False):
 if __name__ == "__main__":
     _init_logging()
     df = pd.read_csv("2021.csv")
-    print_game(df["log_content"][1])
+    print_game(df["log_content"][0])
