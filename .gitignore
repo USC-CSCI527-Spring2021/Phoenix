@@ -151,3 +151,4 @@ crashlytics-build.properties
 fabric.properties
 /data
 /logs
+.DS_Store
