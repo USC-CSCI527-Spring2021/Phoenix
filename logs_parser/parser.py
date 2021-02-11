@@ -458,7 +458,7 @@ def _structure_parsed_result(parsed):
     """
     round_ = None
     game = {'meta': {}, 'rounds': []}
-    for item in parsed:
+    for i, item in enumerate(parsed):
         tag, data = item['tag'], item['data']
         if tag in ['SHUFFLE', 'GO', 'UN', 'TAIKYOKU']:
             game['meta'][tag] = data

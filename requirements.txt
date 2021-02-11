@@ -1,29 +1,40 @@
-absl-py @ file:///tmp/build/80754af9/absl-py_1607439979954/work
-astor==0.8.1
+apipkg==1.5
+appdirs==1.4.4
+attrs==20.3.0
 certifi==2020.12.5
-gast==0.2.2
-google-pasta==0.2.0
-grpcio @ file:///opt/concourse/worker/volumes/live/b5e6cc9f-d048-411b-5e0a-34cf579ea9aa/volume/grpcio_1597424489035/work
-h5py @ file:///opt/concourse/worker/volumes/live/98bee3fd-2687-4017-5421-d742d1f18c35/volume/h5py_1593454156895/work
-importlib-metadata @ file:///tmp/build/80754af9/importlib-metadata_1602276842396/work
-Keras-Applications @ file:///tmp/build/80754af9/keras-applications_1594366238411/work
-Keras-Preprocessing @ file:///tmp/build/80754af9/keras-preprocessing_1612283640596/work
-Markdown @ file:///opt/concourse/worker/volumes/live/ab9d027b-aa96-4f3e-4a67-57db8504e6b6/volume/markdown_1605111065503/work
+chardet==3.0.4
+click==7.1.2
+coverage==5.4
+execnet==1.7.1
+flake8==3.8.4
+idna==2.10
+iniconfig==1.1.1
+isort==5.6.4
+mccabe==0.6.1
+>>>>>>> main
 mkl-fft==1.2.0
 mkl-random==1.1.1
 mkl-service==2.3.0
 numpy @ file:///opt/concourse/worker/volumes/live/a1b5ea96-b05c-40ba-5dfb-4542ece1c186/volume/numpy_and_numpy_base_1603491228242/work
 opt-einsum==3.1.0
 pandas==1.2.1
-protobuf==3.14.0
+pluggy==0.13.1
+py==1.10.0
+pycodestyle==2.6.0
+pyflakes==2.2.0
+pyparsing==2.4.7
+pytest==6.1.2
+pytest-cov==2.10.1
+pytest-forked==1.3.0
+pytest-xdist==2.1.0
 python-dateutil @ file:///home/ktietz/src/ci/python-dateutil_1611928101742/work
-pytz @ file:///tmp/build/80754af9/pytz_1612215392582/work
-scipy @ file:///opt/concourse/worker/volumes/live/53520250-e526-4734-60b4-b4658592fe75/volume/scipy_1612469556481/work
+pytz @ file:///tmp/build/80754af9/pytz_1608922264688/work
+regex==2020.11.13
+requests==2.24.0
 six @ file:///opt/concourse/worker/volumes/live/f983ba11-c9fe-4dff-7ce7-d89b95b09771/volume/six_1605205318156/work
-tensorboard==2.0.0
-tensorflow==2.0.0
-tensorflow-estimator==2.0.0
-termcolor==1.1.0
-Werkzeug @ file:///home/ktietz/src/ci/werkzeug_1611932622770/work
-wrapt==1.12.1
-zipp @ file:///tmp/build/80754af9/zipp_1604001098328/work
+tqdm==4.51.0
+typed-ast==1.4.2
+typing-extensions==3.7.4.3
+urllib3==1.25.11
+zipp==3.4.0
+gdown==3.12.2
