@@ -7,7 +7,13 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Input, Conv2D, ReLU, BatchNormalization, Add, AveragePooling2D, Flatten, Dense
 from tensorflow.keras.models import Model
-import glob, os
+import glob, os, sys, datetime
+
+if not os.path.exists('logs/stdout_logs'):
+    os.mkdir('logs/stdout_logs')
+sys.stderr = sys.stdout
+sys.stdout = open('{}/{}.txt'.format('logs/stdout_logs', datetime.datetime.now().isoformat()), 'w')
+
 
 def preprocess(df_data):
     states = []
@@ -110,7 +116,10 @@ def residual_block(y, nb_channels, _strides=(1, 1), _project_shortcut=False):
 
     return y
 
+
 if __name__ == "__main__":
+    # https://drive.google.com/uc\?id\=1iZpWSXRF9NlrLLwtxujLkAXk4k9KUgUN
+
     all_files = glob.glob("./data" + "/*.csv")
     if './data/2020.csv' in all_files:
         all_files.remove('./data/2020.csv')
@@ -119,10 +128,14 @@ if __name__ == "__main__":
     li = np.array([])
     for filename in all_files:
         df = pd.read_csv(filename, engine='python', error_bad_lines=False)
-        li = np.concatenate((li, df['log_content']), axis=0)
-    #
+        li = np.concatenate((li, df['log_content'].dropna()), axis=0)
+
+
+
     # df = pd.read_csv('./data/2021.csv', engine='python', error_bad_lines=False)
     # li = df['log_content']
+
+    print(li.shape)
     states, label = preprocess(li)
     states = np.array(states)
 
@@ -166,8 +179,8 @@ if __name__ == "__main__":
         else:
             return lr * tf.math.exp(-0.1)
     callbacks = [
-        keras.callbacks.TensorBoard(log_dir="./logs"),
-        keras.callbacks.ModelCheckpoint('./checkpoints',
+        keras.callbacks.TensorBoard(log_dir="./logs", update_freq='epoch', histogram_freq=1),
+        keras.callbacks.ModelCheckpoint('./checkpoints/',
                                         save_weights_only=True, monitor='val_accuracy',
                                         save_freq="epoch",
                                         mode='max', save_best_only=True),
@@ -175,11 +188,13 @@ if __name__ == "__main__":
         keras.callbacks.LearningRateScheduler(scheduler)
     ]
 
-    model.summary()
+    # model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.CategoricalCrossentropy(),
         metrics=["accuracy"])
-    model.fit(x_train, x_label, epochs=50, batch_size=128, validation_data=(valid_data, valid_label),
+    model.fit(x_train, x_label, epochs=50, batch_size=64, validation_data=(valid_data, valid_label),
               callbacks=callbacks)
+    sys.stdout.close()
+
 

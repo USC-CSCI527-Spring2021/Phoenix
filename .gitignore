@@ -153,3 +153,4 @@ fabric.properties
 /logs
 *.csv
 .DS_Store
+/checkpoints

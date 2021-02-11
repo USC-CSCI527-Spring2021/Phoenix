@@ -11,12 +11,10 @@ idna==2.10
 iniconfig==1.1.1
 isort==5.6.4
 mccabe==0.6.1
->>>>>>> main
 mkl-fft==1.2.0
 mkl-random==1.1.1
 mkl-service==2.3.0
 numpy @ file:///opt/concourse/worker/volumes/live/a1b5ea96-b05c-40ba-5dfb-4542ece1c186/volume/numpy_and_numpy_base_1603491228242/work
-opt-einsum==3.1.0
 pandas==1.2.1
 pluggy==0.13.1
 py==1.10.0
