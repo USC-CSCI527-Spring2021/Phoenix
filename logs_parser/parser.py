@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import logging
-from parser_io import ensure_unicode, unquote
+from logs_parser.parser_io import ensure_unicode, unquote
 
 _LG = logging.getLogger(__name__)
 
@@ -458,7 +458,7 @@ def _structure_parsed_result(parsed):
     """
     round_ = None
     game = {'meta': {}, 'rounds': []}
-    for item in parsed:
+    for i, item in enumerate(parsed):
         tag, data = item['tag'], item['data']
         if tag in ['SHUFFLE', 'GO', 'UN', 'TAIKYOKU']:
             game['meta'][tag] = data
@@ -494,7 +494,10 @@ def parse_mjlog(root_node, tags=None):
     parsed = []
     for node in root_node:
         if tags is None or node.tag in tags:
-            parsed.append(parse_node(node.tag, node.attrib))
+            p = parse_node(node.tag, node.attrib)
+            # check if parsed node contain resume and bye tags
+            if p['tag'] not in ['RESUME', 'BYE']:
+                parsed.append(p)
     if tags is None:
         return _structure_parsed_result(parsed)
     return parsed
