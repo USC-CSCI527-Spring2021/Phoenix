@@ -1,0 +1,4366 @@
+{
+  "meta": {
+    "SHUFFLE": {
+      "seed": "mt19937ar-sha512-n288-base64,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",
+      "ref": ""
+    },
+    "GO": {
+      "table": "tenhou",
+      "config": {
+        "red": true,
+        "kui": true,
+        "ton-nan": false,
+        "sanma": false,
+        "soku": true
+      },
+      "lobby": 0
+    },
+    "UN": [
+      {
+        "name": "\u6728\u6625\u7531\u4e43",
+        "dan": 16,
+        "rate": 2191.05,
+        "sex": "M"
+      },
+      {
+        "name": "\u3055\u304d\u305f\u307e\u6797\u6a8e",
+        "dan": 16,
+        "rate": 2149.55,
+        "sex": "M"
+      },
+      {
+        "name": "\u95d8\u5c06\u3060\u3093\u3067\u3043",
+        "dan": 16,
+        "rate": 2144.35,
+        "sex": "M"
+      },
+      {
+        "name": "\u685c\u6ca2\u58a8",
+        "dan": 16,
+        "rate": 2047.16,
+        "sex": "F"
+      }
+    ],
+    "TAIKYOKU": {
+      "oya": "0"
+    }
+  },
+  "rounds": [
+    [
+      {
+        "tag": "INIT",
+        "data": {
+          "oya": "0",
+          "scores": [
+            25000,
+            25000,
+            25000,
+            25000
+          ],
+          "hands": [
+            [
+              18,
+              36,
+              4,
+              75,
+              105,
+              59,
+              41,
+              91,
+              70,
+              72,
+              114,
+              7,
+              29
+            ],
+            [
+              81,
+              63,
+              90,
+              111,
+              35,
+              76,
+              131,
+              39,
+              132,
+              43,
+              32,
+              38,
+              102
+            ],
+            [
+              125,
+              93,
+              1,
+              108,
+              113,
+              46,
+              99,
+              103,
+              116,
+              8,
+              62,
+              80,
+              126
+            ],
+            [
+              60,
+              51,
+              50,
+              23,
+              10,
+              42,
+              56,
+              3,
+              11,
+              20,
+              82,
+              33,
+              122
+            ]
+          ],
+          "round": 0,
+          "combo": 0,
+          "reach": 0,
+          "dices": [
+            3,
+            5
+          ],
+          "dora": 53
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 70
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 89
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 57
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 108
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 61
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 92
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 105
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 130
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 132
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 5
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 113
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 67
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 122
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 68
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 68
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 102
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 47
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 80
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 95
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 82
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 2,
+          "callee": 0,
+          "call_type": "Pon",
+          "mentsu": [
+            126,
+            127,
+            125
+          ]
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 116
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 69
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 3
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 78
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 29
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 74
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 63
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 30
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 30
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 65
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 95
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 129
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 83
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 83
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 109
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 109
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 22
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 78
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 71
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 71
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 101
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 103
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 54
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 42
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 2
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 41
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 37
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 1,
+          "step": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 1,
+          "step": 2,
+          "scores": [
+            25000,
+            24000,
+            25000,
+            25000
+          ]
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 12
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 1
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 25
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 69
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 84
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 2
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 19
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 19
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 85
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 54
+        }
+      },
+      {
+        "tag": "AGARI",
+        "data": {
+          "winner": 2,
+          "hand": [
+            5,
+            8,
+            12,
+            46,
+            47,
+            54,
+            57,
+            62,
+            93,
+            99,
+            101
+          ],
+          "machi": [
+            54
+          ],
+          "dora": [
+            53
+          ],
+          "ura_dora": [],
+          "yaku": [
+            [
+              18,
+              1
+            ],
+            [
+              52,
+              1
+            ]
+          ],
+          "yakuman": [],
+          "ten": {
+            "fu": 30,
+            "point": 2000,
+            "limit": 0
+          },
+          "ba": {
+            "combo": 0,
+            "reach": 1
+          },
+          "scores": [
+            25000,
+            24000,
+            25000,
+            25000
+          ],
+          "gains": [
+            0,
+            0,
+            3000,
+            -2000
+          ],
+          "loser": 3
+        }
+      }
+    ],
+    [
+      {
+        "tag": "INIT",
+        "data": {
+          "oya": "1",
+          "scores": [
+            25000,
+            24000,
+            28000,
+            23000
+          ],
+          "hands": [
+            [
+              60,
+              47,
+              20,
+              42,
+              18,
+              126,
+              127,
+              129,
+              132,
+              76,
+              65,
+              121,
+              55
+            ],
+            [
+              117,
+              135,
+              67,
+              92,
+              19,
+              63,
+              97,
+              80,
+              3,
+              131,
+              29,
+              75,
+              57
+            ],
+            [
+              70,
+              71,
+              0,
+              2,
+              119,
+              123,
+              90,
+              106,
+              113,
+              74,
+              46,
+              83,
+              13
+            ],
+            [
+              26,
+              84,
+              25,
+              45,
+              88,
+              128,
+              134,
+              108,
+              85,
+              64,
+              33,
+              48,
+              95
+            ]
+          ],
+          "round": 1,
+          "combo": 0,
+          "reach": 0,
+          "dices": [
+            4,
+            4
+          ],
+          "dora": 37
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 117
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 99
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 13
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 120
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 120
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 121
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 4
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 135
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 9
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 90
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 44
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 134
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 24
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 103
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 131
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 23
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 23
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 81
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 108
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 86
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 132
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 62
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 19
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 7
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 123
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 110
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 110
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 41
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 129
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 69
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 4
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 59
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 59
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 96
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 128
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 93
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 55
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 0,
+          "callee": 1,
+          "call_type": "Pon",
+          "mentsu": [
+            41,
+            42,
+            43
+          ]
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 47
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 17
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 17
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 16
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 16
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 22
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 64
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 14
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 93
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 125
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 125
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 0,
+          "callee": 1,
+          "call_type": "Pon",
+          "mentsu": [
+            126,
+            127,
+            125
+          ]
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 86
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 10
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 29
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 77
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 46
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 98
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 44
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 58
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 76
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 101
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 101
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 68
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 124
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 124
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 12
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 80
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 27
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 106
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 66
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 84
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 38
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 38
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 5
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 1,
+          "step": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 75
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 1,
+          "step": 2,
+          "scores": [
+            25000,
+            23000,
+            28000,
+            23000
+          ]
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 94
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 74
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 31
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 81
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 34
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 34
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 6
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 6
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 7
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 56
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 114
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 114
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 77
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 49
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 95
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 36
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 36
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 52
+        }
+      },
+      {
+        "tag": "AGARI",
+        "data": {
+          "winner": 1,
+          "hand": [
+            1,
+            3,
+            5,
+            10,
+            12,
+            52,
+            57,
+            62,
+            63,
+            67,
+            69,
+            92,
+            97,
+            103
+          ],
+          "machi": [
+            52
+          ],
+          "dora": [
+            37
+          ],
+          "ura_dora": [
+            118
+          ],
+          "yaku": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              54,
+              1
+            ],
+            [
+              53,
+              0
+            ]
+          ],
+          "yakuman": [],
+          "ten": {
+            "fu": 20,
+            "point": 7800,
+            "limit": 0
+          },
+          "ba": {
+            "combo": 0,
+            "reach": 1
+          },
+          "scores": [
+            25000,
+            23000,
+            28000,
+            23000
+          ],
+          "gains": [
+            -2600,
+            8800,
+            -2600,
+            -2600
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "tag": "INIT",
+        "data": {
+          "oya": "1",
+          "scores": [
+            22400,
+            31800,
+            25400,
+            20400
+          ],
+          "hands": [
+            [
+              44,
+              54,
+              118,
+              128,
+              15,
+              22,
+              9,
+              71,
+              90,
+              81,
+              86,
+              130,
+              18
+            ],
+            [
+              31,
+              123,
+              113,
+              67,
+              65,
+              87,
+              69,
+              20,
+              120,
+              23,
+              79,
+              122,
+              13
+            ],
+            [
+              132,
+              6,
+              133,
+              77,
+              105,
+              4,
+              114,
+              14,
+              125,
+              92,
+              60,
+              1,
+              131
+            ],
+            [
+              75,
+              95,
+              41,
+              47,
+              68,
+              50,
+              55,
+              8,
+              59,
+              89,
+              42,
+              129,
+              72
+            ]
+          ],
+          "round": 1,
+          "combo": 1,
+          "reach": 0,
+          "dices": [
+            1,
+            5
+          ],
+          "dora": 108
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 35
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 69
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 105
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 84
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 129
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 51
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 71
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 134
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 87
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 82
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 39
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 42
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 63
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 118
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 7
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 2
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 131
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 85
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 85
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 11
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 125
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 48
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 68
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 101
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 63
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 53
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 53
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 19
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 92
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 64
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 64
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 101
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 88
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 88
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 116
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 116
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 103
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 103
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 24
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 0,
+          "step": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 0,
+          "step": 2,
+          "scores": [
+            21400,
+            31800,
+            25400,
+            20400
+          ]
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 91
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 113
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 16
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 60
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 38
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 38
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 12
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 123
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 25
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 114
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 121
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 121
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 46
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 46
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 34
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 122
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 57
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 57
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 76
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 39
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 102
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 102
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 27
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 120
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 36
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 36
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 3
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 67
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 40
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 40
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 58
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 58
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 26
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 26
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 52
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 27
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 98
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 25
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 100
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 100
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 17
+        }
+      },
+      {
+        "tag": "AGARI",
+        "data": {
+          "winner": 0,
+          "hand": [
+            9,
+            15,
+            17,
+            18,
+            22,
+            24,
+            44,
+            51,
+            54,
+            81,
+            86,
+            90,
+            128,
+            130
+          ],
+          "machi": [
+            17
+          ],
+          "dora": [
+            108
+          ],
+          "ura_dora": [
+            94
+          ],
+          "yaku": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              25,
+              2
+            ],
+            [
+              53,
+              0
+            ]
+          ],
+          "yakuman": [],
+          "ten": {
+            "fu": 30,
+            "point": 7900,
+            "limit": 0
+          },
+          "ba": {
+            "combo": 1,
+            "reach": 1
+          },
+          "scores": [
+            21400,
+            31800,
+            25400,
+            20400
+          ],
+          "gains": [
+            9200,
+            -4000,
+            -2100,
+            -2100
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "tag": "INIT",
+        "data": {
+          "oya": "2",
+          "scores": [
+            30600,
+            27800,
+            23300,
+            18300
+          ],
+          "hands": [
+            [
+              67,
+              29,
+              25,
+              17,
+              4,
+              20,
+              112,
+              70,
+              65,
+              133,
+              66,
+              84,
+              61
+            ],
+            [
+              32,
+              18,
+              81,
+              34,
+              39,
+              111,
+              54,
+              116,
+              91,
+              85,
+              90,
+              8,
+              21
+            ],
+            [
+              106,
+              46,
+              55,
+              64,
+              101,
+              53,
+              31,
+              49,
+              42,
+              12,
+              110,
+              10,
+              80
+            ],
+            [
+              98,
+              45,
+              104,
+              120,
+              48,
+              92,
+              69,
+              5,
+              37,
+              86,
+              58,
+              13,
+              93
+            ]
+          ],
+          "round": 2,
+          "combo": 0,
+          "reach": 0,
+          "dices": [
+            5,
+            2
+          ],
+          "dora": 57
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 56
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 110
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 97
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 120
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 62
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 22
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 116
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 60
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 69
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 134
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 4
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 19
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 39
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 14
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 31
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 40
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 37
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 23
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 84
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 74
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 74
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 35
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 35
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 94
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 119
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 26
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 8
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 73
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 14
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 2
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 2
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 15
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 0,
+          "step": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 67
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 0,
+          "step": 2,
+          "scores": [
+            29600,
+            27800,
+            23300,
+            18300
+          ]
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 75
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 85
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 129
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 64
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 3,
+          "callee": 2,
+          "call_type": "Chi",
+          "mentsu": [
+            64,
+            58,
+            60
+          ]
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 86
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 114
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 114
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 16
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 108
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 108
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 109
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 109
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 88
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 88
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 63
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 75
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 113
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 113
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 6
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 6
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 30
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 30
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 105
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 105
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 115
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 115
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 130
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 106
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 89
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 89
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 0
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 0
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 24
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 32
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 78
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 101
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 99
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 99
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 87
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 87
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 1,
+          "callee": 0,
+          "call_type": "Chi",
+          "mentsu": [
+            87,
+            81,
+            90
+          ]
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 34
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 102
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 102
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 96
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 98
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 118
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 118
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 122
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 122
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 135
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 135
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 11
+        }
+      },
+      {
+        "tag": "AGARI",
+        "data": {
+          "winner": 3,
+          "hand": [
+            5,
+            11,
+            13,
+            40,
+            45,
+            48,
+            92,
+            93,
+            94,
+            96,
+            97
+          ],
+          "machi": [
+            11
+          ],
+          "dora": [
+            57
+          ],
+          "ura_dora": [],
+          "yaku": [
+            [
+              8,
+              1
+            ],
+            [
+              52,
+              1
+            ]
+          ],
+          "yakuman": [],
+          "ten": {
+            "fu": 30,
+            "point": 2000,
+            "limit": 0
+          },
+          "ba": {
+            "combo": 0,
+            "reach": 1
+          },
+          "scores": [
+            29600,
+            27800,
+            23300,
+            18300
+          ],
+          "gains": [
+            -500,
+            -500,
+            -1000,
+            3000
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "tag": "INIT",
+        "data": {
+          "oya": "3",
+          "scores": [
+            29100,
+            27300,
+            22300,
+            21300
+          ],
+          "hands": [
+            [
+              56,
+              98,
+              114,
+              82,
+              92,
+              127,
+              77,
+              51,
+              99,
+              47,
+              86,
+              13,
+              115
+            ],
+            [
+              44,
+              125,
+              30,
+              21,
+              89,
+              129,
+              100,
+              95,
+              91,
+              15,
+              130,
+              32,
+              68
+            ],
+            [
+              4,
+              131,
+              69,
+              60,
+              64,
+              85,
+              31,
+              107,
+              7,
+              111,
+              17,
+              40,
+              126
+            ],
+            [
+              62,
+              16,
+              103,
+              97,
+              134,
+              10,
+              121,
+              1,
+              3,
+              120,
+              123,
+              70,
+              9
+            ]
+          ],
+          "round": 3,
+          "combo": 0,
+          "reach": 0,
+          "dices": [
+            0,
+            3
+          ],
+          "dora": 61
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 42
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 134
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 35
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 127
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 41
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 125
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 90
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 126
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 52
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 42
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 0,
+          "callee": 3,
+          "call_type": "Chi",
+          "mentsu": [
+            42,
+            47,
+            51
+          ]
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 35
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 36
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 32
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 8
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 107
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 105
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 9
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 0
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 0
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 76
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 76
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 128
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 31
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 5
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 1
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 72
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 56
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 24
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 68
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 63
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 40
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 109
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 109
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 104
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 75
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 75
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 2
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 111
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 135
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 135
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 43
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 39
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 39
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 37
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 37
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 81
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 81
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 74
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 13
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 57
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 57
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 94
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 7
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 19
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 3,
+          "step": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 52
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 3,
+          "step": 2,
+          "scores": [
+            29100,
+            27300,
+            22300,
+            20300
+          ]
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 58
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 82
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 88
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 15
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 49
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 63
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 46
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 46
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 78
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 115
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 83
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 83
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 117
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 117
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 122
+        }
+      },
+      {
+        "tag": "CALL",
+        "data": {
+          "caller": 3,
+          "callee": 3,
+          "call_type": "AnKan",
+          "mentsu": [
+            120,
+            121
+          ]
+        }
+      },
+      {
+        "tag": "DORA",
+        "data": {
+          "hai": 124
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 28
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 38
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 114
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 110
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 110
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 22
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 2,
+          "step": 1
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 49
+        }
+      },
+      {
+        "tag": "REACH",
+        "data": {
+          "player": 2,
+          "step": 2,
+          "scores": [
+            29100,
+            27300,
+            21300,
+            20300
+          ]
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 79
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 108
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 77
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 12
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 36
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 11
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 11
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 33
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 87
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 78
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 45
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 45
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 54
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 54
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 18
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 18
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 116
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 38
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 80
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 44
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 112
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 3,
+          "tile": 106
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 3,
+          "tile": 106
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 0,
+          "tile": 113
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 0,
+          "tile": 108
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 1,
+          "tile": 65
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 1,
+          "tile": 41
+        }
+      },
+      {
+        "tag": "DRAW",
+        "data": {
+          "player": 2,
+          "tile": 66
+        }
+      },
+      {
+        "tag": "DISCARD",
+        "data": {
+          "player": 2,
+          "tile": 66
+        }
+      },
+      {
+        "tag": "AGARI",
+        "data": {
+          "winner": 3,
+          "hand": [
+            3,
+            5,
+            10,
+            16,
+            19,
+            62,
+            66,
+            70,
+            97,
+            103,
+            105
+          ],
+          "machi": [
+            66
+          ],
+          "dora": [
+            61,
+            124
+          ],
+          "ura_dora": [
+            50,
+            55
+          ],
+          "yaku": [
+            [
+              1,
+              1
+            ],
+            [
+              52,
+              1
+            ],
+            [
+              54,
+              1
+            ],
+            [
+              53,
+              0
+            ]
+          ],
+          "yakuman": [],
+          "ten": {
+            "fu": 70,
+            "point": 12000,
+            "limit": 1
+          },
+          "ba": {
+            "combo": 0,
+            "reach": 2
+          },
+          "scores": [
+            29100,
+            27300,
+            21300,
+            20300
+          ],
+          "gains": [
+            0,
+            0,
+            -12000,
+            14000
+          ],
+          "loser": 2,
+          "result": {
+            "scores": [
+              29100,
+              27300,
+              9300,
+              34300
+            ],
+            "uma": [
+              9.0,
+              -13.0,
+              -41.0,
+              45.0
+            ]
+          }
+        }
+      }
+    ]
+  ]
+}
