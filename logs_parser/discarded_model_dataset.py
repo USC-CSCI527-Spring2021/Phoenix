@@ -159,22 +159,6 @@ def transform_136_to_34m4(result):
         result['four_players_open_hands'][i] = encoded_matrix
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-    
-
-
-# In[13]:
-
-
 if __name__ == "__main__":
     
     # read data from csv file
@@ -215,91 +199,7 @@ if __name__ == "__main__":
             "discarded_tile" : discarded_tile 
         }
         
-        # encoded_result for tile discarded model
-        encoded_result = transform_136_to_34m4(copy.copy(result))
-        encoded_result_df = DataFrame(result)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+    # encoded_result for tile discarded model
+    encoded_result = transform_136_to_34m4(copy.copy(result))
+    encoded_result_df = DataFrame(result)
 
