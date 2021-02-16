@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[11]:
-
-
 import sys
-# from io import load_mjlog
+
 from parser import parse_mjlog
 from viewer import print_node
 import pandas as pd
@@ -13,15 +7,6 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import copy
 from pandas.core.frame import DataFrame
-
-
-# In[ ]:
-
-
-
-
-
-# In[12]:
 
 
 def get_round_info(dataset, 
@@ -131,10 +116,7 @@ def get_round_info(dataset,
                 
                 
     
-    
-
-
-# In[ ]:
+# In[3]:
 
 
 def encoded_tiles(matrix, tiles):
@@ -146,23 +128,29 @@ def encoded_tiles(matrix, tiles):
 
 # encoded tiles from 136 format to 34*4 format
 def transform_136_to_34m4(result):
-    
-    for i in range(len(result['hands'])):
-        tiles = result['hands'][i]
-        result['hands'][i] = encoded_tiles(np.zeros((4, 34)), tiles)
+
+    for i in range(len(result[1])):
+        tiles = result[1][i]
         
-        four_players_tiles = result['four_players_open_hands'][i]
+        result[1][i] = encoded_tiles(np.zeros((4, 34)), tiles)
+        
+        four_players_tiles = result[3][i]
         encoded_matrix = np.zeros((4, 4, 34))         
         for j in range(4):
             encoded_matrix[j] = encoded_tiles(np.zeros((4, 34)), four_players_tiles[j])
         
-        result['four_players_open_hands'][i] = encoded_matrix
+        result[3][i] = encoded_matrix
 
 
 if __name__ == "__main__":
     
+    # path for input csv file
+    input_csv_path = sys.argv[1]
+    # path for output npy file
+    output_npy_path = sys.argv[2]
+
     # read data from csv file
-    df = pd.read_csv("2021.csv")
+    df = pd.read_csv(input_csv_path)
     
     # features
     draw_tile_list = []
@@ -186,20 +174,24 @@ if __name__ == "__main__":
         for j in range(len(data["rounds"])):  
             round_data = data["rounds"][j] 
             
-            get_round_info(round_data, draw_tile_list, hands_list, 
+            get_round_info(round_data, draw_tile_list, 
+                           hands_list, 
                            discarded_tiles_pool_list, 
                            four_players_open_hands_list,
                            discarded_tile)
+            
         
-        result = {
-            "draw_tile" : draw_tile_list,
-            "hands" : hands_list, 
-            "discarded_tiles_pool" : discarded_tiles_pool_list, 
-            "four_players_open_hands" : four_players_open_hands_list, 
-            "discarded_tile" : discarded_tile 
-        }
-        
-    # encoded_result for tile discarded model
-    encoded_result = transform_136_to_34m4(copy.copy(result))
-    encoded_result_df = DataFrame(result)
+    result = [draw_tile_list,
+              hands_list,
+              discarded_tiles_pool_list, 
+              four_players_open_hands_list, 
+              discarded_tile]
+    
+    transform_136_to_34m4(result)
+     
+    encoded_np_result = np.array(result)
+    
+    np.save(output_npy_path, encoded_np_result)
+       
+
 
