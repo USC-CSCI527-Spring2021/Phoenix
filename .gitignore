@@ -154,3 +154,5 @@ fabric.properties
 *.csv
 .DS_Store
 /checkpoints
+*.npy
+*.hdf5

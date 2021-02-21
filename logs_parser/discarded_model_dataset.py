@@ -1,22 +1,20 @@
-import sys
-
-from parser import parse_mjlog
-from viewer import print_node
-import pandas as pd
-import xml.etree.ElementTree as ET
-import numpy as np
 import copy
-from pandas.core.frame import DataFrame
+import xml.etree.ElementTree as ET
+
 import h5py
+import numpy as np
+import pandas as pd
+
+from logs_parser.parser import parse_mjlog
 
 
-def get_round_info(dataset, 
-                   draw_tile_list, 
-                   hands_list, 
-                   discarded_tiles_pool_list, 
+def get_round_info(dataset,
+                   draw_tile_list,
+                   hands_list,
+                   discarded_tiles_pool_list,
                    four_players_open_hands_list,
                    discarded_tile
-                  ):
+                   ):
      
     discarded_tiles_pool = []
 
@@ -150,7 +148,7 @@ def transform_136_to_34m4(hands_list, four_players_open_hands, discarded_tiles_p
 if __name__ == "__main__":
     
     # path for dir
-    dir_path = '../../dataset/'
+    dir_path = '../data/'
 
     # path for output hdf5 file 
     output_hdf5_path = './discarded_model_dataset_sum_2021.hdf5'
@@ -162,14 +160,14 @@ if __name__ == "__main__":
     is_init = True
     
     # for year in range(2015, 2022):
-    for year in range(2021, 2022):
+    for year in range(2012, 2013):
 
         input_csv_path = dir_path + str(year) + '.csv'
         # read data from csv file
         df = pd.read_csv(input_csv_path)
 
         for i in range(len(df["log_content"])):
-            xml_str = df["log_content"][i]    
+            xml_str = df["log_content"][i]
 
             if type(xml_str) != str:
                 continue
