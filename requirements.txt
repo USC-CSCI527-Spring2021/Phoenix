@@ -1,3 +1,5 @@
+mahjong==1.2.0.dev5
+tensorflow
 apipkg==1.5
 appdirs==1.4.4
 attrs==20.3.0
@@ -35,4 +37,3 @@ typed-ast==1.4.2
 typing-extensions==3.7.4.3
 urllib3==1.25.11
 zipp==3.4.0
-gdown==3.12.2
