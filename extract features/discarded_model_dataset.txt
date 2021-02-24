@@ -1,0 +1,47 @@
+
+每一行代表一个时刻，按时间顺序来，不同局也混在一起
+前四个list分别为可能影响丢牌决策的features，最后一列为真正丢出的牌
+
+Res = 
+[
+	draw_tile_list,
+	hands_list,
+	discarded_tiles_pool_list, 
+	four_players_open_hands_list, 
+	discarded_tile
+]
+
+Example:
+
+res = np.load('discarded_model_dataset_2021.npy')
+
+res[0] 为draw_tile_list, res[0][0]为index = 0时刻, 玩家摸进来的牌（包含通过碰，吃，明杠手段拿进来的牌）
+res[1] 为hands_list, 当前玩家的手牌（14张或以上，不区分明牌、暗牌）
+res[2] 为discarded_tiles_pool_list, res[2][0]为index = 0时刻, 牌面上玩家们丢出来的所有的牌
+res[3] 为four_players_open_hands_list, res[3][0]为index = 0时刻, 四位玩家的明牌
+res[4] 为discarded_tile, res[4][0]为index = 0时刻, 根据上面这些信息，玩家选择丢出的牌
+
+可以用下面这个代码，把数据跑出来看看(output下面是跑出来的结果)：
+for j in range(3):
+    for i in range(len(res)):
+        print(a[i][j])
+    print('    ')
+
+Output:
+8(摸进来的牌)
+[95, 110, 50, 117, 1, 108, 71, 127, 68, 51, 15, 122, 44, 8]（当前手牌）
+[] （所有丢出来的牌，现在刚开局，还没有牌丢出来）
+[[], [], [], []] （四位玩家的明牌，该时刻为空）
+8 （根据上面这些信息，决定丢掉8）
+    
+134
+[82, 54, 121, 118, 70, 65, 63, 13, 12, 132, 14, 80, 32, 134]
+[8]
+[[], [], [], []]
+118
+    
+96
+[20, 2, 113, 120, 128, 28, 6, 10, 18, 112, 57, 22, 48, 96]
+[8, 118]
+[[], [], [], []]
+120
