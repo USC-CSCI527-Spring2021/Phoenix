@@ -1,20 +1,36 @@
-import copy
-import xml.etree.ElementTree as ET
+#!/usr/bin/env python
+# coding: utf-8
 
-import h5py
-import numpy as np
+# In[1]:
+
+
+# script for json file
+
+
+# In[2]:
+
+
+import sys
+
+from parser import parse_mjlog
+from viewer import print_node
 import pandas as pd
+import xml.etree.ElementTree as ET
+import numpy as np
+import copy
+from pandas.core.frame import DataFrame
+import h5py
 
-from logs_parser.parser import parse_mjlog
+import json
 
 
-def get_round_info(dataset,
-                   draw_tile_list,
-                   hands_list,
-                   discarded_tiles_pool_list,
+def get_round_info(dataset, 
+                   draw_tile_list, 
+                   hands_list, 
+                   discarded_tiles_pool_list, 
                    four_players_open_hands_list,
                    discarded_tile
-                   ):
+                  ):
      
     discarded_tiles_pool = []
 
@@ -118,56 +134,43 @@ def get_round_info(dataset,
 
                     
         last_act = act
-                
 
-def encoded_tiles(matrix, tiles):
-    for tile in tiles:
-        col = tile // 4
-        row = tile % 4
-        matrix[row][col] = 1
-    return matrix 
 
-# encoded tiles from 136 format to 34*4 format
-def transform_136_to_34m4(hands_list, four_players_open_hands, discarded_tiles_pool_list):
 
-    for i in range(len(hands_list)):
-        tiles = hands_list[i]
-        
-        hands_list[i] = encoded_tiles(np.zeros((4, 34)), tiles)
-        discarded_tiles_pool_list[i] =  encoded_tiles(np.zeros((4, 34)), discarded_tiles_pool_list[i])
-        
-        four_players_tiles = four_players_open_hands[i]
-        encoded_matrix = np.zeros((4, 4, 34))         
-        for j in range(4):
-            encoded_matrix[j] = encoded_tiles(np.zeros((4, 34)), four_players_tiles[j])
-        
-        four_players_open_hands[i] = encoded_matrix
+
+
+# In[ ]:
+
+
+
+
+
+# In[3]:
 
 
 
 if __name__ == "__main__":
     
     # path for dir
-    dir_path = '../data/'
-
-    # path for output hdf5 file 
-    output_hdf5_path = './discarded_model_dataset_sum_2021.hdf5'
-
-
-    # create a hdf5 file    
-    # "h5py_example.hdf5"
-    f = h5py.File(output_hdf5_path, "a")
-    is_init = True
+    dir_path = '../../dataset/'
     
-    # for year in range(2015, 2022):
-    for year in range(2012, 2013):
+    # path for output hdf5 file 
+    output_json_path = './discarded_model_summary.json'
+    
+    file = open(output_json_path,'a+',encoding='utf-8')
+ 
 
+    for year in range(2009, 2022):      
+        if year == 2020: 
+            continue
+
+        print("processing " + str(year))
         input_csv_path = dir_path + str(year) + '.csv'
         # read data from csv file
         df = pd.read_csv(input_csv_path)
 
         for i in range(len(df["log_content"])):
-            xml_str = df["log_content"][i]
+            xml_str = df["log_content"][i]    
 
             if type(xml_str) != str:
                 continue
@@ -179,17 +182,18 @@ if __name__ == "__main__":
                 # remove three-players games 
                 if len(data["meta"]['UN'][3]["name"]) == 0:
                     continue
-                else:      
-                    # features
-                    draw_tile_list = []
-                    hands_list = []
-                    discarded_tiles_pool_list = []
-                    four_players_open_hands_list = []
-                    
-                    # label
-                    discarded_tile = []     
+                else:        
 
                     for j in range(len(data["rounds"])):  
+                        
+                        # features
+                        draw_tile_list = []
+                        hands_list = []
+                        discarded_tiles_pool_list = []
+                        four_players_open_hands_list = []
+
+                        # label
+                        discarded_tile = []  
 
                         round_data = data["rounds"][j] 
 
@@ -199,45 +203,29 @@ if __name__ == "__main__":
                                        discarded_tiles_pool_list, 
                                        four_players_open_hands_list,
                                        discarded_tile)
-
-                    if len(draw_tile_list) != len(hands_list) or len(draw_tile_list) != len(discarded_tiles_pool_list) or len(draw_tile_list) != len(four_players_open_hands_list) or len(draw_tile_list) != len(discarded_tile):
-                        print("false")
-
-                    transform_136_to_34m4(hands_list, four_players_open_hands_list, discarded_tiles_pool_list)
-
-                    draw_tile_np = np.array(draw_tile_list)
-                    hands_list_np = np.array(hands_list)
-                    discarded_tiles_pool_np = np.array(discarded_tiles_pool_list)
-                    four_players_open_hands_np = np.array(four_players_open_hands_list)
-                    discarded_tile_np = np.array(discarded_tile)
-
-                    if is_init:
-                        f.create_dataset('draw_tile', data = draw_tile_np, shape = None, dtype = None, chunks=True, maxshape=(None,))
-                        f.create_dataset('hands', data = hands_list_np, shape = None, dtype = None, chunks=True, maxshape=(None, 4, 34)) 
-                        f.create_dataset('discarded_tiles_pool', data = discarded_tiles_pool_np, shape = None, dtype = None, chunks=True, maxshape=(None, 4, 34)) 
-                        f.create_dataset('four_players_open_hands', data = four_players_open_hands_np, shape = None, dtype = None, chunks=True, maxshape=(None, 4, 4, 34)) 
-                        f.create_dataset('discarded_tile', data = discarded_tile_np, shape = None, dtype = None, chunks=True, maxshape=(None,)) 
-                        is_init = False
-
-                    else:
-                        f['draw_tile'].resize((f["draw_tile"].shape[0] + draw_tile_np.shape[0]), axis = 0)
-                        f['draw_tile'][-draw_tile_np.shape[0]:] = draw_tile_np
-
-                        f['hands'].resize((f["hands"].shape[0] + hands_list_np.shape[0]), axis = 0)
-                        f['hands'][-hands_list_np.shape[0]:] = hands_list_np
-
-                        f['discarded_tiles_pool'].resize((f["discarded_tiles_pool"].shape[0] + discarded_tiles_pool_np.shape[0]), axis = 0)
-                        f['discarded_tiles_pool'][-discarded_tiles_pool_np.shape[0]:] = discarded_tiles_pool_np
-
-                        f['four_players_open_hands'].resize((f["four_players_open_hands"].shape[0] + four_players_open_hands_np.shape[0]), axis = 0)
-                        f['four_players_open_hands'][-four_players_open_hands_np.shape[0]:] = four_players_open_hands_np
-
-                        f['discarded_tile'].resize((f["discarded_tile"].shape[0] + discarded_tile_np.shape[0]), axis = 0)
-                        f['discarded_tile'][-discarded_tile_np.shape[0]:] = discarded_tile_np
+                        
+                        for k in range(len(draw_tile_list)):
+                            res = {
+                                'draw_tile': draw_tile_list[k],
+                                'hands': hands_list[k],
+                                'discarded_tiles_pool' : discarded_tiles_pool_list[k],
+                                'four_players_open_hands': four_players_open_hands_list[k],
+                                'discarded_tile': discarded_tile[k]                     
+                            }
+                            
+                            res_str = json.dumps(res)
+                            file.write(res_str+'\n')
+                            
+                        
+            
+        
+        
+        
+        
 
 
+# In[ ]:
 
-       
-        f.close() 
+
 
 
