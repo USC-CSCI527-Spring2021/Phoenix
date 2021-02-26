@@ -1,17 +1,16 @@
-import numpy as np
-
 #Author: Jingwen Sun
 #This is a class used for extract features from a tiles_state_and_action list for chi/pon/kan model.
-#getKanFeatures() is not completed yet
 #usage: 
 #   tiles_state_and_action = np.load('tiles_state_and_action_2021.npy')
-#   ef = extractFeature(tiles_state_and_action)
-#   xs, ys = ef.getChiFeatures()
-#       xs is a list of (63,34) vectors and ys is a list of 1/0
-#   xs, ys = ef.getPonFeatures()
-#       xs is a list of (63,34) vectors and ys is a list of 1/0
+#   fg = FeatureGenerator(tiles_state_and_action)
+#   for idx,(x,y) in enumerate(fg.ChiFeatureGenerator()): code for training
+#   for idx,(x,y) in enumerate(fg.PonFeatureGenerator()): code for training
+#   for idx,(x,y) in enumerate(fg.KanFeatureGenerator()): code for training
 
-class extractFeature:
+import numpy as np
+
+class FeatureGenerator:
+
     def __init__(self, tiles_state_and_action):
         self.tiles_state_and_action = tiles_state_and_action
     
@@ -65,7 +64,6 @@ class extractFeature:
             dora_feature[idx][val//4] = 1
         return dora_feature
     
-    #get score features in one (1,34) vector
     def getScoreList1(self,i):
         def trans_score(score):
             feature = np.zeros((34))
@@ -87,54 +85,8 @@ class extractFeature:
             scores_feature[i] = trans_score(score)
             player_seat += 1
             player_seat %= 4
-        return scores_feature
-    
-    #get board information features in multiple (1,34) vectors
-    def getBoard(self, i):
-        def wind(c):
-            if c=='E' : 
-                return 0
-            if c=='S' : 
-                return 1
-            if c=='W' : 
-                return 2
-            if c=='N' : 
-                return 3
-        player_seat = self.tiles_state_and_action[0][i]
-        dealer_seat = self.tiles_state_and_action[1][i]
-        repeat_dealer = self.tiles_state_and_action[2][i]
-        riichi_bets = self.tiles_state_and_action[3][i]
-        player_wind = self.tiles_state_and_action[4][i]
-        prevailing_wind = self.tiles_state_and_action[5][i]
+        return scores_feature        
         
-        dealer_feature = np.zeros((4, 34))
-        dealer_feature[(dealer_seat+4-player_seat)%4] = 1
-        
-        repeat_dealer_feature = np.zeros((8, 34))
-        if repeat_dealer > 7 :
-            repeat_dealer = 7
-        repeat_dealer_feature[repeat_dealer] = 1
-        
-        riichi_bets_feature = np.zeros((8, 34))
-        if riichi_bets > 7 :
-            repeat_dealer = 7
-        riichi_bets_feature[riichi_bets] = 1
-        
-        player_wind_feature = np.zeros((4, 34))
-        player_wind_feature[(wind(player_wind)+4-player_seat)%4] = 1
-        
-        prevailing_wind_feature = np.zeros((4, 34))
-        prevailing_wind_feature[(wind(prevailing_wind)+4-player_seat)%4] = 1
-        
-        return np.concatenate((
-            dealer_feature,
-            repeat_dealer_feature,
-            riichi_bets_feature,
-            player_wind_feature,
-            prevailing_wind_feature
-        ))
-    
-    #get board information features in one (1,34) vector
     def getBoard1(self, i):
         def wind(c):
             if c=='E' : 
@@ -183,10 +135,8 @@ class extractFeature:
             self.getEnemiesTiles(i), #(36,34)
             self.getScoreList1(i) #(4,34)
         ))
-           
-    def getChiFeatures(self):
-        xs = []
-        ys = []
+        
+    def ChiFeatureGenerator(self):
         for i in range(len(self.tiles_state_and_action[12])):
             could_chi = self.tiles_state_and_action[12][i]
             if could_chi == 1:
@@ -194,18 +144,15 @@ class extractFeature:
                 last_player_discarded_tile_feature = np.zeros((1, 34))
                 last_player_discarded_tile_feature[0][last_player_discarded_tile//4] = 1
                 x = np.concatenate((last_player_discarded_tile_feature,self.getGeneralFeature(i)))
-                xs.append(x)
                     
                 action = self.tiles_state_and_action[15][i]
                 if action[0]=='Chi':
                     y = 1
                 else:
                     y = 0
-                ys.append(y)
+                yield x,y
                 
-        return xs, ys
-    
-    def getPonFeatures(self):
+    def PonFeatureGenerator(self):
         def could_pon(closed_hand_136, last_discarded_tile):
             if last_discarded_tile == None:
                 return False
@@ -216,8 +163,6 @@ class extractFeature:
                 return True
             return False
         
-        xs = []
-        ys = []
         for i in range(len(self.tiles_state_and_action[13])):
             if self.tiles_state_and_action[13][i] == 1:
                 last_three_discarded_tile_list = self.tiles_state_and_action[11][i]
@@ -227,14 +172,80 @@ class extractFeature:
                         last_discarded_tile_feature = np.zeros((1, 34))
                         last_discarded_tile_feature[0][last_discarded_tile//4] = 1
                         x = np.concatenate((last_discarded_tile_feature,self.getGeneralFeature(i)))
-                        xs.append(x)
                         
                         action = self.tiles_state_and_action[15][i]
                         if action[0]=='Pon' and (last_discarded_tile in action[1]):
                             y = 1
                         else:
                             y = 0
-                        ys.append(y)
-                
-        return xs, ys
-
+                        
+                        yield x,y
+                        
+    def KanFeatureGenerator(self):
+        def could_minkan(closed_hand_136, last_discarded_tile):
+            if last_discarded_tile == None:
+                return False
+            count = np.zeros(34)
+            for tile in closed_hand_136:
+                count[tile//4]+=1
+            if count[last_discarded_tile//4] >= 3:
+                return True
+            return False
+        def could_ankan(closed_hand_136):
+            count = np.zeros(34)
+            for tile in closed_hand_136:
+                count[tile//4]+=1
+                if count[tile//4]==4:
+                    return True
+            return False
+        def could_kakan(closed_hand_136, open_hand_136):
+            count = np.zeros(34)
+            for tile in open_hand_136:
+                count[tile//4]+=1
+            for tile in closed_hand_136:
+                if count[tile//4]==3:
+                    return True
+            return False
+        for i in range(len(self.tiles_state_and_action[14])):
+            last_three_discarded_tile_list = self.tiles_state_and_action[11][i]
+            closed_hand_136 = self.tiles_state_and_action[6][i]['closed_hand:']
+            open_hand_136 = self.tiles_state_and_action[6][i]['open_hand']
+            action = self.tiles_state_and_action[15][i]
+            if self.tiles_state_and_action[14][i] == 1: #Minkan
+                for last_discarded_tile in last_three_discarded_tile_list:
+                    if could_minkan(closed_hand_136, last_discarded_tile):
+                        kan_type_feature = np.zeros((3, 34))
+                        kan_type_feature[0] = 1
+                        last_discarded_tile_feature = np.zeros((1, 34))
+                        last_discarded_tile_feature[0][last_discarded_tile//4] = 1
+                        x = np.concatenate((kan_type_feature,last_discarded_tile_feature,self.getGeneralFeature(i)))
+                        
+                        if action[0]=='MinKan' and (last_discarded_tile in action[1]):
+                            y = 1
+                        else:
+                            y = 0
+                        yield x,y
+            else:
+                if could_ankan(closed_hand_136): #AnKan
+                    kan_type_feature = np.zeros((3, 34))
+                    kan_type_feature[1] = 1
+                    last_discarded_tile_feature = np.zeros((1, 34))
+                    x = np.concatenate((kan_type_feature,last_discarded_tile_feature,self.getGeneralFeature(i)))
+                    
+                    if action[0]=='AnKan':
+                        y = 1
+                    else:
+                        y = 0
+                    yield x,y
+                else:
+                    if could_kakan(closed_hand_136, open_hand_136): #KaKan
+                        kan_type_feature = np.zeros((3, 34))
+                        kan_type_feature[2] = 1
+                        last_discarded_tile_feature = np.zeros((1, 34))
+                        x = np.concatenate((kan_type_feature,last_discarded_tile_feature,self.getGeneralFeature(i)))
+                        
+                        if action[0]=='KaKan':
+                            y = 1
+                        else:
+                            y = 0
+                        yield x,y
