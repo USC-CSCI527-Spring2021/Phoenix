@@ -404,7 +404,7 @@ def main(year):
     
     df = pd.read_csv(input_csv_path) 
     
-    output_json_path = '../test/modiefied_sum_2021.json'
+    output_json_path = '../_sum.json'
     file = open(output_json_path, 'a+',encoding='utf-8')
       
     # raw data extract from logs
@@ -555,7 +555,7 @@ def main(year):
     
 
 
-for year in range(2021, 2022):
+for year in range(2009, 2022):
     # start = time.time()
     print('processing {}'.format(year))
     if year == 2020:
