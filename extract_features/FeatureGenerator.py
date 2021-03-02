@@ -1,19 +1,22 @@
 #Author: Jingwen Sun
-#This is a class used for extract features from a tiles_state_and_action list for chi/pon/kan model.
-#usage: 
+# This is a class used for extract features from a tiles_state_and_action list for chi/pon/kan model.
+# usage:
 #   file_name = "tiles_state_and_action_2021_sample.json"
 #   fg = FeatureGenerator(filename)
 #   for idx,(x,y) in enumerate(fg.ChiFeatureGenerator()): code for training
 #   for idx,(x,y) in enumerate(fg.PonFeatureGenerator()): code for training
 #   for idx,(x,y) in enumerate(fg.KanFeatureGenerator()): code for training
 
-import numpy as np
 import json
+
+import numpy as np
+from tensorflow.keras.utils import to_categorical
+
 
 class FeatureGenerator:
     def __init__(self, filename):
         self.filename = filename
-        
+
     def getPlayerTiles(self, player_tiles):
         closed_hand_136 = player_tiles['closed_hand:']
         open_hand_136 = player_tiles['open_hand']
@@ -151,7 +154,7 @@ class FeatureGenerator:
                         y = 1
                     else:
                         y = 0
-                    yield x,y
+                    yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
                 
     def PonFeatureGenerator(self):
         def could_pon(closed_hand_136, last_discarded_tile):

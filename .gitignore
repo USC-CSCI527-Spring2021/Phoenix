@@ -153,6 +153,7 @@ fabric.properties
 /logs
 *.csv
 .DS_Store
-/checkpoints
+/checkpoints/*
 *.npy
 *.hdf5
+/processed_data
