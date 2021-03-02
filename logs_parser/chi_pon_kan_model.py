@@ -4,22 +4,22 @@
 # In[1]:
 
 
-import sys
-from parser import parse_mjlog
-from viewer import print_node
-import pandas as pd
-import xml.etree.ElementTree as ET
-import numpy as np
 import copy
-from pandas.core.frame import DataFrame
 import json
+import xml.etree.ElementTree as ET
+from os import path
+
+import pandas as pd
+
+from logs_parser.parser import parse_mjlog
+from trainer.config import create_or_join
 
 
 # In[2]:
 
 
-def record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras, dealer, repeat_dealer, riichi_bets, scores, player_winds, prevailing_wind):
-    
+def record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras, dealer, repeat_dealer, riichi_bets,
+                     scores, player_winds, prevailing_wind):
     player_id_list.append(player_id)
     four_closed_hands_list.append(copy.copy(closed_hands))
     four_open_hands_list.append(copy.copy(open_hands))
@@ -403,175 +403,166 @@ def pair_data():
 # In[8]:
 
 
-def main(year):
-    
-    input_csv_path = '../../dataset/{}.csv'.format(year)
-    
-    df = pd.read_csv(input_csv_path) 
-    
-    output_json_path = 'tiles_state_and_action_sum.json'
-    file = open(output_json_path, 'a+',encoding='utf-8')
-      
-    # raw data extract from logs
-    global player_id_list
-    global four_closed_hands_list
-    global four_discarded_hands_list
-    global four_open_hands_list
-    global dora_list
-    global action_list
-    global dealer_list
-    global raw_repeat_dealer_list
-    global raw_riichi_bets_list
-    global scores_list
-    global raw_player_wind_list
-    global prevailing_wind_list 
-    
-    # paired data
-    global player_tiles_list
-    global enemies_tiles_list
-    global player_wind_list
-    global repeat_dealer_list
-    global riichi_bets_list
-    global last_player_discarded_tile_list
-    global last_three_discarded_tile_list
-    global could_chi_list
-    global could_pon_list
-    global could_minkan_list
-    global valid_chi_mentsu
+def main():
+    for year in range(2009, 2022):
+        print('processing {}'.format(year))
+        if year == 2020:
+            continue
+        input_csv_path = path.join(create_or_join('dataset'), '{}.csv'.format(year))
 
-    player_id_list = []
-    four_closed_hands_list = []
-    four_discarded_hands_list = []
-    four_open_hands_list = []
-    dora_list = []
-    action_list = []
-    dealer_list = []
-    raw_repeat_dealer_list = []
-    raw_riichi_bets_list = []
-    scores_list = []
-    raw_player_wind_list = []
-    prevailing_wind_list = []
-    
-    player_tiles_list = []
-    enemies_tiles_list = []
-    player_wind_list = []
-    repeat_dealer_list = []
-    riichi_bets_list = []
-    last_player_discarded_tile_list = []
-    last_three_discarded_tile_list = []
-    could_chi_list = []
-    could_pon_list = []
-    could_minkan_list = []
-    
-    # last_player_tile cur_possible_tiles
-    valid_chi_mentsu = {
-         0: [[1, 2]],
-         1: [[2, 3], [0, 2]],
-         2: [[3, 4], [1, 3], [0, 1]],
-         3: [[4, 5], [2, 4], [1, 2]],
-         4: [[5, 6], [3, 5], [2, 3]],
-         5: [[6, 7], [4, 6], [3, 4]],
-         6: [[7, 8], [5, 7], [4, 5]],
-         7: [[6, 8], [5, 6]],
-         8: [[6, 7]],
+        df = pd.read_csv(input_csv_path)
 
-         9: [[10, 11]],
-         10: [[11, 12], [9, 11]],
-         11: [[12, 13], [10, 12], [9, 10]],
-         12: [[13, 14], [11, 13], [10, 11]],
-         13: [[14, 15], [12, 14], [11, 12]],
-         14: [[15, 16], [13, 15], [12, 13]],
-         15: [[16, 17], [14, 16], [13, 14]],
-         16: [[15, 17], [14, 15]],
-         17: [[15, 16]],
+        output_json_path = path.join(create_or_join("processed_data"), 'tiles_state_and_action_sum.json')
+        file = open(output_json_path, 'a+', encoding='utf-8')
 
+        # raw data extract from logs
+        global player_id_list
+        global four_closed_hands_list
+        global four_discarded_hands_list
+        global four_open_hands_list
+        global dora_list
+        global action_list
+        global dealer_list
+        global raw_repeat_dealer_list
+        global raw_riichi_bets_list
+        global scores_list
+        global raw_player_wind_list
+        global prevailing_wind_list
 
-         18: [[19, 20]],
-         19: [[20, 21], [18, 20]],
-         20: [[21, 22], [19, 21], [18, 19]],
-         21: [[22, 23], [20, 22], [19, 20]],
-         22: [[23, 24], [21, 23], [20, 21]],
-         23: [[24, 25], [22, 24], [21, 22]],
-         24: [[25, 26], [23, 25], [22, 23]],
-         25: [[24, 26], [23, 24]],
-         26: [[24, 25]]
-    }
+        # paired data
+        global player_tiles_list
+        global enemies_tiles_list
+        global player_wind_list
+        global repeat_dealer_list
+        global riichi_bets_list
+        global last_player_discarded_tile_list
+        global last_three_discarded_tile_list
+        global could_chi_list
+        global could_pon_list
+        global could_minkan_list
+        global valid_chi_mentsu
 
-      
-    for i in range(len(df["log_content"])):       
-        xml_str = df["log_content"][i] 
-        if type(xml_str) != str:
-                continue
-        else:       
-            node = ET.fromstring(xml_str)
-            data = parse_mjlog(node)
-            
-            # remove three-players games 
-            if len(data["meta"]['UN'][3]["name"]) == 0:
-                continue
-            else:      
-                last_dealer = -1
-                repeat_dealer = [0, 0, 0, 0]
-                prevailing_wind = 'E'
-                
-                for j in range(len(data["rounds"])):  
-                    
-                    dealer = int(data['rounds'][j][0]["data"]["oya"])
-                    player_winds = init_player_winds(dealer)
-                    
-                    if j > 3 and dealer == 0:
-                        prevailing_wind = 'S'
-                    
-                    if dealer == last_dealer:
-                        repeat_dealer[dealer] += 1
+        player_id_list = []
+        four_closed_hands_list = []
+        four_discarded_hands_list = []
+        four_open_hands_list = []
+        dora_list = []
+        action_list = []
+        dealer_list = []
+        raw_repeat_dealer_list = []
+        raw_riichi_bets_list = []
+        scores_list = []
+        raw_player_wind_list = []
+        prevailing_wind_list = []
 
-                    get_round_info(data['rounds'][j], repeat_dealer, player_winds, prevailing_wind)
-                    
-                    last_dealer = dealer
-                    
-    pair_data()                
+        player_tiles_list = []
+        enemies_tiles_list = []
+        player_wind_list = []
+        repeat_dealer_list = []
+        riichi_bets_list = []
+        last_player_discarded_tile_list = []
+        last_three_discarded_tile_list = []
+        could_chi_list = []
+        could_pon_list = []
+        could_minkan_list = []
 
-    
-    for k in range(len(player_id_list)):
-        res = {
-            'player_id': player_id_list[k],
-            'dealer': dealer_list[k],
-            'repeat_dealer': repeat_dealer_list[k],
-            'riichi_bets' : riichi_bets_list[k],
-             'player_wind': player_wind_list[k],
-             'prevailing_wind': prevailing_wind_list[k],
-             'player_tiles': player_tiles_list[k],
-             'enemies_tiles': enemies_tiles_list[k],
-             'dora': dora_list[k],
-             'scores': scores_list[k],
-             'last_player_discarded_tile': last_player_discarded_tile_list[k],
-             'last_three_discarded_tile': last_three_discarded_tile_list[k],
-             'could_chi' : could_chi_list[k],
-             'could_pon' : could_pon_list[k],
-             'could_minkan' : could_minkan_list[k],
-             'action' : action_list[k]                   
+        # last_player_tile cur_possible_tiles
+        valid_chi_mentsu = {
+            0: [[1, 2]],
+            1: [[2, 3], [0, 2]],
+            2: [[3, 4], [1, 3], [0, 1]],
+            3: [[4, 5], [2, 4], [1, 2]],
+            4: [[5, 6], [3, 5], [2, 3]],
+            5: [[6, 7], [4, 6], [3, 4]],
+            6: [[7, 8], [5, 7], [4, 5]],
+            7: [[6, 8], [5, 6]],
+            8: [[6, 7]],
+
+            9: [[10, 11]],
+            10: [[11, 12], [9, 11]],
+            11: [[12, 13], [10, 12], [9, 10]],
+            12: [[13, 14], [11, 13], [10, 11]],
+            13: [[14, 15], [12, 14], [11, 12]],
+            14: [[15, 16], [13, 15], [12, 13]],
+            15: [[16, 17], [14, 16], [13, 14]],
+            16: [[15, 17], [14, 15]],
+            17: [[15, 16]],
+
+            18: [[19, 20]],
+            19: [[20, 21], [18, 20]],
+            20: [[21, 22], [19, 21], [18, 19]],
+            21: [[22, 23], [20, 22], [19, 20]],
+            22: [[23, 24], [21, 23], [20, 21]],
+            23: [[24, 25], [22, 24], [21, 22]],
+            24: [[25, 26], [23, 25], [22, 23]],
+            25: [[24, 26], [23, 24]],
+            26: [[24, 25]]
         }
 
-        res_str = json.dumps(res)
-        file.write(res_str+'\n')
-                            
-    
+        for i in range(len(df["log_content"])):
+            xml_str = df["log_content"][i]
+            if type(xml_str) != str:
+                continue
+            else:
+                node = ET.fromstring(xml_str)
+                data = parse_mjlog(node)
+
+                # remove three-players games
+                if len(data["meta"]['UN'][3]["name"]) == 0:
+                    continue
+                else:
+                    last_dealer = -1
+                    repeat_dealer = [0, 0, 0, 0]
+                    prevailing_wind = 'E'
+
+                    for j in range(len(data["rounds"])):
+
+                        dealer = int(data['rounds'][j][0]["data"]["oya"])
+                        player_winds = init_player_winds(dealer)
+
+                        if j > 3 and dealer == 0:
+                            prevailing_wind = 'S'
+
+                        if dealer == last_dealer:
+                            repeat_dealer[dealer] += 1
+
+                        get_round_info(data['rounds'][j], repeat_dealer, player_winds, prevailing_wind)
+
+                        last_dealer = dealer
+
+        pair_data()
+
+        for k in range(len(player_id_list)):
+            res = {
+                'player_id': player_id_list[k],
+                'dealer': dealer_list[k],
+                'repeat_dealer': repeat_dealer_list[k],
+                'riichi_bets': riichi_bets_list[k],
+                'player_wind': player_wind_list[k],
+                'prevailing_wind': prevailing_wind_list[k],
+                'player_tiles': player_tiles_list[k],
+                'enemies_tiles': enemies_tiles_list[k],
+                'dora': dora_list[k],
+                'scores': scores_list[k],
+                'last_player_discarded_tile': last_player_discarded_tile_list[k],
+                'last_three_discarded_tile': last_three_discarded_tile_list[k],
+                'could_chi': could_chi_list[k],
+                'could_pon': could_pon_list[k],
+                'could_minkan': could_minkan_list[k],
+                'action': action_list[k]
+            }
+
+            res_str = json.dumps(res)
+            file.write(res_str + '\n')
 
 
 # In[ ]:
 
 
-
-
-
 # In[ ]:
 
-
-for year in range(2009, 2022):
-    print('processing {}'.format(year))
-    if year == 2020:
-        continue       
-    main(year)
+if __name__ == "__main__":
+    main()
 
     
 

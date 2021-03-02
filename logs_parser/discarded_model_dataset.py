@@ -10,27 +10,24 @@
 # In[2]:
 
 
-import sys
-
-from parser import parse_mjlog
-from viewer import print_node
-import pandas as pd
-import xml.etree.ElementTree as ET
-import numpy as np
 import copy
-from pandas.core.frame import DataFrame
-import h5py
-
 import json
+import xml.etree.ElementTree as ET
+from os import path
+
+import pandas as pd
+
+from logs_parser.parser import parse_mjlog
+from trainer.config import create_or_join
 
 
-def get_round_info(dataset, 
-                   draw_tile_list, 
-                   hands_list, 
-                   discarded_tiles_pool_list, 
+def get_round_info(dataset,
+                   draw_tile_list,
+                   hands_list,
+                   discarded_tiles_pool_list,
                    four_players_open_hands_list,
                    discarded_tile
-                  ):
+                   ):
      
     discarded_tiles_pool = []
 
@@ -147,21 +144,18 @@ def get_round_info(dataset,
 
 # In[3]:
 
-
-
-if __name__ == "__main__":
-    
+def main():
     # path for dir
-    dir_path = '../../dataset/'
-    
-    # path for output hdf5 file 
-    output_json_path = './discarded_model_summary.json'
-    
-    file = open(output_json_path,'a+',encoding='utf-8')
- 
+    dir_path = create_or_join('dataset/')
 
-    for year in range(2009, 2022):      
-        if year == 2020: 
+    # path for output hdf5 file
+    output_json_path = path.join(create_or_join("processed_data"), 'discarded_model_summary.json')
+
+    file = open(output_json_path, 'a+', encoding='utf-8')
+    count = 1
+
+    for year in range(2009, 2022):
+        if year == 2020:
             continue
 
         print("processing " + str(year))
@@ -170,7 +164,7 @@ if __name__ == "__main__":
         df = pd.read_csv(input_csv_path)
 
         for i in range(len(df["log_content"])):
-            xml_str = df["log_content"][i]    
+            xml_str = df["log_content"][i]
 
             if type(xml_str) != str:
                 continue
@@ -179,13 +173,13 @@ if __name__ == "__main__":
                 node = ET.fromstring(xml_str)
                 data = parse_mjlog(node)
 
-                # remove three-players games 
+                # remove three-players games
                 if len(data["meta"]['UN'][3]["name"]) == 0:
                     continue
-                else:        
+                else:
 
-                    for j in range(len(data["rounds"])):  
-                        
+                    for j in range(len(data["rounds"])):
+
                         # features
                         draw_tile_list = []
                         hands_list = []
@@ -193,28 +187,36 @@ if __name__ == "__main__":
                         four_players_open_hands_list = []
 
                         # label
-                        discarded_tile = []  
+                        discarded_tile = []
 
-                        round_data = data["rounds"][j] 
+                        round_data = data["rounds"][j]
 
-                        get_round_info(round_data, 
-                                       draw_tile_list, 
-                                       hands_list, 
-                                       discarded_tiles_pool_list, 
+                        get_round_info(round_data,
+                                       draw_tile_list,
+                                       hands_list,
+                                       discarded_tiles_pool_list,
                                        four_players_open_hands_list,
                                        discarded_tile)
-                        
+
                         for k in range(len(draw_tile_list)):
                             res = {
+                                'id': count,
                                 'draw_tile': draw_tile_list[k],
                                 'hands': hands_list[k],
-                                'discarded_tiles_pool' : discarded_tiles_pool_list[k],
+                                'discarded_tiles_pool': discarded_tiles_pool_list[k],
                                 'four_players_open_hands': four_players_open_hands_list[k],
-                                'discarded_tile': discarded_tile[k]                     
+                                'discarded_tile': discarded_tile[k]
                             }
-                            
+
                             res_str = json.dumps(res)
-                            file.write(res_str+'\n')
+                            file.write(res_str + '\n')
+                            count += 1
+
+
+if __name__ == "__main__":
+    main()
+
+
                             
                         
             
