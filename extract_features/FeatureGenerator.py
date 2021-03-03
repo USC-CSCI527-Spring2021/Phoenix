@@ -59,14 +59,39 @@ class FeatureGenerator:
             player_tiles = self.getPlayerTiles(enemies_tiles_list[player_seat])
             enemies_tiles_feature = np.concatenate((enemies_tiles_feature,player_tiles))
         return enemies_tiles_feature
-        
-    def getDoraList(self, tiles_state_and_action):
-        dora_list = tiles_state_and_action["dora"]
-        dora_feature = np.zeros((5, 34))
-        for idx, val in enumerate(dora_list):
-            dora_feature[idx][val//4] = 1
-        return dora_feature
     
+     def getDoraIndicatorList(self, tiles_state_and_action):
+        dora_indicator_list = tiles_state_and_action["dora"]
+        dora_indicator_feature = np.zeros((5, 34))
+        for idx, val in enumerate(dora_indicator_list):
+            dora_indicator_feature[idx][val//4] = 1
+        return dora_indicator_feature
+    
+    def getDoraList(self, tiles_state_and_action):
+        def indicator2dora(dora_indicator):
+            dora = dora_indicator//4
+            if dora < 27: #EAST
+                if dora == 8:
+                    dora = -1
+                elif dora == 17:
+                    dora = 8
+                elif dora == 26:
+                    dora = 17
+            else:
+                dora -= 9 * 3
+                if dora == 3:
+                    dora = -1
+                elif dora == 6:
+                    dora = 3
+                dora += 9 * 3
+            dora += 1
+            return dora           
+        dora_indicator_list = tiles_state_and_action["dora"]
+        dora_feature = np.zeros((5, 34))
+        for idx, dora_indicator in enumerate(dora_indicator_list):
+            dora_feature[idx][indicator2dora(dora_indicator)] = 1
+        return dora_feature
+
     def getScoreList1(self,tiles_state_and_action):
         def trans_score(score):
             feature = np.zeros((34))
