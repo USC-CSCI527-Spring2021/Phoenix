@@ -157,3 +157,5 @@ fabric.properties
 *.npy
 *.hdf5
 /processed_data
+/models
+/tmp

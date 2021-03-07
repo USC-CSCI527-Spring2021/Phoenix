@@ -3,11 +3,12 @@ from __future__ import absolute_import
 
 import logging
 import sys
+import xml.etree.ElementTree as ET
 # from io import load_mjlog
 from parser import parse_mjlog
-from viewer import print_node
+
 import pandas as pd
-import xml.etree.ElementTree as ET
+from viewer import print_node
 
 _LG = logging.getLogger(__name__)
 
@@ -44,5 +45,5 @@ def _init_logging(debug=False):
 
 if __name__ == "__main__":
     _init_logging()
-    df = pd.read_csv("2021.csv")
+    df = pd.read_csv("../dataset/2009.csv", encoding='utf8')
     print_game(df["log_content"][0])
