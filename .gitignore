@@ -159,4 +159,4 @@ fabric.properties
 /processed_data
 
 # Customized ignore
-/extract_features/assist/
+extract_features/assist/
