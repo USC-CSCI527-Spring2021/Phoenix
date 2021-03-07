@@ -37,4 +37,6 @@ typed-ast==1.4.2
 typing-extensions==3.7.4.3
 urllib3==1.25.11
 zipp==3.4.0
-google-api-python-client==1.9.3
+google-api-python-client
+tensorflow_transform
+google-cloud-storage
