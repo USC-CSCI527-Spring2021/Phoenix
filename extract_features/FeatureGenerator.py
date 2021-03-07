@@ -1,26 +1,21 @@
 # Author: Jingwen Sun
-# This is a class used for extract features from a tiles_state_and_action list for chi/pon/kan model.
+# This is a class used for extract features from a tiles_state_and_action list for chi/pon/kan/riichi model.
 # usage:
-#   file_name = "tiles_state_and_action_2021_sample.json"
-#   fg = FeatureGenerator(filename)
-#   for idx,(x,y) in enumerate(fg.ChiFeatureGenerator()): code for training
-#   for idx,(x,y) in enumerate(fg.PonFeatureGenerator()): code for training
-#   for idx,(x,y) in enumerate(fg.KanFeatureGenerator()): code for training
+#   at the bottom of this file
 
 import numpy as np
 from tensorflow.keras.utils import to_categorical
 import tensorflow as tf
+import json
 from mahjong.shanten import Shanten
-
+from mahjong.tile import TilesConverter
 class FeatureGenerator:
-    def __init__(self, tiles_state_and_action):
+    def __init__(self):
         """
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
-        self.tiles_state_and_action = tiles_state_and_action
         self.shanten_calculator = Shanten()
-        # self.filename = filename
 
     def getPlayerTiles(self, player_tiles):
         closed_hand_136 = player_tiles['closed_hand:']
@@ -169,19 +164,19 @@ class FeatureGenerator:
             self.getScoreList1(tiles_state_and_action)  # (4,34)
         ))
 
-    def ChiFeatureGenerator(self):
+    def ChiFeatureGenerator(self, tiles_state_and_action):
         """
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
-        could_chi = self.tiles_state_and_action["could_chi"]
-        last_player_discarded_tile = self.tiles_state_and_action["last_player_discarded_tile"]
-        action = self.tiles_state_and_action["action"]
+        could_chi = tiles_state_and_action["could_chi"]
+        last_player_discarded_tile = tiles_state_and_action["last_player_discarded_tile"]
+        action = tiles_state_and_action["action"]
         if could_chi == 1:
             last_player_discarded_tile_feature = np.zeros((1, 34))
             last_player_discarded_tile_feature[0][last_player_discarded_tile // 4] = 1
             x = np.concatenate(
-                (last_player_discarded_tile_feature, self.getGeneralFeature(self.tiles_state_and_action)))
+                (last_player_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
             if action[0] == 'Chi':
                 y = 1
             else:
@@ -189,28 +184,27 @@ class FeatureGenerator:
             return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
                     "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
-    def PonFeatureGenerator(self):
+    def PonFeatureGenerator(self, tiles_state_and_action):
         """
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
-        last_discarded_tile = self.tiles_state_and_action["last_player_discarded_tile"]
-        closed_hand_136 = self.tiles_state_and_action["player_tiles"]['closed_hand:']
-        action = self.tiles_state_and_action["action"]
-        if self.tiles_state_and_action["could_pon"] == 1:
+        last_discarded_tile = tiles_state_and_action["last_player_discarded_tile"]
+        closed_hand_136 = tiles_state_and_action["player_tiles"]['closed_hand:']
+        action = tiles_state_and_action["action"]
+        if tiles_state_and_action["could_pon"] == 1:
             last_discarded_tile_feature = np.zeros((1, 34))
             last_discarded_tile_feature[0][last_discarded_tile // 4] = 1
             x = np.concatenate(
-                (last_discarded_tile_feature, self.getGeneralFeature(self.tiles_state_and_action)))
-            if action[0] == 'Pon' and (last_discarded_tile in action[1]):
+                (last_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
+            if action[0] == 'Pon':
                 y = 1
             else:
                 y = 0
+            return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
-            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-            "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
-
-    def KanFeatureGenerator(self):
+    def KanFeatureGenerator(self, tiles_state_and_action):
         """
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
@@ -232,25 +226,25 @@ class FeatureGenerator:
                     return True
             return False
 
-        last_discarded_tile = self.tiles_state_and_action["last_player_discarded_tile"]
-        closed_hand_136 = self.tiles_state_and_action["player_tiles"]['closed_hand:']
-        open_hand_136 = self.tiles_state_and_action["player_tiles"]['open_hand']
-        action = self.tiles_state_and_action["action"]
-        if self.tiles_state_and_action["could_minkan"] == 1:  # Minkan
+        last_discarded_tile = tiles_state_and_action["last_player_discarded_tile"]
+        closed_hand_136 = tiles_state_and_action["player_tiles"]['closed_hand:']
+        open_hand_136 = tiles_state_and_action["player_tiles"]['open_hand']
+        action = tiles_state_and_action["action"]
+        if tiles_state_and_action["could_minkan"] == 1:  # Minkan
             kan_type_feature = np.zeros((3, 34))
             kan_type_feature[0] = 1
             last_discarded_tile_feature = np.zeros((1, 34))
             last_discarded_tile_feature[0][last_discarded_tile // 4] = 1
             x = np.concatenate(
                 (kan_type_feature, last_discarded_tile_feature,
-                 self.getGeneralFeature(self.tiles_state_and_action)))
+                 self.getGeneralFeature(tiles_state_and_action)))
 
             if action[0] == 'MinKan' and (last_discarded_tile in action[1]):
                 y = 1
             else:
                 y = 0
-            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-            "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+            return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
         else:
             if could_ankan(closed_hand_136):  # AnKan
                 kan_type_feature = np.zeros((3, 34))
@@ -259,13 +253,14 @@ class FeatureGenerator:
                 x = np.concatenate(
                     (
                         kan_type_feature, last_discarded_tile_feature,
-                        self.getGeneralFeature(self.tiles_state_and_action)))
+                        self.getGeneralFeature(tiles_state_and_action)))
 
                 if action[0] == 'AnKan':
                     y = 1
                 else:
                     y = 0
-                yield [x.reshape((x.shape[0], x.shape[1], 1)), y]
+                return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                        "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
             else:
                 if could_kakan(closed_hand_136, open_hand_136):  # KaKan
                     kan_type_feature = np.zeros((3, 34))
@@ -273,27 +268,35 @@ class FeatureGenerator:
                     last_discarded_tile_feature = np.zeros((1, 34))
                     x = np.concatenate(
                         (kan_type_feature, last_discarded_tile_feature,
-                         self.getGeneralFeature(self.tiles_state_and_action)))
+                         self.getGeneralFeature(tiles_state_and_action)))
                     if action[0] == 'KaKan':
                         y = 1
                     else:
                         y = 0
-                    yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+                    return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                            "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
-    def RiichiFeatureGenerator(self):
-        action = self.tiles_state_and_action["action"]
-        if self.tiles_state_and_action["is_FCH"]==1:
-            min_shanten = shanten_calculator.calculate_shanten(
-                [x // 4 for x in self.tiles_state_and_action["player_tiles"]["closed_hand:"]]
-            )
-            if min_shanten==1:
-                x = np.concatenate((self.getGeneralFeature(self.tiles_state_and_action)))
+    def RiichiFeatureGenerator(self,tiles_state_and_action):
+        action = tiles_state_and_action["action"]
+        if tiles_state_and_action["is_FCH"]==1:
+            tiles_34 = TilesConverter.to_34_array(tiles_state_and_action["player_tiles"]["closed_hand:"])
+            min_shanten = self.shanten_calculator.calculate_shanten(tiles_34)
+            if min_shanten==0:
+                x = self.getGeneralFeature(tiles_state_and_action)
                 if action[0] == 'REACH':
                     y = 1
                 else:
                     y = 0
-                yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
                 "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
 if __name__ == "__main__":
+    filename = "assist/chi_pon_kan_reach_2021.json"
+    fg = FeatureGenerator()
+    with open(filename) as infile:
+        for line in infile:
+            tiles_state_and_action = json.loads(line)
+            fg.ChiFeatureGenerator(tiles_state_and_action)
+            fg.PonFeatureGenerator(tiles_state_and_action)
+            fg.KanFeatureGenerator(tiles_state_and_action)
+            fg.RiichiFeatureGenerator(tiles_state_and_action)
