@@ -282,21 +282,18 @@ class FeatureGenerator:
                     "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
     def RiichiFeatureGenerator(self):
-        with open(self.filename) as infile:
-            for line in infile:
-                tiles_state_and_action = json.loads(line)
-                action = self.tiles_state_and_action["action"]
-                if tiles_state_and_action["is_FCH"]==1:
-                    min_shanten = shanten_calculator.calculate_shanten(
-                        [x // 4 for x in self.tiles_state_and_action["player_tiles"]["closed_hand:"]]
-                    )
-                    if min_shanten==1:
-                        x = np.concatenate((self.getGeneralFeature(self.tiles_state_and_action)))
-                        if action[0] == 'REACH':
-                            y = 1
-                        else:
-                            y = 0
-                        yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                        "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+        action = self.tiles_state_and_action["action"]
+        if self.tiles_state_and_action["is_FCH"]==1:
+            min_shanten = shanten_calculator.calculate_shanten(
+                [x // 4 for x in self.tiles_state_and_action["player_tiles"]["closed_hand:"]]
+            )
+            if min_shanten==1:
+                x = np.concatenate((self.getGeneralFeature(self.tiles_state_and_action)))
+                if action[0] == 'REACH':
+                    y = 1
+                else:
+                    y = 0
+                yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
 if __name__ == "__main__":
