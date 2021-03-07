@@ -1,4 +1,4 @@
-#Author: Jingwen Sun
+# Author: Jingwen Sun
 # This is a class used for extract features from a tiles_state_and_action list for chi/pon/kan model.
 # usage:
 #   file_name = "tiles_state_and_action_2021_sample.json"
@@ -10,6 +10,7 @@
 import numpy as np
 from tensorflow.keras.utils import to_categorical
 import tensorflow as tf
+from mahjong.shanten import Shanten
 
 class FeatureGenerator:
     def __init__(self, tiles_state_and_action):
@@ -18,6 +19,7 @@ class FeatureGenerator:
         By Jun Lin
         """
         self.tiles_state_and_action = tiles_state_and_action
+        self.shanten_calculator = Shanten()
         # self.filename = filename
 
     def getPlayerTiles(self, player_tiles):
@@ -192,51 +194,27 @@ class FeatureGenerator:
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
-
-        def could_pon(closed_hand_136, last_discarded_tile):
-            if last_discarded_tile == None:
-                return False
-            count = np.zeros(34)
-            for tile in closed_hand_136:
-                count[tile // 4] += 1
-            if count[last_discarded_tile // 4] >= 2:
-                return True
-            return False
-
-        last_three_discarded_tile_list = self.tiles_state_and_action["last_three_discarded_tile"]
+        last_discarded_tile = self.tiles_state_and_action["last_player_discarded_tile"]
         closed_hand_136 = self.tiles_state_and_action["player_tiles"]['closed_hand:']
         action = self.tiles_state_and_action["action"]
         if self.tiles_state_and_action["could_pon"] == 1:
-            for last_discarded_tile in last_three_discarded_tile_list:
-                if could_pon(closed_hand_136, last_discarded_tile):
-                    last_discarded_tile_feature = np.zeros((1, 34))
-                    last_discarded_tile_feature[0][last_discarded_tile // 4] = 1
-                    x = np.concatenate(
-                        (last_discarded_tile_feature, self.getGeneralFeature(self.tiles_state_and_action)))
-                    if action[0] == 'Pon' and (last_discarded_tile in action[1]):
-                        y = 1
-                    else:
-                        y = 0
+            last_discarded_tile_feature = np.zeros((1, 34))
+            last_discarded_tile_feature[0][last_discarded_tile // 4] = 1
+            x = np.concatenate(
+                (last_discarded_tile_feature, self.getGeneralFeature(self.tiles_state_and_action)))
+            if action[0] == 'Pon' and (last_discarded_tile in action[1]):
+                y = 1
+            else:
+                y = 0
 
-                    yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+            "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
 
     def KanFeatureGenerator(self):
         """
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
-
-        def could_minkan(closed_hand_136, last_discarded_tile):
-            if last_discarded_tile == None:
-                return False
-            count = np.zeros(34)
-            for tile in closed_hand_136:
-                count[tile // 4] += 1
-            if count[last_discarded_tile // 4] >= 3:
-                return True
-            return False
-
         def could_ankan(closed_hand_136):
             count = np.zeros(34)
             for tile in closed_hand_136:
@@ -254,27 +232,25 @@ class FeatureGenerator:
                     return True
             return False
 
-        last_three_discarded_tile_list = self.tiles_state_and_action["last_three_discarded_tile"]
+        last_discarded_tile = self.tiles_state_and_action["last_player_discarded_tile"]
         closed_hand_136 = self.tiles_state_and_action["player_tiles"]['closed_hand:']
         open_hand_136 = self.tiles_state_and_action["player_tiles"]['open_hand']
         action = self.tiles_state_and_action["action"]
         if self.tiles_state_and_action["could_minkan"] == 1:  # Minkan
-            for last_discarded_tile in last_three_discarded_tile_list:
-                if could_minkan(closed_hand_136, last_discarded_tile):
-                    kan_type_feature = np.zeros((3, 34))
-                    kan_type_feature[0] = 1
-                    last_discarded_tile_feature = np.zeros((1, 34))
-                    last_discarded_tile_feature[0][last_discarded_tile // 4] = 1
-                    x = np.concatenate(
-                        (kan_type_feature, last_discarded_tile_feature,
-                         self.getGeneralFeature(self.tiles_state_and_action)))
+            kan_type_feature = np.zeros((3, 34))
+            kan_type_feature[0] = 1
+            last_discarded_tile_feature = np.zeros((1, 34))
+            last_discarded_tile_feature[0][last_discarded_tile // 4] = 1
+            x = np.concatenate(
+                (kan_type_feature, last_discarded_tile_feature,
+                 self.getGeneralFeature(self.tiles_state_and_action)))
 
-                    if action[0] == 'MinKan' and (last_discarded_tile in action[1]):
-                        y = 1
-                    else:
-                        y = 0
-                    yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+            if action[0] == 'MinKan' and (last_discarded_tile in action[1]):
+                y = 1
+            else:
+                y = 0
+            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+            "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
         else:
             if could_ankan(closed_hand_136):  # AnKan
                 kan_type_feature = np.zeros((3, 34))
@@ -298,10 +274,29 @@ class FeatureGenerator:
                     x = np.concatenate(
                         (kan_type_feature, last_discarded_tile_feature,
                          self.getGeneralFeature(self.tiles_state_and_action)))
-
                     if action[0] == 'KaKan':
                         y = 1
                     else:
                         y = 0
                     yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
                     "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+
+    def RiichiFeatureGenerator(self):
+        with open(self.filename) as infile:
+            for line in infile:
+                tiles_state_and_action = json.loads(line)
+                action = self.tiles_state_and_action["action"]
+                if tiles_state_and_action["is_FCH"]==1:
+                    min_shanten = shanten_calculator.calculate_shanten(
+                        [x // 4 for x in self.tiles_state_and_action["player_tiles"]["closed_hand:"]]
+                    )
+                    if min_shanten==1:
+                        x = np.concatenate((self.getGeneralFeature(self.tiles_state_and_action)))
+                        if action[0] == 'REACH':
+                            y = 1
+                        else:
+                            y = 0
+                        yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                        "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+
+if __name__ == "__main__":
