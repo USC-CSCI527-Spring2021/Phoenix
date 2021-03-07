@@ -145,6 +145,9 @@ class Kan:
 
         return None
 
+
+
+
     def _calculate_shanten_for_kan(self):
         previous_results, previous_shanten = self.player.ai.hand_builder.find_discard_options()
 
