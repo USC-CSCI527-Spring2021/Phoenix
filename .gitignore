@@ -158,5 +158,8 @@ fabric.properties
 *.hdf5
 /processed_data
 
+
 # Customized ignore
 extract_features/assist/
+/models
+/tmp
