@@ -60,7 +60,7 @@ class FeatureGenerator:
             enemies_tiles_feature = np.concatenate((enemies_tiles_feature,player_tiles))
         return enemies_tiles_feature
     
-     def getDoraIndicatorList(self, tiles_state_and_action):
+    def getDoraIndicatorList(self, tiles_state_and_action):
         dora_indicator_list = tiles_state_and_action["dora"]
         dora_indicator_feature = np.zeros((5, 34))
         for idx, val in enumerate(dora_indicator_list):
