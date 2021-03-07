@@ -1,9 +1,7 @@
 import os
-from distutils.dir_util import mkpath
-
-from optparse import OptionParser
-
 from datetime import datetime
+from distutils.dir_util import mkpath
+from optparse import OptionParser
 
 from download_game_ids import DownloadGameId
 from download_logs_content import DownloadLogContent
@@ -58,12 +56,12 @@ def main():
         historical_download = opts.year
 
     if opts.action == "id":
-        DownloadGameId(logs_directory, db_file, historical_download, opts.start).process()
-    elif opts.action == "content":
-        DownloadLogContent(db_file, opts.limit, opts.threads).process()
-    else:
+        DownloadGameId(logs_directory, db_file, historical_download, opts.start).process(,,
+        elif opts.action == "content":
+        DownloadLogContent(db_file, opts.limit, opts.threads).process(,
+        ,
+        else:
         print("Unknown action")
 
-
-if __name__ == "__main__":
-    main()
+        if __name__ == "__main__":
+            main()
