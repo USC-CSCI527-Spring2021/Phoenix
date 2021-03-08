@@ -99,11 +99,12 @@ class FeatureGenerator:
             if score > 50000:
                 score = 50000 
             a = score//(50000.0/33)
-            alpha = a + 1 - (score*33.0/50000)
-            alpha = round(alpha, 2)
-            feature[int(a)] = alpha
-            if a<33:
-                feature[int(a)] = 1-alpha
+            # alpha = a + 1 - (score*33.0/50000)
+            # alpha = round(alpha, 2)
+            # feature[int(a)] = alpha
+            # if a<33:
+            #     feature[int(a+1)] = 1-alpha
+            feature[int(a)] = 1
             return feature
             
         player_seat = tiles_state_and_action["player_id"]
