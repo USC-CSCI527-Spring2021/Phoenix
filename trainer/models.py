@@ -3,14 +3,13 @@ from os import path
 
 import numpy as np
 import tensorflow as tf
-from google.cloud import storage
 from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, BatchNormalization, \
     Flatten, Dense, LeakyReLU, add
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.models import Model
 
-from trainer.config import CHECKPOINT_DIR, TRAIN_SPLIT, BATCH_SIZE, create_or_join, RANDOM_SEED, GCP_BUCKET
+from trainer.config import CHECKPOINT_DIR, TRAIN_SPLIT, BATCH_SIZE, create_or_join, RANDOM_SEED
 
 np.random.seed(RANDOM_SEED)
 
@@ -62,7 +61,7 @@ def residual_block(y, filter, _strides=(1, 1), _project_shortcut=False):
     return y
 
 
-def make_or_restore_model(input_shape, model_type):
+def make_or_restore_model(input_shape, model_type, strategy):
     """
     create or restore the model trained before
     :param model: keras model class
@@ -70,17 +69,20 @@ def make_or_restore_model(input_shape, model_type):
     """
     # Either restore the latest model, or create a fresh one
     # if there is no checkpoint available.
-    is_cloud = bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
+    is_cloud = os.environ.get("TF_KERAS_RUNNING_REMOTELY")
 
     checkpoint = create_or_join('{}/{}'.format(CHECKPOINT_DIR, model_type))
 
-    if is_cloud:
-        client = storage.Client()
-        checkpoints = [path.join(checkpoint, name) for name in list(client.list_blobs(GCP_BUCKET, prefix=checkpoint))]
+    if bool(is_cloud):
+        if not tf.io.gfile.exists(checkpoint):
+            tf.io.gfile.makedirs(checkpoint)
+        checkpoints = tf.io.gfile.listdir(checkpoint)
+        # client = storage.Client()
+        # checkpoints = [path.join(checkpoint, name) for name in list(client.list_blobs(GCP_BUCKET, prefix=checkpoint))]
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
+    model = discard_model(input_shape, strategy) if model_type == 'discarded' else rcpk_model(input_shape, strategy)
     if checkpoints:
         latest_checkpoint = max(checkpoints, key=os.path.getctime)
         print("Restoring {} from".format(model_type), latest_checkpoint)
@@ -90,60 +92,62 @@ def make_or_restore_model(input_shape, model_type):
     return model
 
 
-def discard_model(input_shape):
+def discard_model(input_shape, strategy):
     """
     Discard Model
     Network structure using idea of CNN
     :param input_shape: data shape
     :return: keras model class
     """
-    x = input_shape
-    x = Normalization()(x)
-    for _ in range(3):
-        x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
-    for _ in range(3):
-        x = residual_block(x, 256, _project_shortcut=True)
+    with strategy.scope():
+        x = input_shape
+        x = Normalization()(x)
+        for _ in range(3):
+            x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
+        for _ in range(3):
+            x = residual_block(x, 256, _project_shortcut=True)
 
-    x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
-    x = Flatten()(x)
-    outputs = Dense(34, activation="softmax")(x)
-    # model = keras.applications.ResNet50V2(weights=None, input_shape=(64, 34, 1), classes=34, include_top=True)
-    model = Model(input_shape, outputs)
-    model.summary()
-    model.compile(
-        keras.optimizers.Adam(learning_rate=0.008),
-        keras.losses.CategoricalCrossentropy(),
-        metrics=keras.metrics.CategoricalAccuracy())
-    return model
+        x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
+        x = Flatten()(x)
+        outputs = Dense(34, activation="softmax")(x)
+        # model = keras.applications.ResNet50V2(weights=None, input_shape=(64, 34, 1), classes=34, include_top=True)
+        model = Model(input_shape, outputs)
+        model.summary()
+        model.compile(
+            keras.optimizers.Adam(learning_rate=0.008),
+            keras.losses.CategoricalCrossentropy(),
+            metrics=keras.metrics.CategoricalAccuracy())
+        return model
 
 
-def rcpk_model(input_shape):
+def rcpk_model(input_shape, strategy):
     """
     Riichi, Chi, Pon, Kan models
     Network structure using idea of CNN
     :param input_shape: data shape
     :return: keras model class
     """
-    x = input_shape
-    x = Normalization()(x)
-    for _ in range(3):
-        x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
-    for _ in range(5):
-        x = residual_block(x, 256, _project_shortcut=True)
-    for _ in range(3):
-        x = Conv2D(32, (3, 1), padding="same", data_format="channels_last")(x)
-    x = Flatten()(x)
-    x = Dense(1024)(x)
-    x = Dense(256)(x)
-    outputs = Dense(2, activation="softmax")(x)
+    with strategy.scope():
+        x = input_shape
+        x = Normalization()(x)
+        for _ in range(3):
+            x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
+        for _ in range(5):
+            x = residual_block(x, 256, _project_shortcut=True)
+        for _ in range(3):
+            x = Conv2D(32, (3, 1), padding="same", data_format="channels_last")(x)
+        x = Flatten()(x)
+        x = Dense(1024)(x)
+        x = Dense(256)(x)
+        outputs = Dense(2, activation="softmax")(x)
 
-    model = Model(input_shape, outputs)
-    model.summary()
-    model.compile(
-        keras.optimizers.Adam(learning_rate=0.008),
-        keras.losses.BinaryCrossentropy(),
-        metrics=keras.metrics.Accuracy())
-    return model
+        model = Model(input_shape, outputs)
+        model.summary()
+        model.compile(
+            keras.optimizers.Adam(learning_rate=0.008),
+            keras.losses.BinaryCrossentropy(),
+            metrics=keras.metrics.Accuracy())
+        return model
 
 
 def data_generator(states, labels, start=0):

@@ -13,6 +13,6 @@ setup(
     install_requires=[
         'google-cloud-storage==1.36.1',
         'tensorflow_transform==0.28.0',
-        ''
+        'tensorflow==2.4.1'
     ],
 )

@@ -1,11 +1,16 @@
 
 # Parse command line arguments
 unset WORK_DIR
+unset TYPE
 MAX_DATA_FILES=5
 PROJECT=$(gcloud config get-value project || echo $PROJECT)
 REGION=us-central1
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --training-type)
+      TYPE=$2
+      shift
+      ;;
     --work-dir)
       WORK_DIR=$2
       shift
@@ -62,14 +67,37 @@ run python pipeline.py \
 
 echo "Submit Training Job to AI Platform"
 
-run gcloud ai-platform jobs submit training discard_model_`date +"%Y%m%d_%H%M"` \
+run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
   --region $REGION \
   --python-version 3.7 \
   --runtime-version 2.4 \
   --job-dir $WORK_DIR \
+  --config config.yaml \
   --stream-logs \
   -- \
-  --model_type="discard" \
-  --cloud_train=1
+  --model-type="discarded" \
+  --cloud-train=1
+
+
+  gcloud ai-platform jobs submit training discard_model_`date +"%Y%m%d_%H%M"` \
+  --package-path trainer/ \
+  --module-name trainer.task \
+  --region us-central1 \
+  --python-version 3.7 \
+  --runtime-version 2.4 \
+  --job-dir "gs://mahjong-dataset/" \
+  --config trainer/config.yaml \
+  --stream-logs \
+  -- \
+  --model-type="discarded" \
+  --cloud-train=1
+
+  gcloud ai-platform local train \
+  --distributed --worker-count 3 \
+  --package-path trainer/  \
+  --module-name trainer.task \
+  -- \
+  --model-type="discarded" \
+  --cloud-train=1
