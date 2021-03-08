@@ -29,28 +29,18 @@ def getGeneralFeature(player):
         feature = np.zeros((34))
         if score > 50000:
             score = 50000 
-        a = score//(50000.0/33)
-        alpha = a + 1 - (score*33.0/50000)
-        alpha = round(alpha, 2)
-        feature[int(a)] = alpha
-        if a<33:
-            feature[int(a)] = 1-alpha
+        a = score // (50000.0 / 33)
+        feature[int(a)] = 1
         return feature
 
     def _getPlayerTiles(player):
         closed_hand_feature = np.zeros((4, 34))
         open_hand_feature = np.zeros((4, 34))
         discarded_tiles_feature = np.zeros((4, 34))
-        
-        open_hand=[]
-        for meld in player.melds:
-            for tile in meld.tiles:
-                open_hand.append(tile)
-        closed_hand=[]
-        for tile in player.tiles:
-            if tile not in open_hand:
-                closed_hand.append(tile)
-        discarded_tiles=player.discards
+
+        open_hand = [tile for tile in meld.tiles for meld in player.melds]
+        closed_hand = [tile for tile in player.tiles if tile not in open_hand]
+        discarded_tiles = player.discards
         
         for val in closed_hand:
             idx=0
@@ -83,7 +73,7 @@ def getGeneralFeature(player):
     def _getDoraList(player):  
         dora_indicators = player.table.dora_indicators
         dora_feature = np.zeros((5, 34))
-        for idx, dora_indicator in enumerate(dora_list):
+        for idx, dora_indicator in enumerate(dora_indicators):
             dora_feature[idx][_indicator2dora(dora_indicator)] = 1
         return dora_feature
 
@@ -113,7 +103,7 @@ def getGeneralFeature(player):
         player_wind_feature[(4-player.table.dealer_seat)%4] = 1
 
         prevailing_wind_feature = np.zeros((4, 34))
-        prevailing_wind_feature[round_wind_number//4] = 1
+        prevailing_wind_feature[player.table.round_wind_number//4] = 1
 
         return np.concatenate((
             dealer_feature,
