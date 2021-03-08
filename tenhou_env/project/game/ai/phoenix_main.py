@@ -1,6 +1,8 @@
 from game.ai.nn import Chi, Pon, Kan, Riichi, Discard
 from game.ai.hand_builder import HandBuilder
 from mahjong.meld import Meld
+from mahjong.utils import is_honor, is_terminal
+from mahjong.tile import TilesConverter
 
 class Phoenix:
     def __init__(self, player):
@@ -29,12 +31,18 @@ class Phoenix:
         '''
         return discarded_tile and with_riichi
         '''
-        if discard_tile is not None:
+        if discard_tile is not None:    #discard after meld
             return discard_tile, False
-        else:
-            return self.discard.discard_tile()
-
-
+        if self.player.is_open_hand:    #can not riichi
+            return self.discard.discard_tile(), False
+        
+        waiting, shanten = self.hand_builder.calculate_waits(self.player.closed_hand, self.player.tiles)
+        if shanten != 0:                #can not riichi
+            return self.discard.discard_tile(), False
+        with_riichi, p = self.riichi.should_call_riichi()
+        tile_to_discard = self.discard.discard_tile(with_riichi=with_riichi)
+        return tile_to_discard
+            
     def try_to_call_meld(self, tile_136, is_kamicha_discard, meld_type):
         # 1 pon
         # 2 kan (it is a closed kan and can be send only to the self draw)
@@ -63,12 +71,18 @@ class Phoenix:
         all_tiles_copy.append(tile_136)
         meld_tiles_copy.append(meld)
         closed_hand_copy = [item for item in all_tiles_copy if item not in meld_tiles_copy]
-        discard_option = self.player.discard(all_tiles_copy, closed_hand_copy)
+        discard_option = self.discard.discard_tile(all_hands_136=all_tiles_copy, closed_hands_136=closed_hand_copy)
 
         return meld, discard_option
 
     def should_call_kyuushu_kyuuhai(self):
-        pass
+        #try kokushi strategy if with 10 types
+        tiles_34 = TilesConverter.to_34_array(self.player.tiles)
+        types = sum([1 for t in tiles_34 if t > 0])
+        if types >= 10:
+            return False
+        else:
+            return True
 
 
     def should_call_win(self, tile, is_tsumo, enemy_seat=None, is_chankan=False):
