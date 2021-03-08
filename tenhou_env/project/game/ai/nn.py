@@ -74,7 +74,7 @@ class Discard:
         self.player = player
         self.model = models.make_or_restore_model(input_shape, "discard")
 
-    def discard_tile(self, all_hands_136=None, closed_hands_136=None):
+    def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi=False):
         '''
         The reason why these two should be input:
         if the "discard" action is from "discard after meld", since we have decided to meld, what
@@ -82,7 +82,7 @@ class Discard:
         interrupted), so we could only use discard model based on supposed hands after melding
 
         '''
-        features = self.getFeature(all_hands_136, closed_hands_136)
+        features = self.getFeature(all_hands_136, closed_hands_136, with_riichi)
         tile_to_discard = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
         tile_to_discard_136 = [h for h in closed_hands_136 if h // 4 == tile_to_discard][-1] 
         #if multiple tiles exists, return the one which is not red dora
@@ -91,5 +91,6 @@ class Discard:
 
 
 
-    def getFeature(self, open_hands_136, closed_hands_136):
+    def getFeature(self, open_hands_136, closed_hands_136, with_riichi):
+        #if hands are none, get hands from self.player
         return np.random.randn(62, 34, 1)       #change this according to actual shape
