@@ -96,7 +96,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
     else:
         pipeline_opt = PipelineOptions(runner=kwargs['runner'], project=project_id, region=region,
                                        setup_file="./setup.py",
-                                       machine_type="n1-highcpu-16",
+                                       machine_type="n1-standard-16",
                                        experiments=['shuffle_mode=service', 'use_runner_v2'],
                                        temp_location=path.join(job_dir, 'data-processing-tmp'),
                                        save_main_session=True)
