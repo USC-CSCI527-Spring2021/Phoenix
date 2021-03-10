@@ -5,7 +5,7 @@ from threading import Thread
 from time import sleep
 from urllib.parse import quote
 
-from game.ai.configs.phoenix import PhoenixConfig
+# from game.ai.configs.phoenix import PhoenixConfig
 from game.client import Client
 from mahjong.tile import TilesConverter
 from tenhou.decoder import TenhouDecoder
@@ -28,7 +28,7 @@ class TenhouClient(Client):
     _rating_string = None
 
     def __init__(self, logger):
-        super().__init__(PhoenixConfig if settings.AI == 0 else None)
+        super().__init__()
         self.logger = logger
         self.statistics = Statistics()
 

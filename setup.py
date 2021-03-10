@@ -13,6 +13,8 @@ setup(
     install_requires=[
         'google-cloud-storage==1.36.1',
         'tensorflow_transform==0.28.0',
-        'tensorflow==2.4.1'
+        'tensorflow==2.4.1',
+        'mahjong==1.2.0.dev5',
+        'tensorboard==2.4.1'
     ],
 )
