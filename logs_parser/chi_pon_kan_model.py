@@ -455,13 +455,8 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         return False
 
     def process(self, log_data, **kwargs):
-
-        xml_str = log_data[4]
-
-        # if type(xml_str) != str:
-        #     continue
-
         try:
+            xml_str = log_data[4]
             node = ET.fromstring(xml_str)
             data = parse_mjlog(node)
 
@@ -513,6 +508,6 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
                 yield res
                 # output.append(res)
             # return output
-        except ET.ParseError:
+        except:
             return
 # In[ ]:
