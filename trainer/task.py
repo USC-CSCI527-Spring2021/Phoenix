@@ -18,7 +18,7 @@ def argument_parse():
         '--num-epochs',
         type=int,
         default=5000,
-        help='number of times to go through the data, default=10')
+        help='number of times to go through the data, default=5000')
     # parser.add_argument(
     #     '--batch-size',
     #     default=128,
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         #     implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
         # strategy = tf.distribute.MultiWorkerMirroredStrategy(communication_options=communication_options)
         # num_workers = len(tf_config['cluster']['worker'])
-        strategy = tf.distribute.MirroredStrategy()
+        strategy = tf.distribute.experimental.CentralStorageStrategy()
         print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
         BATCH_SIZE_PER_REPLICA = BATCH_SIZE
         BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
