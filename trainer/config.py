@@ -1,13 +1,15 @@
 import os
 
-GCP_BUCKET = 'mahjong-dataset'
+# GCP_BUCKET = 'mahjong-dataset'
+GCP_BUCKET = 'mahjong-bucket'
 BATCH_SIZE = 1
 TRAIN_SPLIT = 0.8
 CHECKPOINT_DIR = "checkpoints"
 RANDOM_SEED = 1
 DISCARD_TABLE_BQ = "mahjong.discarded"
 CHI_PON_KAN_TABLE_BQ = "mahjong.chi_pon_kan"
-PROJECT_ID = "mahjong-305819"
+# PROJECT_ID = "mahjong-305819"
+PROJECT_ID = "mahjong-307020"
 REGION = "us-central1"
 
 

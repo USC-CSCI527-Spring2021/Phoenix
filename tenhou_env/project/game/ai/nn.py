@@ -230,10 +230,15 @@ class Discard:
         tile_to_discard_136 = [h for h in closed_hands_136 if h // 4 == tile_to_discard][-1] 
         #if multiple tiles exists, return the one which is not red dora
         return tile_to_discard_136
-                
-
-
 
     def getFeature(self, open_hands_136, closed_hands_136, with_riichi):
-        #if hands are none, get hands from self.player
-        return np.random.randn(62, 34, 1)       #change this according to actual shape
+        from trainer.models import transform_discard_features
+        data = {
+            "draw_tile": self.player.tiles[-1],
+            "discarded_tiles_pool": self.player.table.revealed_tiles_136,
+            "four_players_open_hands": self.player.table.melded_tiles,
+            ## fake data here, pass in just to get function running
+            "discarded_tile": 0,
+        }
+        # if hands are none, get hands from self.player
+        return transform_discard_features(data)['features']  # change this according to actual shape

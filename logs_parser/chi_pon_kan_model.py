@@ -5,6 +5,7 @@ import apache_beam as beam
 
 from .parser import parse_mjlog
 
+
 # from last player, match with cur tile
 def could_pon(last_player_tile_34, cur_player_closed_hands_34):
     match_count = 0
@@ -460,55 +461,58 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         # if type(xml_str) != str:
         #     continue
 
-        node = ET.fromstring(xml_str)
-        data = parse_mjlog(node)
+        try:
+            node = ET.fromstring(xml_str)
+            data = parse_mjlog(node)
 
-        # remove three-players games
-        # if len(data["meta"]['UN'][3]["name"]) == 0:
-        #     continue
+            # remove three-players games
+            # if len(data["meta"]['UN'][3]["name"]) == 0:
+            #     continue
 
-        last_dealer = -1
-        repeat_dealer = [0, 0, 0, 0]
-        prevailing_wind = 'E'
+            last_dealer = -1
+            repeat_dealer = [0, 0, 0, 0]
+            prevailing_wind = 'E'
 
-        for j in range(len(data["rounds"])):
+            for j in range(len(data["rounds"])):
 
-            dealer = int(data['rounds'][j][0]["data"]["oya"])
-            player_winds = self.init_player_winds(dealer)
+                dealer = int(data['rounds'][j][0]["data"]["oya"])
+                player_winds = self.init_player_winds(dealer)
 
-            if j > 3 and dealer == 0:
-                prevailing_wind = 'S'
+                if j > 3 and dealer == 0:
+                    prevailing_wind = 'S'
 
-            if dealer == last_dealer:
-                repeat_dealer[dealer] += 1
+                if dealer == last_dealer:
+                    repeat_dealer[dealer] += 1
 
-            self.get_round_info(data['rounds'][j], repeat_dealer, player_winds, prevailing_wind)
+                self.get_round_info(data['rounds'][j], repeat_dealer, player_winds, prevailing_wind)
 
-            last_dealer = dealer
+                last_dealer = dealer
 
-        self.pair_data()
+            self.pair_data()
 
-        for k in range(len(self.player_id_list)):
-            res = {
-                u'player_id': self.player_id_list[k],
-                u'dealer': self.dealer_list[k],
-                u'repeat_dealer': self.repeat_dealer_list[k],
-                u'riichi_bets': self.riichi_bets_list[k],
-                u'player_wind': self.player_wind_list[k],
-                u'prevailing_wind': self.prevailing_wind_list[k],
-                u'player_tiles': self.player_tiles_list[k],
-                u'open_hands_detail': self.open_hands_detail_list[k],
-                u'enemies_tiles': self.enemies_tiles_list[k],
-                u'dora': self.dora_list[k],
-                u'scores': self.scores_list[k],
-                u'last_player_discarded_tile': self.last_player_discarded_tile_list[k],
-                u'could_chi': self.could_chi_list[k],
-                u'could_pon': self.could_pon_list[k],
-                u'could_minkan': self.could_minkan_list[k],
-                u'is_FCH' : self.is_FCH_list[k],
-                u'action': self.action_list[k]
-            }
-            yield res
-            # output.append(res)
-        # return output
+            for k in range(len(self.player_id_list)):
+                res = {
+                    u'player_id': self.player_id_list[k],
+                    u'dealer': self.dealer_list[k],
+                    u'repeat_dealer': self.repeat_dealer_list[k],
+                    u'riichi_bets': self.riichi_bets_list[k],
+                    u'player_wind': self.player_wind_list[k],
+                    u'prevailing_wind': self.prevailing_wind_list[k],
+                    u'player_tiles': self.player_tiles_list[k],
+                    u'open_hands_detail': self.open_hands_detail_list[k],
+                    u'enemies_tiles': self.enemies_tiles_list[k],
+                    u'dora': self.dora_list[k],
+                    u'scores': self.scores_list[k],
+                    u'last_player_discarded_tile': self.last_player_discarded_tile_list[k],
+                    u'could_chi': self.could_chi_list[k],
+                    u'could_pon': self.could_pon_list[k],
+                    u'could_minkan': self.could_minkan_list[k],
+                    u'is_FCH': self.is_FCH_list[k],
+                    u'action': self.action_list[k]
+                }
+                yield res
+                # output.append(res)
+            # return output
+        except ET.ParseError:
+            return
 # In[ ]:

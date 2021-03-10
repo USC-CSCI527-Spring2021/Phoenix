@@ -3,12 +3,14 @@
 # usage:
 #   at the bottom of this file
 
-import numpy as np
-from tensorflow.keras.utils import to_categorical
-import tensorflow as tf
 import json
+
+import numpy as np
 from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
+from tensorflow.keras.utils import to_categorical
+
+
 class FeatureGenerator:
     def __init__(self):
         """
@@ -184,7 +186,7 @@ class FeatureGenerator:
             else:
                 y = 0
             return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+                    "labels": to_categorical(y, num_classes=2)}
 
     def PonFeatureGenerator(self, tiles_state_and_action):
         """
@@ -204,8 +206,7 @@ class FeatureGenerator:
             else:
                 y = 0
             return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
-
+                    "labels": to_categorical(y, num_classes=2)}
     def KanFeatureGenerator(self, tiles_state_and_action):
         """
         changed the input from filename to tiles_state_and_action data
@@ -246,7 +247,7 @@ class FeatureGenerator:
             else:
                 y = 0
             return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                    "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+                    "labels": to_categorical(y, num_classes=2)}
         else:
             if could_ankan(closed_hand_136):  # AnKan
                 kan_type_feature = np.zeros((3, 34))
@@ -262,7 +263,7 @@ class FeatureGenerator:
                 else:
                     y = 0
                 return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                        "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+                        "labels": to_categorical(y, num_classes=2)}
             else:
                 if could_kakan(closed_hand_136, open_hand_136):  # KaKan
                     kan_type_feature = np.zeros((3, 34))
@@ -276,7 +277,7 @@ class FeatureGenerator:
                     else:
                         y = 0
                     return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                            "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+                            "labels": to_categorical(y, num_classes=2)}
 
     def RiichiFeatureGenerator(self,tiles_state_and_action):
         action = tiles_state_and_action["action"]
@@ -290,7 +291,7 @@ class FeatureGenerator:
                 else:
                     y = 0
                 return {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                "labels": to_categorical(y, num_classes=2, dtype=tf.int64)}
+                        "labels": to_categorical(y, num_classes=2)}
 
 if __name__ == "__main__":
     filename = "assist/chi_pon_kan_reach_2021.json"

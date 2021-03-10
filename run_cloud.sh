@@ -80,7 +80,7 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --model-type="discarded" \
   --cloud-train=1
 
-
+# discarded model runner
   gcloud ai-platform jobs submit training discard_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
@@ -94,6 +94,25 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --model-type="discarded" \
   --cloud-train=1
 
+# chi model runner
+gcloud ai-platform jobs submit training chi_model_`date +"%Y%m%d_%H%M"` \
+  --package-path trainer/ \
+  --module-name trainer.task \
+  --region us-central1 \
+  --python-version 3.7 \
+  --runtime-version 2.4 \
+  --job-dir "gs://mahjong-dataset/" \
+  --config trainer/config.yaml \
+  --stream-logs \
+  -- \
+  --model-type="chi" \
+  --cloud-train=1
+
+# Runner for pipeline, replace the # to your information
+# Local run only supply --job-type
+  python pipeline.py --cloud=1 --job-dir=gs://mahjong-dataset --job-type="riichi" --project-id="#" --region="#" --google-app-cred="#"
+
+#local ai platform tester
   gcloud ai-platform local train \
   --distributed --worker-count 3 \
   --package-path trainer/  \

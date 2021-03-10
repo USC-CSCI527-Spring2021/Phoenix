@@ -14,6 +14,8 @@ class Table:
 
     dora_indicators = None
 
+    discarded_pool_136 = None
+
     dealer_seat = 0
     round_number = -1
     round_wind_number = 0
@@ -38,7 +40,9 @@ class Table:
         self.dora_indicators = []
         self.revealed_tiles = [0] * 34
         self.revealed_tiles_136 = []
+        self.discarded_pool_136 = []
 
+        self.melded_tiles = [[], [], [], []]
     def __str__(self):
         dora_string = TilesConverter.to_one_line_string(
             self.dora_indicators, print_aka_dora=self.player.table.has_aka_dora
@@ -63,6 +67,8 @@ class Table:
 
         self.revealed_tiles = [0] * 34
         self.revealed_tiles_136 = []
+        self.discarded_pool_136 = []
+        self.melded_tiles = [[], [], [], []]
 
         self.dora_indicators = []
         self.add_dora_indicator(dora_indicator)
@@ -89,6 +95,8 @@ class Table:
         self.dora_indicators = []
         self.revealed_tiles = [0] * 34
         self.revealed_tiles_136 = []
+        self.discarded_pool_136 = []
+        self.melded_tiles = [[], [], [], []]
 
     def add_called_meld(self, player_seat, meld):
         self.meld_was_called = True
@@ -109,6 +117,7 @@ class Table:
         self.get_player(player_seat).add_called_meld(meld)
 
         tiles = meld.tiles[:]
+        self._add_melded_tiles(player_seat, tiles)
         # called tile was already added to revealed array
         # because it was called on the discard
         if meld.called_tile is not None:
@@ -186,6 +195,7 @@ class Table:
         player.add_discarded_tile(tile)
 
         self._add_revealed_tile(tile_136)
+        self.discarded_pool_136.append(tile_136)
 
         player.is_ippatsu = False
 
@@ -244,6 +254,9 @@ class Table:
         assert (
             self.revealed_tiles[tile_34] <= 4
         ), f"we have only 4 tiles in the game: {TilesConverter.to_one_line_string([tile])}"
+
+    def _add_melded_tiles(self, player_seat, tiles):
+        self.melded_tiles[player_seat] += tiles
 
     def _init_players(self, bot_config):
         self.player = Player(self, 0, self.dealer_seat, bot_config)

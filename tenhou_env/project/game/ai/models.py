@@ -1,6 +1,4 @@
-import json
 import os
-import subprocess
 from os import path
 
 import numpy as np
@@ -11,7 +9,9 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization, \
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.models import Model
 
-from trainer.config import checkpoint_dir, TRAIN_SPLIT, BATCH_SIZE, create_or_join
+from trainer.config import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
+
+np.random.seed(RANDOM_SEED)
 
 
 def scheduler(epoch, lr):
@@ -61,7 +61,7 @@ def residual_block(y, filter, _strides=(1, 1), _project_shortcut=False):
     return y
 
 
-def make_or_restore_model(input_shape, model_type):
+def make_or_restore_model(input_shape, model_type, strategy):
     """
     create or restore the model trained before
     :param model: keras model class
@@ -69,12 +69,27 @@ def make_or_restore_model(input_shape, model_type):
     """
     # Either restore the latest model, or create a fresh one
     # if there is no checkpoint available.
-    checkpoint = create_or_join('{}{}'.format(checkpoint_dir, model_type))
-    checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
+    is_cloud = os.environ.get("TF_KERAS_RUNNING_REMOTELY")
 
-    model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
+    checkpoint = create_or_join('{}/{}'.format(CHECKPOINT_DIR, model_type))
+
+    if bool(is_cloud):
+        if not tf.io.gfile.exists(checkpoint):
+            tf.io.gfile.makedirs(checkpoint)
+        checkpoints = [path.join(checkpoint, name) for name in tf.io.gfile.listdir(checkpoint)]
+    else:
+        checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
+
+    if strategy == "local":
+        model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+    else:
+        with strategy.scope():
+            model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+            print("Start {} model in distribute mode".format(model_type))
+
     if checkpoints:
-        latest_checkpoint = max(checkpoints, key=os.path.getctime)
+        latest_checkpoint = max(checkpoints,
+                                key=lambda x: os.path.getctime(x) if not is_cloud else tf.io.gfile.stat(x).mtime_nsec)
         print("Restoring {} from".format(model_type), latest_checkpoint)
         model.load_weights(latest_checkpoint)
         return model
@@ -138,41 +153,27 @@ def rcpk_model(input_shape):
     return model
 
 
-def data_generator(states, labels, start=0):
-    end = len(states) * TRAIN_SPLIT if start == 0 else len(states)
-    while start < end:
-        if start + BATCH_SIZE > end:
-            yield states[start:].reshape((BATCH_SIZE, 4, 34, 1)), keras.utils.to_categorical(
-                [i // 4 for i in labels[start:]], num_classes=34)
-        else:
-            yield states[start:start + BATCH_SIZE].reshape(
-                (BATCH_SIZE, 4, 34, 1)), keras.utils.to_categorical(
-                [i // 4 for i in labels[start:start + BATCH_SIZE]],
-                num_classes=34)
-        start += BATCH_SIZE
-
-
-def DiscardFeatureGenerator(filepath, train_set=True):
-    last_line = subprocess.check_output(['tail', '-1', filepath])
-    total_element = json.loads(last_line)['id']
-    with open(filepath, 'r') as f:
-        for line in f:
-            data = json.loads(line)
-            if not train_set and data['id'] < int(total_element * TRAIN_SPLIT) - 1:
-                continue
-            draw, hands, discard_pool, open_hands, label = data['draw_tile'], data['hands'], \
-                                                           data['discarded_tiles_pool'], data[
-                                                               'four_players_open_hands'], \
-                                                           data['discarded_tile']
-            hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat = np.zeros((4, 34)), np.zeros((1, 34)), np.zeros(
-                (4, 34)), np.zeros((4, 34))
-            for tile in hands:
-                hands_mat[tile % 4][tile // 4] = 1
-            draw_mat[0][draw // 4] = 1
-            for discard_tile in discard_pool:
-                discard_pool_mat[discard_tile % 4][discard_tile // 4] = 1
-            for player in open_hands:
-                for tile in player:
-                    four_open_hands_mat[tile % 4][tile // 4] = 1
-            features = np.vstack((hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat))
-            yield features.reshape((features.shape[0], 34, 1)), keras.utils.to_categorical(label // 4, num_classes=34)
+def transform_discard_features(data):
+    """
+    Transform discard raw data to input features and labels
+    :param data: each row of discard raw data
+    :return: features and labels
+    """
+    draw, hands, discard_pool, open_hands, label = data['draw_tile'], data['hands'], \
+                                                   data['discarded_tiles_pool'], data[
+                                                       'four_players_open_hands'], \
+                                                   data['discarded_tile']
+    hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat = np.zeros((4, 34)), np.zeros((4, 34)), np.zeros(
+        (4, 34)), np.zeros((4, 34))
+    for tile in hands:
+        hands_mat[tile % 4][tile // 4] = 1
+    draw_mat[0][draw // 4] = 1
+    for discard_tile in discard_pool:
+        discard_pool_mat[discard_tile % 4][discard_tile // 4] = 1
+    for player in open_hands:
+        for tile in player:
+            four_open_hands_mat[tile % 4][tile // 4] = 1
+    features = np.vstack((hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat))
+    return {"features": features.reshape((features.shape[0], 34, 1)),
+            "labels": keras.utils.to_categorical(int(label // 4), 34)}
+    # return [features.reshape((features.shape[0], 34, 1)), label // 4]

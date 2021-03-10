@@ -269,7 +269,7 @@ class DiscardedFeatureExtractor(beam.DoFn):
                             # else:
                             #     file.write(res_str + '\n')
             except ET.ParseError:
-                pass
+                return
         # return output
 
 # if __name__ == "__main__":

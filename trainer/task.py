@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import json
 import os
 
 import dill as pickle
@@ -18,7 +17,7 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=10,
+        default=5000,
         help='number of times to go through the data, default=10')
     # parser.add_argument(
     #     '--batch-size',
@@ -68,42 +67,41 @@ if __name__ == "__main__":
     # states = f.get('hands')
     # labels = f.get('discarded_tile')
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/jun/key.json"
+    # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/jun/key.json"
+    os.system("/sbin/ldconfig -N -v $(sed 's/:/ /g' <<< $LD_LIBRARY_PATH) | grep libcupti")
 
     args = argument_parse()
     from trainer.config import CHECKPOINT_DIR, BATCH_SIZE, create_or_join
 
+    BUFFER_SIZE = 10000
     if args.cloud_train:
         os.environ["TF_KERAS_RUNNING_REMOTELY"] = args.job_dir
         print("Start Training in Cloud")
-        os.environ.pop('TF_CONFIG', None)
-        tf_config = {
-            "cluster": {
-                "chief": ["{}-training-master:3000".format(args.model_type)],
-                "worker": ["{}-training-worker1:3000".format(args.model_type),
-                           "{}-training-worker2:3000".format(args.model_type)],
-            },
-            "task": {"type": "chief", "index": 0}
-        }
-        os.environ["TF_CONFIG"] = json.dumps(tf_config)
-        communication_options = tf.distribute.experimental.CommunicationOptions(
-            implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
-        strategy = tf.distribute.MultiWorkerMirroredStrategy(communication_options=communication_options)
-        num_workers = len(tf_config['cluster']['worker'])
-        # strategy = tf.distribute.MirroredStrategy()
+        # tf_config = {
+        #     "cluster": {
+        #         "chief": ["10.128.0.11:3000"],
+        #         "worker": ["10.128.0.9:3000",
+        #                    "10.128.0.10:3001"],
+        #     },
+        #     "task": {"type": "chief", "index": 0}
+        # }
+        # os.environ["TF_CONFIG"] = json.dumps(tf_config)
+        # communication_options = tf.distribute.experimental.CommunicationOptions(
+        #     implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
+        # strategy = tf.distribute.MultiWorkerMirroredStrategy(communication_options=communication_options)
+        # num_workers = len(tf_config['cluster']['worker'])
+        strategy = tf.distribute.MirroredStrategy()
         print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
-
-        BUFFER_SIZE = 10000
-
-        BATCH_SIZE_PER_REPLICA = 128
-        BATCH_SIZE = BATCH_SIZE_PER_REPLICA * num_workers
-        task_type, task_id = (strategy.cluster_resolver.task_type,
-                              strategy.cluster_resolver.task_id)
-        write_model_path = write_filepath(os.path.join(create_or_join("models")), task_type, task_id)
+        BATCH_SIZE_PER_REPLICA = BATCH_SIZE
+        BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
+        # task_type, task_id = (strategy.cluster_resolver.task_type,
+        #                       strategy.cluster_resolver.task_id)
+        # write_model_path = write_filepath(os.path.join(create_or_join("models")), task_type, task_id)
 
     else:
         os.environ["TF_KERAS_RUNNING_REMOTELY"] = args.job_dir
         print("Start Training in Local")
+        strategy = "local"
 
     # tfc.run(
     #     entry_point=None,
@@ -128,6 +126,7 @@ if __name__ == "__main__":
         with tf.io.gfile.GFile(create_or_join('processed_data/{}/{}_meta'.format(args.model_type, args.model_type), ),
                                'rb') as f:
             preprocess_data = pickle.load(f)
+            print(serialized_example)
             example = tf.io.parse_example(serialized_example, preprocess_data.input_feature_spec)
 
             features = example['features']
@@ -144,58 +143,58 @@ if __name__ == "__main__":
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
     if args.model_type == 'discarded':
-        # generator = DiscardFeatureGenerator(path.join(get_root_path(), "processed_data",
-        #                                                     "discarded_model_summary.json"))
-        input_shape = keras.Input((13, 34, 1))
+        input_shape = keras.Input((16, 34, 1))
         model = make_or_restore_model(input_shape, args.model_type, strategy)
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-            # keras.callbacks.ModelCheckpoint(checkpoint_path,
-            #                                 save_weights_only=True,
-            #                                 monitor='categorical_accuracy',
-            #                                 save_freq="epoch",
-            #                                 ),
             tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("/tmp/backup")),
             keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
             keras.callbacks.LearningRateScheduler(scheduler)
         ]
     else:
-        # FG = FeatureGenerator(path.join(get_root_path(), "processed_data", "tiles_state_and_action_sum.json"))
-        # if args.model_type == 'riichi':
-        #     pass
         input_shape = keras.Input((63, 34, 1))
         if args.model_type == 'chi':
             input_shape = keras.Input((63, 34, 1))
         elif args.model_type == 'pon':
-            pass
+            input_shape = keras.Input((63, 34, 1))
             # generator = FG.PonFeatureGenerator()
         elif args.model_type == 'kan':
             input_shape = keras.Input((66, 34, 1))
-            # generator = FG.KanFeatureGenerator()
+        elif args.model_type == 'riichi':
+            input_shape = keras.Input((62, 34, 1))
         model = make_or_restore_model(input_shape, args.model_type, strategy)
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-            keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                            save_weights_only=True,
-                                            monitor='accuracy',
-                                            save_freq='epoch',
-                                            ),
+            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("/tmp/backup")),
             keras.callbacks.EarlyStopping(monitor='accuracy'),
             keras.callbacks.LearningRateScheduler(scheduler)
         ]
 
+    # if not args.cloud_train:
+    #     callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
+    #                                         save_weights_only=True,
+    #                                         monitor='accuracy',
+    #                                         save_freq=10,
+    #                                         ))
     # tf_dataset = tf.data.Dataset.from_generator(lambda: generator,
     #                                             (tf.int8, tf.int8)).shuffle(BATCH_SIZE, RANDOM_SEED, True)
     # train_dataset, val_dataset = split_dataset(tf_dataset)
     # sys.stderr = sys.stdout
     # sys.stdout = open('{}/{}.txt'.format('logs/stdout_logs', datetime.datetime.now().isoformat()), 'w')
-    model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=100,
+    callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                                     save_weights_only=True,
+                                                     monitor='accuracy',
+                                                     save_freq=500,
+                                                     ))
+    model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=1000,
               use_multiprocessing=True,
               workers=-1,
               callbacks=callbacks)
-    model.save(write_model_path)
-    if args.cloud_train:
-        # clean up for workers temp
-        if not _is_chief(task_type, task_id):
-            tf.io.gfile.rmtree(os.path.dirname(write_model_path))
+    model.save(os.path.join(create_or_join("models"), args.model_type))
+
+    # model.save(write_model_path)
+    # if args.cloud_train:
+    #     # clean up for workers temp
+    #     if not _is_chief(task_type, task_id):
+    #         tf.io.gfile.rmtree(os.path.dirname(write_model_path))
     # sys.stdout.close()

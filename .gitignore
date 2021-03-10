@@ -163,3 +163,4 @@ fabric.properties
 extract_features/assist/
 /models
 /tmp
+google.json
