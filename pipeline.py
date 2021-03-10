@@ -49,15 +49,15 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, **kwargs):
             data = (
                     dataset
                     | "Process {} data".format(types) >> beam.ParDo(kwargs["process_fn"])
-                    | "Transform {} data".format(types) >> beam.Map(kwargs["transform_fn"])
-                    | "Filter None" >> beam.Filter(lambda x: isinstance(x, dict))
+                    | "Transform {} data".format(types) >> beam.FlatMap(kwargs["transform_fn"])
+                # | "Filter None" >> beam.Filter(lambda x: isinstance(x, dict))
             )
 
         input_meta = dataset_metadata.DatasetMetadata(dataset_schema.from_feature_spec(kwargs["feature_spec"]))
-        # discard_data, trans_func = (
-        #         (data, input_meta)
-        #         | 'Analyze data' >> tft_beam.AnalyzeAndTransformDataset(lambda x: x))
-        # discard_data, meta_data = discard_data
+        trans_func = (
+                (data, input_meta)
+                | 'Analyze data' >> tft_beam.AnalyzeDataset(lambda x: x))
+        # data, meta_data = data
         train_data, val_data = (
                 data
                 | "Split Data" >> beam.Partition(
@@ -78,13 +78,12 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, **kwargs):
          | 'Write val dataset' >> beam.io.WriteToTFRecord(eval_dataset_dir, coder))
 
         # Write the transform_fn
-        # _ = (
-        #         trans_func
-        #         | 'Write transformFn' >> transform_fn_io.WriteTransformFn(
-        #     path.join(dataset_prefix, '{}_transform'.format(types))))
+        _ = (
+                trans_func
+                | 'Write transformFn' >> tft_beam.WriteTransformFn(
+            path.join(dataset_prefix, '{}_transform'.format(types))))
         with tf.io.gfile.GFile(path.join(dataset_prefix, types + "_meta"), 'wb') as f:
-            pickle.dump(PreprocessData(kwargs["feature_spec"], train_dataset_dir + "*", eval_dataset_dir + "*"), f,
-                        protocol=1)
+            pickle.dump(PreprocessData(kwargs["feature_spec"], train_dataset_dir + "*", eval_dataset_dir + "*"), f)
 
 
 def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
@@ -96,7 +95,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
     else:
         pipeline_opt = PipelineOptions(runner=kwargs['runner'], project=project_id, region=region,
                                        setup_file="./setup.py",
-                                       machine_type="n1-standard-16",
+                                       # machine_type="n1-highcpu-8",
                                        experiments=['shuffle_mode=service', 'use_runner_v2'],
                                        temp_location=path.join(job_dir, 'data-processing-tmp'),
                                        save_main_session=True)
