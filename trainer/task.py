@@ -3,10 +3,11 @@ import datetime
 import os
 
 import dill as pickle
+import kerastuner as kt
 import tensorflow as tf
 from tensorflow import keras
 
-from trainer.models import make_or_restore_model, scheduler
+from trainer.models import make_or_restore_model, scheduler, hypertune
 
 
 def argument_parse():
@@ -17,7 +18,7 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=5000,
+        default=500,
         help='number of times to go through the data, default=5000')
     # parser.add_argument(
     #     '--batch-size',
@@ -29,6 +30,11 @@ def argument_parse():
         help='GCS location to write checkpoints and export models.',
         default=""
     )
+    parser.add_argument(
+        '--hypertune',
+        type=int,
+        default=0,
+        help='0 for no, 1 for hyper parameter tuning')
     args = parser.parse_args()
     return args
 
@@ -90,7 +96,7 @@ if __name__ == "__main__":
         #     implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
         # strategy = tf.distribute.MultiWorkerMirroredStrategy(communication_options=communication_options)
         # num_workers = len(tf_config['cluster']['worker'])
-        strategy = tf.distribute.experimental.CentralStorageStrategy()
+        strategy = tf.distribute.MirroredStrategy()
         print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
         BATCH_SIZE_PER_REPLICA = BATCH_SIZE
         BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
@@ -103,7 +109,7 @@ if __name__ == "__main__":
         print("Start Training in Local")
         strategy = "local"
 
-    # tfc.run(
+    # tfc.run(import kerastuner as kt
     #     entry_point=None,
     #     requirements_txt="requirements.txt",
     #     distribution_strategy="auto",
@@ -142,55 +148,74 @@ if __name__ == "__main__":
     val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
-    if args.model_type == 'discarded':
-        input_shape = keras.Input((16, 34, 1))
-        model = make_or_restore_model(input_shape, args.model_type, strategy)
-        callbacks = [
-            keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("/tmp/backup")),
-            keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
-            keras.callbacks.LearningRateScheduler(scheduler)
-        ]
+    if args.hypertune:
+        tuner = kt.Hyperband(
+            hypermodel=hypertune,
+            objective='val_categorical_accuracy',
+            max_epochs=500,
+            factor=2,
+            hyperband_iterations=5,
+            distribution_strategy=tf.distribute.MirroredStrategy(),
+            directory=create_or_join("hyper_results_dir"),
+            project_name='mahjong')
+        print("hypertune: {}".format(args.model_type))
+        tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=5000,
+                     validation_steps=1000,
+                     use_multiprocessing=True,
+                     workers=-1,
+                     callbacks=[keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1)])
     else:
-        input_shape = keras.Input((63, 34, 1))
-        if args.model_type == 'chi':
+        if args.model_type == 'discarded':
+            input_shape = keras.Input((16, 34, 1))
+            model = make_or_restore_model(input_shape, args.model_type, strategy)
+            callbacks = [
+                keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
+                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("/tmp/backup")),
+                keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
+                keras.callbacks.LearningRateScheduler(scheduler)
+            ]
+        else:
             input_shape = keras.Input((63, 34, 1))
-        elif args.model_type == 'pon':
-            input_shape = keras.Input((63, 34, 1))
-            # generator = FG.PonFeatureGenerator()
-        elif args.model_type == 'kan':
-            input_shape = keras.Input((66, 34, 1))
-        elif args.model_type == 'riichi':
-            input_shape = keras.Input((62, 34, 1))
-        model = make_or_restore_model(input_shape, args.model_type, strategy)
-        callbacks = [
-            keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("/tmp/backup")),
-            keras.callbacks.EarlyStopping(monitor='accuracy'),
-            keras.callbacks.LearningRateScheduler(scheduler)
-        ]
+            if args.model_type == 'chi':
+                input_shape = keras.Input((63, 34, 1))
+            elif args.model_type == 'pon':
+                input_shape = keras.Input((63, 34, 1))
+                # generator = FG.PonFeatureGenerator()
+            elif args.model_type == 'kan':
+                input_shape = keras.Input((66, 34, 1))
+            elif args.model_type == 'riichi':
+                input_shape = keras.Input((62, 34, 1))
+            model = make_or_restore_model(input_shape, args.model_type, strategy)
+            callbacks = [
+                keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
+                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("/tmp/backup")),
+                keras.callbacks.EarlyStopping(monitor='val_accuracy'),
+                keras.callbacks.LearningRateScheduler(scheduler)
+            ]
 
-    # if not args.cloud_train:
-    #     callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
-    #                                         save_weights_only=True,
-    #                                         monitor='accuracy',
-    #                                         save_freq=10,
-    #                                         ))
-    # tf_dataset = tf.data.Dataset.from_generator(lambda: generator,
-    #                                             (tf.int8, tf.int8)).shuffle(BATCH_SIZE, RANDOM_SEED, True)
-    # train_dataset, val_dataset = split_dataset(tf_dataset)
-    # sys.stderr = sys.stdout
-    # sys.stdout = open('{}/{}.txt'.format('logs/stdout_logs', datetime.datetime.now().isoformat()), 'w')
-    callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                     save_weights_only=True,
-                                                     monitor='accuracy',
-                                                     save_freq=500,
-                                                     ))
-    model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=1000,
-              use_multiprocessing=True,
-              workers=-1,
-              callbacks=callbacks)
-    model.save(os.path.join(create_or_join("models"), args.model_type))
+        # if not args.cloud_train:
+        #     callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
+        #                                         save_weights_only=True,
+        #                                         monitor='accuracy',
+        #                                         save_freq=10,
+        #                                         ))
+        # tf_dataset = tf.data.Dataset.from_generator(lambda: generator,
+        #                                             (tf.int8, tf.int8)).shuffle(BATCH_SIZE, RANDOM_SEED, True)
+        # train_dataset, val_dataset = split_dataset(tf_dataset)
+        # sys.stderr = sys.stdout
+        # sys.stdout = open('{}/{}.txt'.format('logs/stdout_logs', datetime.datetime.now().isoformat()), 'w')
+        callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                                         save_weights_only=True,
+                                                         monitor='accuracy',
+                                                         save_freq=500,
+                                                         ))
+        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=1000,
+                  validation_steps=100,
+                  use_multiprocessing=True,
+                  workers=-1,
+                  callbacks=callbacks)
+
+        model.save(os.path.join(create_or_join("models"), args.model_type))
 
     # model.save(write_model_path)
     # if args.cloud_train:

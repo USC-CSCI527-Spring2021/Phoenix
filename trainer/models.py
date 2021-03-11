@@ -98,6 +98,31 @@ def make_or_restore_model(input_shape, model_type, strategy):
     return model
 
 
+def hypertune(hp):
+    input_shape = keras.Input((16, 34, 1))
+    x = input_shape
+    x = Normalization()(x)
+
+    for i in range(hp.Int('num_conv_layer', 1, 5, default=3)):
+        x = Conv2D(hp.Int('filters_' + str(i), 32, 512, step=32, default=256),
+                   (hp.Int('kernel_size_x' + str(i), 1, 5), hp.Int('kernel_size_y' + str(i), 1, 5)),
+                   padding="same", data_format="channels_last")(x)
+    for i in range(hp.Int('num_res_block', 1, 50, 5, default=5)):
+        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [32, 64, 128, 256, 512], default=256),
+                           _project_shortcut=True)
+
+    x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
+    x = Flatten()(x)
+    outputs = Dense(34, activation="softmax")(x)
+    model = Model(input_shape, outputs)
+    model.summary()
+    model.compile(
+        hp.Choice('optimizer', ['adam', 'sgd', 'Nadam']),
+        keras.losses.CategoricalCrossentropy(),
+        metrics=keras.metrics.CategoricalAccuracy())
+    return model
+
+
 def discard_model(input_shape):
     """
     Discard Model
@@ -107,9 +132,10 @@ def discard_model(input_shape):
     """
     x = input_shape
     x = Normalization()(x)
+
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
-    for _ in range(3):
+    for _ in range(5):
         x = residual_block(x, 256, _project_shortcut=True)
 
     x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
