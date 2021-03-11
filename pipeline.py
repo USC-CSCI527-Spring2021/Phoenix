@@ -1,20 +1,15 @@
 import argparse
+import base64
 import csv
-import random
 from os import environ, path
 
 import apache_beam as beam
-import dill as pickle
 import tensorflow as tf
 import tensorflow_transform.beam as tft_beam
 from apache_beam.options.pipeline_options import PipelineOptions
-from tensorflow_transform.coders import example_proto_coder
-from tensorflow_transform.tf_metadata import dataset_metadata
-from tensorflow_transform.tf_metadata import dataset_schema
 
 from extract_features.FeatureGenerator import FeatureGenerator
 from logs_parser import discarded_model_dataset, chi_pon_kan_model
-from trainer.config import TRAIN_SPLIT
 from trainer.models import transform_discard_features
 
 
@@ -29,8 +24,8 @@ class PreprocessData(object):
         self.eval_files_pattern = eval_files_pattern
 
 
-def data_pipeline(dataset_path, pipeline_opt, types, job_dir, **kwargs):
-    t = [dict, callable, callable]
+def data_pipeline(dataset_path, pipeline_opt, types, job_dir, project_id, **kwargs):
+    t = [str, dict, callable, callable]
     # check if correct type data pass in
     assert all([map(t[i], [v]) for i, (_, v) in enumerate(kwargs.items())]), "input type incorrect"
     with beam.Pipeline(options=pipeline_opt) as p1, tft_beam.impl.Context(temp_dir=path.join(job_dir, 'tmp')):
@@ -50,40 +45,54 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, **kwargs):
                     dataset
                     | "Process {} data".format(types) >> beam.ParDo(kwargs["process_fn"])
                     | "Transform {} data".format(types) >> beam.FlatMap(kwargs["transform_fn"])
-                # | "Filter None" >> beam.Filter(lambda x: isinstance(x, dict))
             )
-
-        input_meta = dataset_metadata.DatasetMetadata(dataset_schema.from_feature_spec(kwargs["feature_spec"]))
-        trans_func = (
-                (data, input_meta)
-                | 'Analyze data' >> tft_beam.AnalyzeDataset(lambda x: x))
+        # input_meta = dataset_metadata.DatasetMetadata(schema_from_feature_spec(kwargs["feature_spec"]))
+        #
+        # data, trans_func = (
+        #         (data, input_meta)
+        #         | 'Analyze data' >> tft_beam.AnalyzeAndTransformDataset(lambda x: x))
         # data, meta_data = data
-        train_data, val_data = (
-                data
-                | "Split Data" >> beam.Partition(
-            lambda x, _: int(random.uniform(0, 100) < 1 - TRAIN_SPLIT), 2)
-        )
-        coder = example_proto_coder.ExampleProtoCoder(input_meta.schema)
-        dataset_prefix = path.join(job_dir, 'processed_data/' + types)
+        # train_data, val_data = (
+        #         data
+        #         | "Split Data" >> beam.Partition(
+        #     lambda x, _: int(random.uniform(0, 100) < 1 - TRAIN_SPLIT), 2)
+        # )
 
-        if tf.io.gfile.exists(dataset_prefix):
-            tf.io.gfile.rmtree(dataset_prefix)
-        tf.io.gfile.makedirs(dataset_prefix)
-        train_dataset_dir = path.join(dataset_prefix, 'train-dataset')
-        eval_dataset_dir = path.join(dataset_prefix, 'eval-dataset')
-        (train_data
-         | 'Write train dataset' >> beam.io.WriteToTFRecord(train_dataset_dir, coder))
-
-        (val_data
-         | 'Write val dataset' >> beam.io.WriteToTFRecord(eval_dataset_dir, coder))
-
-        # Write the transform_fn
         _ = (
-                trans_func
-                | 'Write transformFn' >> tft_beam.WriteTransformFn(
-            path.join(dataset_prefix, '{}_transform'.format(types))))
-        with tf.io.gfile.GFile(path.join(dataset_prefix, types + "_meta"), 'wb') as f:
-            pickle.dump(PreprocessData(kwargs["feature_spec"], train_dataset_dir + "*", eval_dataset_dir + "*"), f)
+                (data)
+                | "Encoding" >> beam.Map(lambda x: {"features": base64.b64encode(x["features"].tobytes()),
+                                                    "labels": base64.b64encode(x["labels"].tobytes())})
+                | 'WriteToBigQuery' >> beam.io.WriteToBigQuery(table=types,
+                                                               dataset=kwargs["table_bq_table"].split(".")[0],
+                                                               project=project_id,
+                                                               schema="features:BYTES, labels:BYTES",
+                                                               insert_retry_strategy='RETRY_ON_TRANSIENT_ERROR',
+                                                               method="FILE_LOADS",
+                                                               custom_gcs_temp_location=job_dir + "/temps",
+                                                               create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+                                                               write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)
+        )
+
+        # coder = example_proto_coder.ExampleProtoCoder(input_meta.schema)
+        # dataset_prefix = path.join(job_dir, 'processed_data/' + types)
+        #
+        # if tf.io.gfile.exists(dataset_prefix):
+        #     tf.io.gfile.rmtree(dataset_prefix)
+        # tf.io.gfile.makedirs(dataset_prefix)
+        # train_dataset_dir = path.join(dataset_prefix, 'train-dataset')
+        # eval_dataset_dir = path.join(dataset_prefix, 'eval-dataset')
+        # (train_data
+        #  | 'Write train dataset' >> beam.io.WriteToTFRecord(train_dataset_dir, coder))
+        #
+        # (val_data
+        #  | 'Write val dataset' >> beam.io.WriteToTFRecord(eval_dataset_dir, coder))
+        #
+        # # Write the transform_fn
+        # _ = (
+        #     trans_func
+        #     | 'Write transformFn' >> tft_beam.WriteTransformFn(path.join(dataset_prefix, '{}_transform'.format(types))))
+        # with tf.io.gfile.GFile(path.join(dataset_prefix, types + "_meta"), 'wb') as f:
+        #     pickle.dump(PreprocessData(kwargs["feature_spec"], train_dataset_dir + "*", eval_dataset_dir + "*"), f)
 
 
 def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
@@ -95,8 +104,9 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
     else:
         pipeline_opt = PipelineOptions(runner=kwargs['runner'], project=project_id, region=region,
                                        setup_file="./setup.py",
-                                       # machine_type="n1-highcpu-8",
-                                       experiments=['shuffle_mode=service', 'use_runner_v2'],
+                                       # machine_type="n1-highmem-8",
+                                       # streaming=True,
+                                       experiments=['use_runner_v2', 'shuffle_mode=service'],
                                        temp_location=path.join(job_dir, 'data-processing-tmp'),
                                        save_main_session=True)
     # pipeline_opt = PipelineOptions()
@@ -104,6 +114,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
     #                    "four_players_open_hands:STRING,discarded_tile:INTEGER "
     params = {
         "discarded": {
+            "table_bq_table": 'mahjong.discarded',
             "feature_spec": {
                 "features": tf.io.FixedLenFeature((16, 34, 1), tf.int64),
                 "labels": tf.io.FixedLenFeature((34,), tf.float32),
@@ -112,6 +123,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
             "transform_fn": transform_discard_features,
         },
         "chi": {
+            "table_bq_table": "mahjong.chi",
             "feature_spec": {
                 "features": tf.io.FixedLenFeature((63, 34, 1), tf.int64),
                 "labels": tf.io.FixedLenFeature((2,), tf.float32),
@@ -120,6 +132,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
             "transform_fn": FeatureGenerator().ChiFeatureGenerator,
         },
         "pon": {
+            "table_bq_table": "mahjong.pon",
             "feature_spec": {
                 "features": tf.io.FixedLenFeature((63, 34, 1), tf.int64),
                 "labels": tf.io.FixedLenFeature((2,), tf.float32),
@@ -128,6 +141,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
             "transform_fn": FeatureGenerator().PonFeatureGenerator,
         },
         "kan": {
+            "table_bq_table": "mahjong.kan",
             "feature_spec": {
                 "features": tf.io.FixedLenFeature((66, 34, 1), tf.float32),
                 "labels": tf.io.FixedLenFeature((2,), tf.float32),
@@ -136,6 +150,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
             "transform_fn": FeatureGenerator().KanFeatureGenerator,
         },
         "riichi": {
+            "table_bq_table": "mahjong.riichi",
             "feature_spec": {
                 "features": tf.io.FixedLenFeature((62, 34, 1), tf.int64),
                 "labels": tf.io.FixedLenFeature((2,), tf.float32),
@@ -144,7 +159,8 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
             "transform_fn": FeatureGenerator().RiichiFeatureGenerator,
         }
     }
-    data_pipeline(dataset_path, pipeline_opt, job_type, job_dir, **params[job_type])
+
+    data_pipeline(dataset_path, pipeline_opt, job_type, job_dir, project_id, **params[job_type])
     # data_pipeline(dataset_path, pipeline_opt, "discarded", job_dir, **params["discarded"])
     # data_pipeline(dataset_path, pipeline_opt, "pon", job_dir, **params["pon"])
     # data_pipeline(dataset_path, pipeline_opt, "chi", job_dir, **params["chi"])
