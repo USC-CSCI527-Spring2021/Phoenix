@@ -3,6 +3,7 @@ from typing import Optional
 import utils.decisions_constants as log
 from game.ai.configs.default import BotDefaultConfig
 from game.ai.main import MahjongAI
+from game.ai.phoenix_main import Phoenix
 from mahjong.constants import CHUN, EAST, HAKU, HATSU, NORTH, SOUTH, WEST
 from mahjong.tile import Tile, TilesConverter
 from utils.decisions_logger import DecisionsLogger, MeldPrint
@@ -170,7 +171,8 @@ class Player(PlayerInterface):
     def __init__(self, table, seat, dealer_seat, bot_config: Optional[BotDefaultConfig]):
         super().__init__(table, seat, dealer_seat)
         self.config = bot_config or BotDefaultConfig()
-        self.ai = MahjongAI(self)
+        # self.ai = MahjongAI(self)
+        self.ai = Phoenix(self)
 
     def erase_state(self):
         super().erase_state()

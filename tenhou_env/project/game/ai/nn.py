@@ -124,7 +124,8 @@ def getGeneralFeature(player):
 class Chi:
     def __init__(self, player):
         self.player = player
-        self.model = models.make_or_restore_model(input_shape, "chi")
+        self.strategy = 'local'        # fix here     
+        self.model = models.make_or_restore_model(input_shape, "chi", self.strategy)
     
     def should_call_chi(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
@@ -144,7 +145,8 @@ class Chi:
 class Pon:
     def __init__(self, player):
         self.player = player
-        self.model = models.make_or_restore_model(input_shape, "pon")
+        self.strategy = 'local'
+        self.model = models.make_or_restore_model(input_shape, "pon", self.strategy)
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
         p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
@@ -164,7 +166,8 @@ class Pon:
 class Kan:
     def __init__(self, input_shape, player):
         self.player = player
-        self.model = models.make_or_restore_model(input_shape, "kan")
+        self.strategy = 'local'
+        self.model = models.make_or_restore_model(input_shape, "kan", self.strategy)
 
     def should_call_kan(self, tile, open_kan, from_riichi=False):
         features = self.getFeature(tile, open_kan)
@@ -198,7 +201,8 @@ class Kan:
 class Riichi:
     def __init__(self, player):
         self.player = player
-        self.model = models.make_or_restore_model(input_shape, "riichi")
+        self.strategy = 'local'
+        self.model = models.make_or_restore_model(input_shape, "riichi", self.strategy)
 
     def should_call_riichi(self):
         features = self.getFeature()
@@ -215,7 +219,8 @@ class Riichi:
 class Discard:
     def __init__(self, player):
         self.player = player
-        self.model = models.make_or_restore_model(input_shape, "discard")
+        self.strategy = 'local'
+        self.model = models.make_or_restore_model(input_shape, "discard", self.strategy)
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi=False):
         '''
