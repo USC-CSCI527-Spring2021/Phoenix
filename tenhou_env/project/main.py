@@ -8,6 +8,7 @@ from tenhou.main import connect_and_play
 from utils.settings_handler import settings
 
 
+
 def parse_args_and_set_up_settings():
     parser = OptionParser()
 
@@ -85,6 +86,14 @@ def main():
             traces_sample_rate=1.0,
         )
 
+    #remove this after debugging
+    from tenhou.client import TenhouClient
+    from utils.logger import set_up_logging   
+    logger = set_up_logging() 
+    client = TenhouClient(logger)
+
+    print('###### loading finished #######')
+    return
     connect_and_play()
 
 
