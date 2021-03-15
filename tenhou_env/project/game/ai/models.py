@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization, \
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.models import Model
 
-from game.ai.trainer.config import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
+from trainer.config import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
 
 np.random.seed(RANDOM_SEED)
 
@@ -69,7 +69,6 @@ def make_or_restore_model(input_shape, model_type, strategy):
     """
     # Either restore the latest model, or create a fresh one
     # if there is no checkpoint available.
-    input_shape = keras.Input(input_shape)
     is_cloud = os.environ.get("TF_KERAS_RUNNING_REMOTELY")
 
     checkpoint = create_or_join('{}/{}'.format(CHECKPOINT_DIR, model_type))
@@ -81,20 +80,46 @@ def make_or_restore_model(input_shape, model_type, strategy):
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    if strategy == "local":
-        model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
-    else:
-        with strategy.scope():
-            model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
-            print("Start {} model in distribute mode".format(model_type))
+    model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
 
     if checkpoints:
         latest_checkpoint = max(checkpoints,
                                 key=lambda x: os.path.getctime(x) if not is_cloud else tf.io.gfile.stat(x).mtime_nsec)
         print("Restoring {} from".format(model_type), latest_checkpoint)
-        model.load_weights(latest_checkpoint)
+        if strategy == "local":
+            model.load_weights(latest_checkpoint)
+        else:
+            with strategy.scope():
+                model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+                model.load_weights(latest_checkpoint)
+            print("Start {} model in distribute mode".format(model_type))
         return model
     print("Creating a new {} model".format(model_type))
+    return model
+
+
+def hypertune(hp):
+    input_shape = keras.Input((16, 34, 1))
+    x = input_shape
+    x = Normalization()(x)
+
+    for i in range(hp.Int('num_conv_layer', 1, 5, default=3)):
+        x = Conv2D(hp.Int('filters_' + str(i), 32, 512, step=32, default=256),
+                   (3, 1),
+                   padding="same", data_format="channels_last")(x)
+    for i in range(hp.Int('num_res_block', 1, 50, 5, default=5)):
+        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [32, 64, 128, 256, 512], default=256),
+                           _project_shortcut=True)
+
+    x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
+    x = Flatten()(x)
+    outputs = Dense(34, activation="softmax")(x)
+    model = Model(input_shape, outputs)
+    model.summary()
+    model.compile(
+        hp.Choice('optimizer', ['adam', 'sgd', 'Nadam']),
+        keras.losses.CategoricalCrossentropy(),
+        metrics=keras.metrics.CategoricalAccuracy())
     return model
 
 
@@ -105,18 +130,19 @@ def discard_model(input_shape):
     :param input_shape: data shape
     :return: keras model class
     """
-    x = input_shape
-    x = Normalization()(x)
+    k_input = keras.Input(input_shape)
+    x = Normalization()(k_input)
+
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
-    for _ in range(3):
+    for _ in range(5):
         x = residual_block(x, 256, _project_shortcut=True)
 
     x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
     x = Flatten()(x)
     outputs = Dense(34, activation="softmax")(x)
     # model = keras.applications.ResNet50V2(weights=None, input_shape=(64, 34, 1), classes=34, include_top=True)
-    model = Model(input_shape, outputs)
+    model = Model(k_input, outputs)
     model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
@@ -132,8 +158,8 @@ def rcpk_model(input_shape):
     :param input_shape: data shape
     :return: keras model class
     """
-    x = input_shape
-    x = Normalization()(x)
+    k_input = keras.Input(input_shape)
+    x = Normalization()(k_input)
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
     for _ in range(5):
@@ -145,7 +171,7 @@ def rcpk_model(input_shape):
     x = Dense(256)(x)
     outputs = Dense(2, activation="softmax")(x)
 
-    model = Model(input_shape, outputs)
+    model = Model(k_input, outputs)
     model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),

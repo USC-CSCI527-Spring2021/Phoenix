@@ -417,7 +417,8 @@ class TenhouClient(Client):
                         if message[1].lower() == "g":
                             is_kamicha_discard = True
 
-                        meld, tile_to_discard = self.player.try_to_call_meld(tile, is_kamicha_discard)
+                        meld, tile_to_discard = self.player.try_to_call_meld(tile, is_kamicha_discard,
+                                                                             int(message.split()[1][3]))
                         if meld:
                             self._random_sleep(1, 2)
 

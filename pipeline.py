@@ -36,6 +36,41 @@ class PreprocessData(object):
         self.eval_files_pattern = eval_files_pattern
 
 
+class transmform_wrapper(beam.DoFn):
+    def __init__(self, transfromfn, *unused_args, **unused_kwargs):
+        self.transfrom_fn = transfromfn
+
+    def process(self, element, *args, **kwargs):
+        return self.transfrom_fn(element)
+
+
+class ValidateInputData(beam.DoFn):
+    """This DoFn validates that every element matches the metadata given."""
+
+    def __init__(self, feature_spec):
+        self.feature_names = set(feature_spec.keys())
+
+    def process(self, elem):
+        if not isinstance(elem, dict):
+            raise ValueError(
+                'Element must be a dict(str, value). '
+                'Given: {} {}'.format(elem, type(elem)))
+        elem_features = set(elem.keys())
+        if not self.feature_names.issubset(elem_features):
+            raise ValueError(
+                "Element features are missing from feature_spec keys. "
+                'Given: {}; Features: {}'.format(
+                    list(elem_features), list(self.feature_names)))
+        yield elem
+
+
+def _bytes_feature(value):
+    """Returns a bytes_list from a string / byte."""
+    if isinstance(value, type(tf.constant(0))):
+        value = value.numpy()  # BytesList won't unpack a string from an EagerTensor.
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+
 def data_pipeline(dataset_path, pipeline_opt, types, job_dir, project_id, **kwargs):
     """
     pipeline function
@@ -84,20 +119,22 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, project_id, **kwar
             data = (
                     dataset
                     | "Process {} data".format(types) >> beam.ParDo(kwargs["process_fn"])
-                    | "Transform {} data".format(types) >> beam.FlatMap(kwargs["transform_fn"])
+                    | "Transform {} data".format(types) >> beam.ParDo(transmform_wrapper(kwargs["transform_fn"]))
+                    | "Validate Transform" >> beam.ParDo(ValidateInputData(kwargs["feature_spec"]))
             )
         # meta data schema for tfrecord later
         input_meta = dataset_metadata.DatasetMetadata(schema_from_feature_spec(kwargs["feature_spec"]))
         # analyze the dataset for some stats
-        # data, trans_func = (
-        #         (data, input_meta)
-        #         | 'Analyze data' >> tft_beam.AnalyzeAndTransformDataset(lambda x: x))
-        # data, meta_data = data
+        data, trans_func = (
+                (data, input_meta)
+                | 'Analyze data' >> tft_beam.AnalyzeAndTransformDataset(lambda x: x))
+        data, meta_data = data
+
+        assert 0 < (TRAIN_SPLIT * 10) < 100, 'eval_percent must in the range (0-100)'
         # split data to train split
         train_data, val_data = (
                 data
-                | "Split Data" >> beam.Partition(
-            lambda x, _: int(random.uniform(0, 100) < 1 - TRAIN_SPLIT), 2)
+                | "Split Data" >> beam.Partition(lambda x, _: int(random.uniform(0, 100) < 100 - (TRAIN_SPLIT * 10)), 2)
         )
 
         # encode the numpy array to bytes and save to bigqueyr
@@ -122,7 +159,7 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, project_id, **kwar
         # )
 
         # example protobuf use to encode the data
-        coder = example_proto_coder.ExampleProtoCoder(input_meta.schema)
+        coder = example_proto_coder.ExampleProtoCoder(meta_data.schema)
         dataset_prefix = path.join(job_dir, 'processed_data/' + types)
         # delete existing processed data
         if tf.io.gfile.exists(dataset_prefix):
@@ -138,9 +175,10 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, project_id, **kwar
          | 'Write val dataset' >> beam.io.WriteToTFRecord(eval_dataset_dir, coder))
 
         # Write the transform_fn
-        # _ = (
-        #     trans_func
-        #     | 'Write transformFn' >> tft_beam.WriteTransformFn(path.join(dataset_prefix, '{}_transform'.format(types))))
+        _ = (
+                trans_func
+                | 'Write transformFn' >> tft_beam.WriteTransformFn(
+            path.join(dataset_prefix, '{}_transform'.format(types))))
 
         # write some information to later training
         with tf.io.gfile.GFile(path.join(dataset_prefix, types + "_meta"), 'wb') as f:
@@ -148,8 +186,9 @@ def data_pipeline(dataset_path, pipeline_opt, types, job_dir, project_id, **kwar
         # wait until finish
         p1.run().wait_until_finish()
 
+
 def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
-    dataset_path = path.join(job_dir, "dataset/2021.csv")
+    dataset_path = path.join(job_dir, "dataset/2022.csv")
     environ["GOOGLE_APPLICATION_CREDENTIALS"] = google_app_cred
     # environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google.json"
     if kwargs['runner'] != 'DataflowRunner':
@@ -157,7 +196,7 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
     else:
         pipeline_opt = PipelineOptions(runner=kwargs['runner'], project=project_id, region=region,
                                        setup_file="./setup.py",
-                                       machine_type="n1-standard-8",
+                                       # machine_type="n1-standard-8",
                                        # streaming=True,
                                        # max_num_workers=5,
                                        # experiments=['enable_stackdriver_agent_metrics'],
@@ -167,7 +206,8 @@ def main(job_dir, job_type, project_id, region, google_app_cred, **kwargs):
                                        # enable_streaming_engine=True,
                                        staging_location=path.join(job_dir, 'data-staging-tmp'),
                                        temp_location=path.join(job_dir, 'data-processing-tmp'),
-                                       save_main_session=True)
+                                       save_main_session=True
+                                       )
     # pipeline_opt = PipelineOptions()
     # discarded_schema = "draw_tile:INTEGER,hands:STRING,discarded_tiles_pool:STRING," \
     #                    "four_players_open_hands:STRING,discarded_tile:INTEGER "

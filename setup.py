@@ -16,7 +16,6 @@ setup(
         'mahjong==1.2.0.dev5',
         'tensorboard==2.4.1',
         'apache-beam==2.28.0',
-        'numpy',
     ],
     scripts=['pipeline.py']
 
