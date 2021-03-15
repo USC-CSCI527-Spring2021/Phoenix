@@ -173,6 +173,7 @@ class Player(PlayerInterface):
         self.config = bot_config or BotDefaultConfig()
         # self.ai = MahjongAI(self)
         self.ai = Phoenix(self)
+        self.logger.logger.info("Model loading finished")
 
     def erase_state(self):
         super().erase_state()
@@ -194,8 +195,8 @@ class Player(PlayerInterface):
             f"Remaining tiles: {self.table.count_of_remaining_tiles}",
             f"Hand: {self.format_hand_for_print(tile_136)}",
         ]
-        if self.ai.current_strategy:
-            context.append(f"Current strategy: {self.ai.current_strategy}")
+        # if self.ai.current_strategy:
+        #     context.append(f"Current strategy: {self.ai.current_strategy}")
 
         self.logger.debug(log.DRAW, context=context)
 
@@ -205,7 +206,7 @@ class Player(PlayerInterface):
         # we need sort it to have a better string presentation
         self.tiles = sorted(self.tiles)
 
-        self.ai.draw_tile(tile_136)
+        # self.ai.draw_tile(tile_136)
 
     def discard_tile(self, discard_tile=None, force_tsumogiri=False):
         if force_tsumogiri:
@@ -243,8 +244,8 @@ class Player(PlayerInterface):
     def should_call_kyuushu_kyuuhai(self):
         return self.ai.should_call_kyuushu_kyuuhai()
 
-    def try_to_call_meld(self, tile, is_kamicha_discard):
-        return self.ai.try_to_call_meld(tile, is_kamicha_discard)
+    def try_to_call_meld(self, tile, is_kamicha_discard, meld_type):
+        return self.ai.try_to_call_meld(tile, is_kamicha_discard, meld_type)
 
     def enemy_called_riichi(self, player_seat):
         self.ai.enemy_called_riichi(player_seat)
