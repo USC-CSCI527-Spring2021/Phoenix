@@ -105,7 +105,7 @@ def hypertune(hp):
 
     for i in range(hp.Int('num_conv_layer', 1, 5, default=3)):
         x = Conv2D(hp.Int('filters_' + str(i), 32, 512, step=32, default=256),
-                   (hp.Int('kernel_size_x' + str(i), 1, 5), hp.Int('kernel_size_y' + str(i), 1, 5)),
+                   (3, 1),
                    padding="same", data_format="channels_last")(x)
     for i in range(hp.Int('num_res_block', 1, 50, 5, default=5)):
         x = residual_block(x, hp.Choice('filters_res_block' + str(i), [32, 64, 128, 256, 512], default=256),
@@ -130,8 +130,8 @@ def discard_model(input_shape):
     :param input_shape: data shape
     :return: keras model class
     """
-    x = input_shape
-    x = Normalization()(x)
+    k_input = keras.Input(input_shape)
+    x = Normalization()(k_input)
 
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
@@ -142,7 +142,7 @@ def discard_model(input_shape):
     x = Flatten()(x)
     outputs = Dense(34, activation="softmax")(x)
     # model = keras.applications.ResNet50V2(weights=None, input_shape=(64, 34, 1), classes=34, include_top=True)
-    model = Model(input_shape, outputs)
+    model = Model(k_input, outputs)
     model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
@@ -158,8 +158,8 @@ def rcpk_model(input_shape):
     :param input_shape: data shape
     :return: keras model class
     """
-    x = input_shape
-    x = Normalization()(x)
+    k_input = keras.Input(input_shape)
+    x = Normalization()(k_input)
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
     for _ in range(5):
@@ -171,7 +171,7 @@ def rcpk_model(input_shape):
     x = Dense(256)(x)
     outputs = Dense(2, activation="softmax")(x)
 
-    model = Model(input_shape, outputs)
+    model = Model(k_input, outputs)
     model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),

@@ -18,7 +18,7 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=500,
+        default=100,
         help='number of times to go through the data, default=5000')
     # parser.add_argument(
     #     '--batch-size',
@@ -161,12 +161,10 @@ if __name__ == "__main__":
         print("hypertune: {}".format(args.model_type))
         tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=5000,
                      validation_steps=1000,
-                     use_multiprocessing=True,
-                     workers=-1,
-                     callbacks=[keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1)])
+                     callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
     else:
         if args.model_type == 'discarded':
-            input_shape = keras.Input((16, 34, 1))
+            input_shape = (16, 34, 1)
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
                 keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
@@ -175,16 +173,16 @@ if __name__ == "__main__":
                 keras.callbacks.LearningRateScheduler(scheduler)
             ]
         else:
-            input_shape = keras.Input((63, 34, 1))
+            input_shape = (63, 34, 1)
             if args.model_type == 'chi':
-                input_shape = keras.Input((63, 34, 1))
+                input_shape = (63, 34, 1)
             elif args.model_type == 'pon':
-                input_shape = keras.Input((63, 34, 1))
+                input_shape = (63, 34, 1)
                 # generator = FG.PonFeatureGenerator()
             elif args.model_type == 'kan':
-                input_shape = keras.Input((66, 34, 1))
+                input_shape = (66, 34, 1)
             elif args.model_type == 'riichi':
-                input_shape = keras.Input((62, 34, 1))
+                input_shape = (62, 34, 1)
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
                 keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
@@ -209,7 +207,7 @@ if __name__ == "__main__":
                                                          monitor='accuracy',
                                                          save_freq=500,
                                                          ))
-        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=1000,
+        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=100,
                   validation_steps=100,
                   use_multiprocessing=True,
                   workers=-1,

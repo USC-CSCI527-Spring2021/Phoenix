@@ -1,9 +1,11 @@
+from __future__ import absolute_import
+
 import copy
 import xml.etree.ElementTree as ET
 
 import apache_beam as beam
 
-from .parser import parse_mjlog
+from logs_parser.parser import parse_mjlog
 
 
 # from last player, match with cur tile

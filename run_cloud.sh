@@ -124,6 +124,47 @@ gcloud ai-platform jobs submit training chi_model_`date +"%Y%m%d_%H%M"` \
   --model-type="chi" \
   --cloud-train=1
 
+# riichi model runner
+gcloud ai-platform jobs submit training riichi_model_`date +"%Y%m%d_%H%M"` \
+  --package-path trainer/ \
+  --module-name trainer.task \
+  --region us-central1 \
+  --python-version 3.7 \
+  --runtime-version 2.4 \
+  --job-dir "gs://mahjong-bucket/" \
+  --config trainer/config.yaml \
+  --stream-logs \
+  -- \
+  --model-type="riichi" \
+  --cloud-train=1
+
+# kan model runner
+gcloud ai-platform jobs submit training kan_model_`date +"%Y%m%d_%H%M"` \
+  --package-path trainer/ \
+  --module-name trainer.task \
+  --region us-central1 \
+  --python-version 3.7 \
+  --runtime-version 2.4 \
+  --job-dir "gs://mahjong-bucket/" \
+  --config trainer/config.yaml \
+  --stream-logs \
+  -- \
+  --model-type="kan" \
+  --cloud-train=1
+
+# pon model runner
+gcloud ai-platform jobs submit training pon_model_`date +"%Y%m%d_%H%M"` \
+  --package-path trainer/ \
+  --module-name trainer.task \
+  --region us-central1 \
+  --python-version 3.7 \
+  --runtime-version 2.4 \
+  --job-dir "gs://mahjong-bucket/" \
+  --config trainer/config.yaml \
+  --stream-logs \
+  -- \
+  --model-type="pon" \
+  --cloud-train=1
 # Runner for pipeline, replace the # to your information
 # Local run only supply --job-type
   python pipeline.py --cloud=1 --job-dir=gs://mahjong-dataset --job-type="riichi" --project-id="#" --region="#" --google-app-cred="#"

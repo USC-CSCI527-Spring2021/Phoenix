@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 
 import apache_beam as beam
 
-from .parser import parse_mjlog
+from logs_parser.parser import parse_mjlog
 
 
 def get_round_info(dataset,
