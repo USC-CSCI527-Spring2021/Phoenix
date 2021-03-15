@@ -69,6 +69,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
     """
     # Either restore the latest model, or create a fresh one
     # if there is no checkpoint available.
+    input_shape = keras.Input(input_shape)
     is_cloud = os.environ.get("TF_KERAS_RUNNING_REMOTELY")
 
     checkpoint = create_or_join('{}/{}'.format(CHECKPOINT_DIR, model_type))
