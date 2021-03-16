@@ -227,21 +227,36 @@ class Kan:
         #     return True, p_do
         # else:
         #     return False, p_donot
-        def _is_kakan(tile, melds):
+        def _can_minankan(tile, closed_hand):
+            count = np.zeros(34)
+            for t in closed_hand:
+                count[t//4]+=1
+            if count[tile//4]==3:
+                return True
+            return False
+        def _can_kakan(tile, melds):
             for meld in melds:
                 if (meld.type == MeldPrint.PON) and (tile//4 == meld.tiles[0]//4):
                     return True
             return False
         kan_type_feature = np.zeros((3, 34))
+        open_hand = [t for meld in self.player.melds for t in meld.tiles]
+        closed_hand = [t for t in self.player.tiles if t not in open_hand]
         if not open_kan:
-            kan_type_feature[1] = 1
-            kan_type = MeldPrint.KAN
-        else:
-            if _is_kakan(tile, self.player.melds):
+            if _can_kakan(tile, self.player.melds): #KaKan
                 kan_type_feature[2] = 1
+                kan_type = MeldPrint.SHOUMINKAN
+            elif _can_minankan(tile, closed_hand): #AnKan
+                kan_type_feature[1] = 1
+                kan_type = MeldPrint.KAN
             else:
-                kan_type_feature[0] = 1
-            kan_type = MeldPrint.SHOUMINKAN
+                return None
+        else: 
+            if _can_minankan(tile, closed_hand):#MinKan
+                kan_type_feature[0] = 1 
+                kan_type = MeldPrint.SHOUMINKAN
+            else:
+                return None
         # random make a decision
         return kan_type if random.randint(0, 1) else None
         # features = self.getFeature(tile, kan_type_feature)
