@@ -52,7 +52,7 @@ PRINT_LOGS = True
 # for dynamic game type selection (based on the bot rank and rate)
 # you can use:
 # GAME_TYPE = None
-GAME_TYPE = "0"
+GAME_TYPE = "1"
 
 try:
     from .settings_local import *
