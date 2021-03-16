@@ -312,3 +312,11 @@ class Phoenix:
                     melds_chi.append(best_meld_34)
 
         return melds_chi, melds_pon          
+
+    def enemy_called_riichi(self, enemy_seat):
+        """
+        After enemy riichi we had to check will we fold or not
+        it is affect open hand decisions
+        :return:
+        """
+        pass
