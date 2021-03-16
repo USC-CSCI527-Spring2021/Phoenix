@@ -191,47 +191,50 @@ class Kan:
         # self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
         print('###### Kan model initialized #######')
 
-    def should_call_kan(self, tile, open_kan, from_riichi=False):
-        # # we can't call kan on the latest tile
+    def should_call_kan(self, tile_136, open_kan, from_riichi=False):
+        # we can't call kan on the latest tile
         # if self.player.table.count_of_remaining_tiles <= 1:
         #     return None
-        # if open_kan:
-        #     # we don't want to start open our hand from called kan
-        #     if not self.player.is_open_hand:
-        #         return None
 
-        #     # there is no sense to call open kan when we are not in tempai
-        #     if not self.player.in_tempai:
-        #         return None
-        # tile_34 = tile // 4
-        # tiles_34 = TilesConverter.to_34_array(self.player.tiles)
-
-        # # save original hand state
-        # original_tiles = self.player.tiles[:]
-
-        # new_shanten = 0
-        # previous_shanten = 0
-        # new_waits_count = 0
-        # previous_waits_count = 0
+        # tile_34 = tile_136 // 4
+        # closed_hand_34 = TilesConverter.to_34_array(self.player.closed_hand)
 
         # # let's check can we upgrade opened pon to the kan
         # pon_melds = [x for x in self.player.meld_34_tiles if is_pon(x)]
         # has_shouminkan_candidate = False
+        # for meld in pon_melds:
+        #     # tile is equal to our already opened pon
+        #     if tile_34 in meld:
+        #         has_shouminkan_candidate = True
 
-        # # random make a decision
-        # return (True, 10) if random.randint(0, 1) else (False, 10)
 
-        # features = self.getFeature(tile, open_kan)
+        # if not open_kan and not has_shouminkan_candidate and closed_hand_34[tile_34] != 4:
+        #     return None
+
+        # if open_kan and closed_hand_34[tile_34] != 3:
+        #     return None
+
+        # kan_type = has_shouminkan_candidate and MeldPrint.SHOUMINKAN or MeldPrint.KAN 
+        # return kan_type
+
+        # features = self.getFeature(tile_136, open_kan)
         # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
         # if p_do > p_donot:
-        #     return True, p_do
+        #     return kan_type
         # else:
-        #     return False, p_donot
-        def _can_minankan(tile, closed_hand):
+        #     return None
+        def _can_minkan(tile, closed_hand):
             count = np.zeros(34)
             for t in closed_hand:
                 count[t//4]+=1
             if count[tile//4]==3:
+                return True
+            return False
+        def _can_ankan(tile, closed_hand):
+            count = np.zeros(34)
+            for t in closed_hand:
+                count[t//4]+=1
+            if count[tile//4]==4:
                 return True
             return False
         def _can_kakan(tile, melds):
@@ -240,27 +243,24 @@ class Kan:
                     return True
             return False
         kan_type_feature = np.zeros((3, 34))
-        open_hand = [t for meld in self.player.melds for t in meld.tiles]
-        closed_hand = [t for t in self.player.tiles if t not in open_hand]
+        closed_hand = self.player.closed_hand
         if not open_kan:
-            if _can_kakan(tile, self.player.melds): #KaKan
+            if _can_kakan(tile_136, self.player.melds): #KaKan
                 kan_type_feature[2] = 1
                 kan_type = MeldPrint.SHOUMINKAN
-            elif _can_minankan(tile, closed_hand): #AnKan
+            elif _can_ankan(tile_136, closed_hand): #AnKan
                 kan_type_feature[1] = 1
                 kan_type = MeldPrint.KAN
             else:
                 return None
         else: 
-            if _can_minankan(tile, closed_hand):#MinKan
+            if _can_minkan(tile_136, closed_hand):#MinKan
                 kan_type_feature[0] = 1 
                 kan_type = MeldPrint.SHOUMINKAN
             else:
                 return None
         # random make a decision
-        return kan_type if random.randint(0, 1) else None
-        # features = self.getFeature(tile, kan_type_feature)
-        # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
+        return kan_type #if random.randint(0, 1) else None
 
     def getFeature(self, tile136, kan_type_feature):
         tile136_feature = np.zeros((1, 34))
@@ -312,13 +312,12 @@ class Discard:
 
         '''
         # random output a tile
-        hand = [i // 4 for i in self.player.tiles]
-        tile_to_discard_136 = hand[random.randint(0, len(hand) - 1)]
+        tile_to_discard_136 = random.choice(self.player.closed_hand)
         # features = self.getFeature(all_hands_136, closed_hands_136, with_riichi)
         # tile_to_discard = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
         # tile_to_discard_136 = [h for h in closed_hands_136 if h // 4 == tile_to_discard][-1]
         # if multiple tiles exists, return the one which is not red dora
-        return tile_to_discard_136, False
+        return tile_to_discard_136
 
     def getFeature(self, open_hands_136, closed_hands_136, with_riichi):
         from trainer.models import transform_discard_features
