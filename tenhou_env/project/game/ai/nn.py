@@ -89,26 +89,26 @@ def getGeneralFeature(player):
         return scores_feature
 
     def _getBoard1(player): 
-        dealer_feature = np.zeros((4, 34))
-        dealer_feature[player.table.dealer_seat] = 1
+        
+        dealer_feature = np.zeros((1, 34))
+        dealer_seat = player.table.dealer_seat
+        player_seat = player.seat
+        dealer_feature[0][(dealer_seat+4-player_seat)%4] = 1
 
-        repeat_dealer_feature = np.zeros((8, 34))
+
+        repeat_dealer_feature = np.zeros((1, 34))
         repeat_dealer = player.table.count_of_honba_sticks
-        if repeat_dealer > 7 :
-            repeat_dealer = 7
-        repeat_dealer_feature[repeat_dealer] = 1
+        repeat_dealer_feature[0][repeat_dealer] = 1
 
-        riichi_bets_feature = np.zeros((8, 34))
+        riichi_bets_feature = np.zeros((1, 34))
         riichi_bets = player.table.count_of_riichi_sticks
-        if riichi_bets > 7 :
-            repeat_dealer = 7
-        riichi_bets_feature[riichi_bets] = 1
+        riichi_bets_feature[0][riichi_bets] = 1
 
-        player_wind_feature = np.zeros((4, 34))
-        player_wind_feature[(4-player.table.dealer_seat)%4] = 1
+        player_wind_feature = np.zeros((1, 34))
+        player_wind_feature[27 + (4-player.table.dealer_seat)%4] = 1
 
-        prevailing_wind_feature = np.zeros((4, 34))
-        prevailing_wind_feature[player.table.round_wind_number//4] = 1
+        prevailing_wind_feature = np.zeros((1, 34))
+        prevailing_wind_feature[27 + player.table.round_wind_number//4] = 1
 
         return np.concatenate((
             dealer_feature,
