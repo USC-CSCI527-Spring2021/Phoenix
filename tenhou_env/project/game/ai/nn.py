@@ -192,58 +192,64 @@ class Kan:
         print('###### Kan model initialized #######')
 
     def should_call_kan(self, tile, open_kan, from_riichi=False):
-        # we can't call kan on the latest tile
-        if self.player.table.count_of_remaining_tiles <= 1:
-            return None
-        if open_kan:
-            # we don't want to start open our hand from called kan
-            if not self.player.is_open_hand:
-                return None
+        # # we can't call kan on the latest tile
+        # if self.player.table.count_of_remaining_tiles <= 1:
+        #     return None
+        # if open_kan:
+        #     # we don't want to start open our hand from called kan
+        #     if not self.player.is_open_hand:
+        #         return None
 
-            # there is no sense to call open kan when we are not in tempai
-            if not self.player.in_tempai:
-                return None
-        tile_34 = tile // 4
-        tiles_34 = TilesConverter.to_34_array(self.player.tiles)
+        #     # there is no sense to call open kan when we are not in tempai
+        #     if not self.player.in_tempai:
+        #         return None
+        # tile_34 = tile // 4
+        # tiles_34 = TilesConverter.to_34_array(self.player.tiles)
 
-        # save original hand state
-        original_tiles = self.player.tiles[:]
+        # # save original hand state
+        # original_tiles = self.player.tiles[:]
 
-        new_shanten = 0
-        previous_shanten = 0
-        new_waits_count = 0
-        previous_waits_count = 0
+        # new_shanten = 0
+        # previous_shanten = 0
+        # new_waits_count = 0
+        # previous_waits_count = 0
 
-        # let's check can we upgrade opened pon to the kan
-        pon_melds = [x for x in self.player.meld_34_tiles if is_pon(x)]
-        has_shouminkan_candidate = False
+        # # let's check can we upgrade opened pon to the kan
+        # pon_melds = [x for x in self.player.meld_34_tiles if is_pon(x)]
+        # has_shouminkan_candidate = False
 
-        # random make a decision
-        return (True, 10) if random.randint(0, 1) else (False, 10)
+        # # random make a decision
+        # return (True, 10) if random.randint(0, 1) else (False, 10)
+
         # features = self.getFeature(tile, open_kan)
         # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
         # if p_do > p_donot:
         #     return True, p_do
         # else:
         #     return False, p_donot
-
-    def getFeature(self, tile136, open_kan):
         def _is_kakan(tile, melds):
             for meld in melds:
-                if (meld.type == MeldPrint.PON) and (tile136//4 == meld.tiles[0]//4):
+                if (meld.type == MeldPrint.PON) and (tile//4 == meld.tiles[0]//4):
                     return True
             return False
-
-        tile136_feature = np.zeros((1, 34))
-        tile136_feature[0][tile136 // 4] = 1
         kan_type_feature = np.zeros((3, 34))
         if not open_kan:
             kan_type_feature[1] = 1
+            kan_type = MeldPrint.KAN
         else:
-            if _is_kakan(tile136, self.player.melds):
+            if _is_kakan(tile, self.player.melds):
                 kan_type_feature[2] = 1
             else:
                 kan_type_feature[0] = 1
+            kan_type = MeldPrint.SHOUMINKAN
+        # random make a decision
+        return kan_type if random.randint(0, 1) else None
+        # features = self.getFeature(tile, kan_type_feature)
+        # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
+
+    def getFeature(self, tile136, kan_type_feature):
+        tile136_feature = np.zeros((1, 34))
+        tile136_feature[0][tile136 // 4] = 1        
         x = np.concatenate((kan_type_feature, tile136_feature, getGeneralFeature(self.player)))
         return x.reshape((x.shape[0], x.shape[1], 1))
 
