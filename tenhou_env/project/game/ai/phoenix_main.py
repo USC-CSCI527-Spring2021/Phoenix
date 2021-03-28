@@ -4,15 +4,16 @@ import utils.decisions_constants as log
 from game.ai.hand_builder import HandBuilder
 from game.ai.nn import Chi, Pon, Kan, Riichi, Discard
 from mahjong.constants import DISPLAY_WINDS
+from mahjong.hand_calculating.divider import HandDivider
+from mahjong.hand_calculating.hand import HandCalculator
+from mahjong.hand_calculating.hand_config import HandConfig, OptionalRules
 from mahjong.meld import Meld
 from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
-from mahjong.hand_calculating.hand_config import HandConfig, OptionalRules
-from mahjong.hand_calculating.hand import HandCalculator
-from mahjong.hand_calculating.divider import HandDivider
-from mahjong.utils import is_chi, is_honor, is_man, is_pin, is_pon, is_sou, is_terminal, plus_dora, simplify
-from utils.cache import build_shanten_cache_key
+from mahjong.utils import is_chi, is_man, is_pin, is_pon, is_sou
 from utils.cache import build_estimate_hand_value_cache_key, build_shanten_cache_key
+
+
 class Phoenix:
     def __init__(self, player):
         self.player = player
@@ -78,13 +79,12 @@ class Phoenix:
         meld_chi, meld_pon = None, None
         should_chi, should_pon = False, False
 
-
-        print(tile_136)
-        print(self.player.closed_hand)
+        # print(tile_136)
+        # print(self.player.closed_hand)
         melds_chi, melds_pon = self.get_possible_meld(tile_136, is_kamicha_discard)
         if meld_type & 4:
             should_chi, chi_score = self.chi.should_call_chi(tile_136, is_kamicha_discard)
-            #fix here: tiles_chi is now the first possible meld
+            # fix here: tiles_chi is now the first possible meld
             assert melds_chi
             tiles_chi = melds_chi[0]
             meld_chi = Meld(meld_type="chi", tiles=tiles_chi) if meld_chi else None
@@ -252,6 +252,13 @@ class Phoenix:
         """
         return self.player.table.players[1:]
 
+    def enemy_called_riichi(self, enemy_seat):
+        """
+        After enemy riichi we had to check will we fold or not
+        it is affect open hand decisions
+        :return:
+        """
+        pass
 
     def get_possible_meld(self, tile, is_kamicha_discard):
 

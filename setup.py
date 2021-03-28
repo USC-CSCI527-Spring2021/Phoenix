@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='Phoenix',
-    version='',
+    version='0.0.1',
     packages=find_packages(),
     url='',
     license='',
@@ -11,10 +11,7 @@ setup(
     description='',
     include_package_data=True,
     install_requires=[
-        'tensorflow_transform==0.28.0',
-        'tensorflow==2.4.1',
         'mahjong==1.2.0.dev5',
-        'tensorboard==2.4.1',
         'apache-beam==2.28.0',
     ],
     scripts=['pipeline.py']

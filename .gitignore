@@ -164,3 +164,6 @@ extract_features/assist/
 /models
 /tmp
 google.json
+*.json
+/model_backup
+/hyper_results_dir

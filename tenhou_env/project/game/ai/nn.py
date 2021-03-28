@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 
+import os
 import random
 
 import numpy as np
-from mahjong.tile import TilesConverter
-from mahjong.utils import is_pon
+from mahjong.utils import is_aka_dora
+from tensorflow import keras
 from utils.decisions_logger import MeldPrint
 
 
@@ -68,12 +69,12 @@ def getGeneralFeature(player):
     def _getSelfTiles(player): 
         return _getPlayerTiles(player) 
 
-    def _getEnemiesTiles(player): 
-        np.concatenate((
+    def _getEnemiesTiles(player):
+        return np.concatenate((
             _getPlayerTiles(player.table.get_player(1)),
             _getPlayerTiles(player.table.get_player(2)),
             _getPlayerTiles(player.table.get_player(3))
-            ))
+        ))
     
     def _getDoraList(player):  
         dora_indicators = player.table.dora_indicators
@@ -105,10 +106,10 @@ def getGeneralFeature(player):
         riichi_bets_feature[0][riichi_bets] = 1
 
         player_wind_feature = np.zeros((1, 34))
-        player_wind_feature[27 + (4-player.table.dealer_seat)%4] = 1
+        player_wind_feature[0][27 + (4 - player.table.dealer_seat) % 4] = 1
 
         prevailing_wind_feature = np.zeros((1, 34))
-        prevailing_wind_feature[27 + player.table.round_wind_number//4] = 1
+        prevailing_wind_feature[0][27 + player.table.round_wind_number // 4] = 1
 
         return np.concatenate((
             dealer_feature,
@@ -133,18 +134,19 @@ class Chi:
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
-        # self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
         print('###### Chi model initialized #######')
 
     def should_call_chi(self, tile_136, is_kamicha_discard):
         # random make a decision
-        return (True, 10) if random.randint(0, 1) else (False, 10)
-        # features = self.getFeature(tile_136)
-        # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
-        # if p_do > p_donot:
-        #     return True, p_do
-        # else:
-        #     return False, p_donot
+        # return (True, 10) if random.randint(0, 1) else (False, 10)
+        features = self.getFeature(tile_136)
+        prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        if prediction == 0:
+            print("Chi Model choose not to chi")
+            return False, prediction
+        print("Chi Model choose to chi")
+        return True, prediction
 
     def getFeature(self, tile_136):
         tile_136_feature = np.zeros((1, 34))
@@ -160,17 +162,24 @@ class Pon:
         # self.input_shape = (63, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
-        # self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
         print('###### Pon model initialized #######')
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         # random make a decision
-        return (True, 10) if random.randint(0, 1) else (False, 0)
-        # features = self.getFeature(tile_136)
-        # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
+        # return (True, 10) if random.randint(0, 1) else (False, 0)
+        features = self.getFeature(tile_136)
+        prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        if prediction == 0:
+            print("Pon Model choose not to pon")
+            return False, prediction
+        print("Pon Model choose to pon")
+        return True, prediction
         # if p_do > p_donot:
+        #     print("Pon Model choose to pon")
         #     return True, p_do
         # else:
+        #     print("Pon Model choose not to pon")
         #     return False, p_donot
 
     def getFeature(self, tile_136):
@@ -188,7 +197,7 @@ class Kan:
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
-        # self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
         print('###### Kan model initialized #######')
 
     def should_call_kan(self, tile_136, open_kan, from_riichi=False):
@@ -234,29 +243,45 @@ class Kan:
             count = np.zeros(34)
             for t in closed_hand:
                 count[t//4]+=1
-            if count[tile//4]==4:
+            if count[tile // 4] == 4:
                 return True
             return False
+
         def _can_kakan(tile, melds):
             for meld in melds:
-                if (meld.type == MeldPrint.PON) and (tile//4 == meld.tiles[0]//4):
+                if (meld.type == MeldPrint.PON) and (tile // 4 == meld.tiles[0] // 4):
                     return True
             return False
+
         kan_type_feature = np.zeros((3, 34))
         closed_hand = self.player.closed_hand
+        features = self.getFeature(tile_136, kan_type_feature)
+        model_predict = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
         if not open_kan:
-            if _can_kakan(tile_136, self.player.melds): #KaKan
+            if _can_kakan(tile_136, self.player.melds):  # KaKan
                 kan_type_feature[2] = 1
                 kan_type = MeldPrint.SHOUMINKAN
-            elif _can_ankan(tile_136, closed_hand): #AnKan
+                if model_predict:
+                    print("Kan model choose to ", kan_type)
+                else:
+                    print("Kan model choose not to ", kan_type)
+            elif _can_ankan(tile_136, closed_hand):  # AnKan
                 kan_type_feature[1] = 1
                 kan_type = MeldPrint.KAN
+                if model_predict:
+                    print("Kan model choose to ", kan_type)
+                else:
+                    print("Kan model choose not to ", kan_type)
             else:
                 return None
         else: 
             if _can_minkan(tile_136, closed_hand):#MinKan
-                kan_type_feature[0] = 1 
+                kan_type_feature[0] = 1
                 kan_type = MeldPrint.SHOUMINKAN
+                if model_predict:
+                    print("Kan model choose to ", kan_type)
+                else:
+                    print("Kan model choose not to ", kan_type)
             else:
                 return None
         # random make a decision
@@ -276,18 +301,19 @@ class Riichi:
         # self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
-        # self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
         print('###### Riichi model initialized #######')
 
     def should_call_riichi(self):
         # random make a decision
-        return (True, 10) if random.randint(0, 1) else (False, 10)
-        # features = self.getFeature()
-        # p_donot, p_do = self.model.predict(np.expand_dims(features, axis=0))[0]
-        # if p_do > p_donot:
-        #     return True, p_do
-        # else:
-        #     return False, p_donot
+        # return (True, 10) if random.randint(0, 1) else (False, 10)
+        features = self.getFeature()
+        prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        if prediction == 0:
+            print("Riichi Model choose not to riichi")
+            return False, prediction
+        print("Riichi Model choose to riichi")
+        return True, prediction
 
     def getFeature(self):
         x = getGeneralFeature(self.player)
@@ -300,7 +326,7 @@ class Discard:
         # self.input_shape = (16, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        # self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
         print('###### Discarded model initialized #######')
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi=False):
@@ -312,17 +338,37 @@ class Discard:
 
         '''
         # random output a tile
-        tile_to_discard_136 = random.choice(self.player.closed_hand)
-        # features = self.getFeature(all_hands_136, closed_hands_136, with_riichi)
-        # tile_to_discard = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
-        # tile_to_discard_136 = [h for h in closed_hands_136 if h // 4 == tile_to_discard][-1]
-        # if multiple tiles exists, return the one which is not red dora
-        return tile_to_discard_136
+        # tile_to_discard_136 = random.choice(self.player.closed_hand)
+        features = self.getFeature(all_hands_136, closed_hands_136, with_riichi)
+        tile_to_discard = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        tile_to_discard_136 = [h for h in self.player.closed_hand if h // 4 == tile_to_discard]
+        akadora = [tile for tile in tile_to_discard_136 if is_aka_dora(tile, True)]
+        # No discard candidate
+        if not tile_to_discard_136:
+            ran = random.choice(self.player.closed_hand)
+            print("Discarded Model predict {} not in closed hand.\nRandom choose {} from {} to discard".format(
+                tile_to_discard * 4, ran, self.player.closed_hand))
+            return ran
+        # only if this game has akadora
+        if self.player.table.has_aka_dora and akadora:
+            if len(tile_to_discard_136) > 1:
+                # if multiple tiles exists, return the one which is not red dora
+                tile_to_discard_136.remove(akadora[-1])
+                print("Multiple tiles exists, AkaDora:", akadora[-1], "Discard the non red dora:",
+                      tile_to_discard_136[0])
+                return tile_to_discard_136[0]
+            else:
+                print("Discard the AkaDora:", tile_to_discard_136[0])
+                return tile_to_discard_136[0]
+        else:
+            print("Discarded Model:", "discard", tile_to_discard_136[-1], "from", self.player.closed_hand)
+            return tile_to_discard_136[-1]
 
     def getFeature(self, open_hands_136, closed_hands_136, with_riichi):
         from trainer.models import transform_discard_features
         data = {
             "draw_tile": self.player.tiles[-1],
+            "hands": self.player.tiles,
             "discarded_tiles_pool": self.player.table.revealed_tiles_136,
             "four_players_open_hands": self.player.table.melded_tiles,
             ## fake data here, pass in just to get function running

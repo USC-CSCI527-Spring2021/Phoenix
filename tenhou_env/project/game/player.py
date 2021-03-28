@@ -218,12 +218,12 @@ class Player(PlayerInterface):
         is_tsumogiri = tile_to_discard == self.last_draw
         # it is important to use table method,
         # to recalculate revealed tiles and etc.
-        print(tile_to_discard)
-        
-        print('checking discard', self.tiles)
+        # print(tile_to_discard)
+
+        # print('checking discard', self.tiles)
         self.table.add_discarded_tile(0, tile_to_discard, is_tsumogiri)
         self.tiles.remove(tile_to_discard)
-        print(self.tiles)
+        # print(self.tiles)
 
         return tile_to_discard, with_riichi
 

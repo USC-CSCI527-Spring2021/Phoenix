@@ -185,8 +185,9 @@ class FeatureGenerator:
                 y = 1
             else:
                 y = 0
-            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                   "labels": to_categorical(y, num_classes=2)}
+            # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+            #        "labels": to_categorical(y, num_classes=2)}
+            yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
 
     def PonFeatureGenerator(self, tiles_state_and_action):
         """
@@ -205,8 +206,9 @@ class FeatureGenerator:
                 y = 1
             else:
                 y = 0
-            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                   "labels": to_categorical(y, num_classes=2)}
+            # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+            #        "labels": to_categorical(y, num_classes=2)}
+            yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
     def KanFeatureGenerator(self, tiles_state_and_action):
         """
         changed the input from filename to tiles_state_and_action data
@@ -246,8 +248,9 @@ class FeatureGenerator:
                 y = 1
             else:
                 y = 0
-            yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                   "labels": to_categorical(y, num_classes=2)}
+            # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+            #        "labels": to_categorical(y, num_classes=2)}
+            yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
         else:
             if could_ankan(closed_hand_136):  # AnKan
                 kan_type_feature = np.zeros((3, 34))
@@ -262,8 +265,9 @@ class FeatureGenerator:
                     y = 1
                 else:
                     y = 0
-                yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                       "labels": to_categorical(y, num_classes=2)}
+                # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                #        "labels": to_categorical(y, num_classes=2)}
+                yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
             else:
                 if could_kakan(closed_hand_136, open_hand_136):  # KaKan
                     kan_type_feature = np.zeros((3, 34))
@@ -276,22 +280,24 @@ class FeatureGenerator:
                         y = 1
                     else:
                         y = 0
-                    yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                           "labels": to_categorical(y, num_classes=2)}
+                    # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                    #        "labels": to_categorical(y, num_classes=2)}
+                    yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
 
     def RiichiFeatureGenerator(self,tiles_state_and_action):
         action = tiles_state_and_action["action"]
-        if tiles_state_and_action["is_FCH"]==1:
+        if tiles_state_and_action["is_FCH"] == 1:
             tiles_34 = TilesConverter.to_34_array(tiles_state_and_action["player_tiles"]["closed_hand:"])
             min_shanten = self.shanten_calculator.calculate_shanten(tiles_34)
-            if min_shanten==0:
+            if min_shanten == 0:
                 x = self.getGeneralFeature(tiles_state_and_action)
                 if action[0] == 'REACH':
                     y = 1
                 else:
                     y = 0
-                yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-                       "labels": to_categorical(y, num_classes=2)}
+                # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                #        "labels": to_categorical(y, num_classes=2)}
+                yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
 
 if __name__ == "__main__":
     filename = "assist/chi_pon_kan_reach_2021.json"
