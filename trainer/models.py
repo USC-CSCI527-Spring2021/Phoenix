@@ -80,22 +80,23 @@ def make_or_restore_model(input_shape, model_type, strategy):
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+    # model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
 
     if checkpoints:
-        latest_checkpoint = max(checkpoints,
-                                key=lambda x: os.path.getctime(x) if not is_cloud else tf.io.gfile.stat(x).mtime_nsec)
+        latest_checkpoint = checkpoint
+        # latest_checkpoint = max(checkpoints,
+        #                         key=lambda x: os.path.getctime(x) if not is_cloud else tf.io.gfile.stat(x).mtime_nsec)
         print("Restoring {} from".format(model_type), latest_checkpoint)
         if strategy == "local":
-            model.load_weights(latest_checkpoint)
+            model = keras.models.load_model(latest_checkpoint)
         else:
             with strategy.scope():
-                model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
-                model.load_weights(latest_checkpoint)
+                # model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+                model = keras.models.load_model(latest_checkpoint)
             print("Start {} model in distribute mode".format(model_type))
         return model
     print("Creating a new {} model".format(model_type))
-    return model
+    return discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
 
 
 def hypertune(hp):
@@ -107,10 +108,11 @@ def hypertune(hp):
         x = Conv2D(hp.Int('filters_' + str(i), 32, 512, step=32, default=256),
                    (3, 1),
                    padding="same", data_format="channels_last")(x)
-    for i in range(hp.Int('num_res_block', 1, 50, 5, default=5)):
-        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [32, 64, 128, 256, 512], default=256),
+    for i in range(hp.Choice('num_res_block', [5, 10, 20, 30, 40, 50], default=5)):
+        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [64, 128, 256, 512], default=256),
                            _project_shortcut=True)
-
+        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [64, 128, 256, 512], default=256),
+                           _project_shortcut=True)
     x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
     x = Flatten()(x)
     outputs = Dense(34, activation="softmax")(x)
@@ -136,6 +138,7 @@ def discard_model(input_shape):
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
     for _ in range(5):
+        x = residual_block(x, 256, _project_shortcut=True)
         x = residual_block(x, 256, _project_shortcut=True)
 
     x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
@@ -163,6 +166,7 @@ def rcpk_model(input_shape):
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
     for _ in range(5):
+        x = residual_block(x, 256, _project_shortcut=True)
         x = residual_block(x, 256, _project_shortcut=True)
     for _ in range(3):
         x = Conv2D(32, (3, 1), padding="same", data_format="channels_last")(x)

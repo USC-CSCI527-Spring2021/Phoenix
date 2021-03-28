@@ -1,7 +1,11 @@
-FROM apache/beam_python3.7_sdk:2.28.0
+FROM tensorflow/tensorflow:2.4.1
 
+WORKDIR /
+COPY extract_features /extract_features
+COPY logs_parser /logs_parser
+COPY trainer /trainer
 COPY requirements.txt /requirements.txt
+COPY setup.py /setup.py
 RUN pip install --no-cache-dir -r /requirements.txt
-COPY ./extract_features .
-COPY ./logs_parser .
-COPY ./pipeline.py /pipeline.py
+
+ENTRYPOINT ["python","-m", "trainer.task"]

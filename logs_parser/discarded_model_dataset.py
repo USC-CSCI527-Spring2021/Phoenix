@@ -218,7 +218,7 @@ def get_round_info(dataset,
 
 class DiscardedFeatureExtractor(beam.DoFn):
     def process(self, log_data, **kwargs):
-        xml_str = log_data[4]
+        xml_str = log_data
         output = []
         if type(xml_str) == str:
             # transform data from xml format to dict
@@ -268,8 +268,8 @@ class DiscardedFeatureExtractor(beam.DoFn):
                             #         print("Encountered errors while inserting rows: {}".format(error))
                             # else:
                             #     file.write(res_str + '\n')
-            except ET.ParseError:
-                return
+            except:
+                pass
         # return output
 
 # if __name__ == "__main__":

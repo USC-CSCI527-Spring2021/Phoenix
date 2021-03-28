@@ -1,11 +1,13 @@
 trainingInput:
+  runtimeVersion: "2.4"
+  pythonVersion: "3.7"
   scaleTier: CUSTOM
   #  network: projects/538372709834/global/networks/default
   # Configure a master worker with 4 T4 GPUs
   masterType: n1-highmem-8
   masterConfig:
     acceleratorConfig:
-      count: 4
+      count: 1
       type: NVIDIA_TESLA_T4
   # Configure 2 workers, each with 4 T4 GPUs
   #  workerCount: 2
@@ -15,5 +17,5 @@ trainingInput:
   #      count: 4
   #      type: NVIDIA_TESLA_K80
   # Configure 3 parameter servers with no GPUs
-  parameterServerCount: 1
-  parameterServerType: n1-highmem-8
+#  parameterServerCount: 1
+#  parameterServerType: n1-highmem-8

@@ -1,7 +1,7 @@
 TENHOU_HOST = "133.242.10.78"
 TENHOU_PORT = 10080
 
-USER_ID = "NoName"
+USER_ID = "ID4E811190-HRS6RAXZ"
 
 # 0-our ai
 AI = 0
@@ -52,7 +52,7 @@ PRINT_LOGS = True
 # for dynamic game type selection (based on the bot rank and rate)
 # you can use:
 # GAME_TYPE = None
-GAME_TYPE = "1"
+GAME_TYPE = "0"
 
 try:
     from .settings_local import *
