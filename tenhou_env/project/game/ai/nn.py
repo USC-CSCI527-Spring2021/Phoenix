@@ -153,6 +153,7 @@ class Chi:
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
+<<<<<<< HEAD
         predictions = self.model.predict(features)
         pidx = np.argmax(predictions[:,1])
         choice = np.argmax(predictions[pidx])
@@ -164,6 +165,28 @@ class Chi:
         else:
             print("Chi Model choose to chi")
             return True, predictions[pidx][choice], melds_chi[pidx]
+=======
+        actions = self.model.predict(features)
+        pidx = np.argmax(actions[:,1])
+        prediction = np.argmax(actions[pidx])
+        if prediction == 0:
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Chi Model choose not to chi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                ],
+            )
+            return False, prediction
+        self.player.logger.debug(
+            log.MELD_CALL,
+            "Chi Model choose to chi",
+            context=[
+                f"Hand: {self.player.format_hand_for_print(tile_136)}",
+            ],
+        )
+        return True, prediction
+>>>>>>> rewrote the debug message for each model
 
     def getFeature(self, melds_chi):
         def _get_x(meld_chi):
@@ -192,6 +215,7 @@ class Pon:
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
+<<<<<<< HEAD
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
@@ -202,6 +226,27 @@ class Pon:
         else:
             print("Pon Model choose to pon")
             return True, predictions[choice]
+=======
+        action = self.model.predict(np.expand_dims(features, axis=0))[0]
+        prediction = np.argmax(action)
+        if prediction == 0:
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Pon Model choose not to pon",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                ],
+            )
+            return False, prediction
+        self.player.logger.debug(
+            log.MELD_CALL,
+            "Pon Model choose to pon",
+            context=[
+                f"Hand: {self.player.format_hand_for_print(tile_136)}",
+            ],
+        )
+        return True, prediction
+>>>>>>> rewrote the debug message for each model
 
     def getFeature(self, tile_136):
         tile_136_feature = np.zeros((1, 34))
@@ -256,16 +301,40 @@ class Kan:
                 kan_type_feature[2] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to "+kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
             elif _can_ankan(tile_136, closed_hand):  # AnKan
                 kan_type_feature[1] = 1
                 kan_type = MeldPrint.KAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
             else:
                 return None
         else: 
@@ -273,14 +342,32 @@ class Kan:
                 kan_type_feature[0] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
             else:
                 return None
+<<<<<<< HEAD
         actions = np.eye(predictions.shape[-1])[model_predict]
         self.collector.record_decision(features, actions, predictions)
         return kan_type 
+=======
+        action = True if kan_type else False
+        self.collector.record_decision(features, action)
+        return kan_type
+>>>>>>> rewrote the debug message for each model
 
     def getFeature(self, tile136, kan_type_feature):
         tile136_feature = np.zeros((1, 34))
@@ -311,10 +398,22 @@ class Riichi:
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
         if choice == 0:
-            print("Riichi Model choose not to riichi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Riichi Model choose not to riichi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(self.player.closed_hand)}",
+                ],
+            )
             return False, predictions[choice]
         else:
-            print("Riichi Model choose to riichi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Riichi Model choose to riichi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(self.player.closed_hand)}",
+                ],
+            )
             return True, predictions[choice]
 
     def getFeature(self):
@@ -354,7 +453,9 @@ class Discard:
             if score > max_score or (score == max_score and is_aka_dora(choice, True)):
                 max_score = score
                 choice = option
-        print("Discarded Model:", "discard", option, "from", closed_hands_136 if closed_hands_136 else self.player.closed_hand)
+        self.player.logger.debug(log.DISCARD,
+                                         context="Discard Model: discard {} from {}"
+                                         .format(option, closed_hands_136 if closed_hands_136 else self.player.closed_hand)
         actions = np.eye(predictions.shape[-1])[choice // 4]
         self.collector.record_decision(features, actions, predictions)
         return choice
@@ -379,7 +480,7 @@ class Discard:
 #         '''
 #         The reason why these two should be input:
 #         if the "discard" action is from "discard after meld", since we have decided to meld, what
-#         to do next is to decide what to discard, but the meld has not happened (and could also be 
+#         to do next is to decide what to discard, but the meld has not happened (and could also be
 #         interrupted), so we could only use discard model based on supposed hands after melding
 
 #         '''
