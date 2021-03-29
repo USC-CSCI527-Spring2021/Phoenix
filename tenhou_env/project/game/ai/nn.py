@@ -7,6 +7,7 @@ import numpy as np
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
+import utils.decisions_constants as log
 
 
 def getGeneralFeature(player):
@@ -142,10 +143,23 @@ class Chi:
         # return (True, 10) if random.randint(0, 1) else (False, 10)
         features = self.getFeature(tile_136)
         prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+
         if prediction == 0:
-            print("Chi Model choose not to chi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Chi Model choose not to chi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                ],
+            )
             return False, prediction
-        print("Chi Model choose to chi")
+        self.player.logger.debug(
+            log.MELD_CALL,
+            "Chi Model choose to chi",
+            context=[
+                f"Hand: {self.player.format_hand_for_print(tile_136)}",
+            ],
+        )
         return True, prediction
 
     def getFeature(self, tile_136):
@@ -171,9 +185,21 @@ class Pon:
         features = self.getFeature(tile_136)
         prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
         if prediction == 0:
-            print("Pon Model choose not to pon")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Pon Model choose not to pon",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                ],
+            )
             return False, prediction
-        print("Pon Model choose to pon")
+        self.player.logger.debug(
+            log.MELD_CALL,
+            "Pon Model choose to pon",
+            context=[
+                f"Hand: {self.player.format_hand_for_print(tile_136)}",
+            ],
+        )
         return True, prediction
         # if p_do > p_donot:
         #     print("Pon Model choose to pon")
@@ -262,16 +288,40 @@ class Kan:
                 kan_type_feature[2] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to "+kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
             elif _can_ankan(tile_136, closed_hand):  # AnKan
                 kan_type_feature[1] = 1
                 kan_type = MeldPrint.KAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
             else:
                 return None
         else: 
@@ -279,9 +329,21 @@ class Kan:
                 kan_type_feature[0] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                        ],
+                    )
             else:
                 return None
         # random make a decision
@@ -310,8 +372,21 @@ class Riichi:
         features = self.getFeature()
         prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
         if prediction == 0:
-            print("Riichi Model choose not to riichi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Riichi Model choose not to riichi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(self.player.closed_hand)}",
+                ],
+            )
             return False, prediction
+        self.player.logger.debug(
+            log.MELD_CALL,
+            "Riichi Model choose to riichi",
+            context=[
+                f"Hand: {self.player.format_hand_for_print(self.player.closed_hand)}",
+            ],
+        )
         print("Riichi Model choose to riichi")
         return True, prediction
 
@@ -346,7 +421,7 @@ class Discard:
         # No discard candidate
         if not tile_to_discard_136:
             ran = random.choice(self.player.closed_hand)
-            print("Discarded Model predict {} not in closed hand.\nRandom choose {} from {} to discard".format(
+            self.player.logger.debug(log.DISCARD, context="Discarded Model predict {} not in closed hand.\nRandom choose {} from {} to discard".format(
                 tile_to_discard * 4, ran, self.player.closed_hand))
             return ran
         # only if this game has akadora
@@ -354,14 +429,17 @@ class Discard:
             if len(tile_to_discard_136) > 1:
                 # if multiple tiles exists, return the one which is not red dora
                 tile_to_discard_136.remove(akadora[-1])
-                print("Multiple tiles exists, AkaDora:", akadora[-1], "Discard the non red dora:",
-                      tile_to_discard_136[0])
+                self.player.logger.debug(log.DISCARD,
+                                         context=["Multiple tiles exists, AkaDora: {}".format(akadora[-1]),
+                                                  "Discard the non red dora: {}".format(tile_to_discard_136[0])])
                 return tile_to_discard_136[0]
             else:
-                print("Discard the AkaDora:", tile_to_discard_136[0])
+                self.player.logger.debug(log.DISCARD,
+                                         context="Discard the AkaDora: {}".format(tile_to_discard_136[0]))
                 return tile_to_discard_136[0]
         else:
-            print("Discarded Model:", "discard", tile_to_discard_136[-1], "from", self.player.closed_hand)
+            self.player.logger.debug(log.DISCARD,
+                                     context="Discard Model: discard {} from {}".format(tile_to_discard_136[-1], self.player.closed_hand))
             return tile_to_discard_136[-1]
 
     def getFeature(self, open_hands_136, closed_hands_136, with_riichi):
