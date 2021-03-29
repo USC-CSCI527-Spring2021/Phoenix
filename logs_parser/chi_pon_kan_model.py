@@ -488,6 +488,11 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
             self.pair_data()
 
             for k in range(len(self.player_id_list)):
+
+                # if the player reached, remove the rest of data 
+                if "REACH" in self.player_call_actions_record_list[k]:
+                    continue
+
                 res = {
                     u'player_id': self.player_id_list[k],
                     u'dealer': self.dealer_list[k],
