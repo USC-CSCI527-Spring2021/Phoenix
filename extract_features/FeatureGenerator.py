@@ -62,7 +62,6 @@ class FeatureGenerator:
             enemies_tiles_feature = np.concatenate((enemies_tiles_feature, player_tiles))
         return enemies_tiles_feature
 
-
     def getDoraIndicatorList(self, tiles_state_and_action):
         dora_indicator_list = tiles_state_and_action["dora"]
         dora_indicator_feature = np.zeros((5, 34))
@@ -173,21 +172,34 @@ class FeatureGenerator:
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
+        def _chilist(last_player_discarded_tile, closed_hand_136):
+            res = []
+            pairs = [(a, b) for idx, a in enumerate(closed_hand_136) for b in closed_hand_136[idx + 1:]]
+            for p in pairs:
+                meld = [last_player_discarded_tile,p[0],p[1]]
+                if all(tile < 36 for tile in meld) or all(36 <= tile < 72 for tile in meld) or all(36 <= tile < 72 for tile in meld):
+                    meld34 = [tile//4 for tile in meld]
+                    if any(tile+1 in meld34 and tile-1 in meld34 for tile in meld34):
+                        res.append(meld)
+            return res
         could_chi = tiles_state_and_action["could_chi"]
         last_player_discarded_tile = tiles_state_and_action["last_player_discarded_tile"]
+        closed_hand_136 = tiles_state_and_action["player_tiles"]['closed_hand:']
         action = tiles_state_and_action["action"]
         if could_chi == 1:
-            last_player_discarded_tile_feature = np.zeros((1, 34))
-            last_player_discarded_tile_feature[0][last_player_discarded_tile // 4] = 1
-            x = np.concatenate(
-                (last_player_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
-            if action[0] == 'Chi':
-                y = 1
-            else:
-                y = 0
-            # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
-            #        "labels": to_categorical(y, num_classes=2)}
-            yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
+            for chimeld in _chilist(last_player_discarded_tile, closed_hand_136):
+                last_player_discarded_tile_feature = np.zeros((1, 34))
+                for chitile in chimeld:
+                    last_player_discarded_tile_feature[0][chitile // 4] = 1
+                x = np.concatenate(
+                    (last_player_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
+                if action[0] == 'Chi' && all(chitile in action[1] for chitile in chimeld):
+                    y = 1
+                else:
+                    y = 0
+                # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
+                #        "labels": to_categorical(y, num_classes=2)}
+                yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
 
     def PonFeatureGenerator(self, tiles_state_and_action):
         """
@@ -209,6 +221,7 @@ class FeatureGenerator:
             # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
             #        "labels": to_categorical(y, num_classes=2)}
             yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
+
     def KanFeatureGenerator(self, tiles_state_and_action):
         """
         changed the input from filename to tiles_state_and_action data
