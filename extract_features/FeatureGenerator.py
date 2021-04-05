@@ -20,9 +20,9 @@ class FeatureGenerator:
         self.shanten_calculator = Shanten()
 
     def getPlayerTiles(self, player_tiles):
-        closed_hand_136 = player_tiles['closed_hand:']
-        open_hand_136 = player_tiles['open_hand']
-        discarded_tiles_136 = player_tiles['discarded_tiles']
+        closed_hand_136 = player_tiles.get('closed_hand:',[])
+        open_hand_136 = player_tiles.get('open_hand:',[])
+        discarded_tiles_136 = player_tiles.get('discarded_tiles:',[])
 
         closed_hand_feature = np.zeros((4, 34))
         open_hand_feature = np.zeros((4, 34))
@@ -193,7 +193,7 @@ class FeatureGenerator:
                     last_player_discarded_tile_feature[0][chitile // 4] = 1
                 x = np.concatenate(
                     (last_player_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
-                if action[0] == 'Chi' && all(chitile in action[1] for chitile in chimeld):
+                if action[0] == 'Chi' and all(chitile in action[1] for chitile in chimeld):
                     y = 1
                 else:
                     y = 0
@@ -311,6 +311,12 @@ class FeatureGenerator:
                 # yield {'features': x.reshape((x.shape[0], x.shape[1], 1)),
                 #        "labels": to_categorical(y, num_classes=2)}
                 yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
+
+    def DiscardFeatureGenerator(self,tiles_state_and_action):
+        x = self.getGeneralFeature(tiles_state_and_action)
+        y = tiles_state_and_action["discarded_tile"]//4
+        yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=34)
+
 
 if __name__ == "__main__":
     filename = "assist/chi_pon_kan_reach_2021.json"
