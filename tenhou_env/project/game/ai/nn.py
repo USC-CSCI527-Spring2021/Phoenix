@@ -7,7 +7,7 @@ import numpy as np
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
-
+from game.ai.exp_buffer import ExperienceCollector
 
 def getGeneralFeature(player):
     def _indicator2dora(dora_indicator):
@@ -136,16 +136,21 @@ class Chi:
         # load models from current working dir
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
         print('###### Chi model initialized #######')
+        self.collector = ExperienceCollector('chi')
+        self.collector.start_episode()
 
     def should_call_chi(self, tile_136, is_kamicha_discard):
         # random make a decision
         # return (True, 10) if random.randint(0, 1) else (False, 10)
         features = self.getFeature(tile_136)
-        prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        action = self.model.predict(np.expand_dims(features, axis=0))[0]
+        prediction = np.argmax(action)
         if prediction == 0:
             print("Chi Model choose not to chi")
+            self.collector.record_decision(features, action)
             return False, prediction
         print("Chi Model choose to chi")
+        self.collector.record_decision(features, action)
         return True, prediction
 
     def getFeature(self, tile_136):
@@ -164,16 +169,20 @@ class Pon:
         # load models from current working dir
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
         print('###### Pon model initialized #######')
+        self.collector = ExperienceCollector('pon')
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         # random make a decision
         # return (True, 10) if random.randint(0, 1) else (False, 0)
         features = self.getFeature(tile_136)
-        prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        action = self.model.predict(np.expand_dims(features, axis=0))[0]
+        prediction = np.argmax(action)
         if prediction == 0:
             print("Pon Model choose not to pon")
+            self.collector.record_decision(features, action)
             return False, prediction
         print("Pon Model choose to pon")
+        self.collector.record_decision(features, action)
         return True, prediction
         # if p_do > p_donot:
         #     print("Pon Model choose to pon")
@@ -199,6 +208,7 @@ class Kan:
         # load models from current working dir
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
         print('###### Kan model initialized #######')
+        self.collector = ExperienceCollector('kan')
 
     def should_call_kan(self, tile_136, open_kan, from_riichi=False):
         # we can't call kan on the latest tile
@@ -256,7 +266,8 @@ class Kan:
         kan_type_feature = np.zeros((3, 34))
         closed_hand = self.player.closed_hand
         features = self.getFeature(tile_136, kan_type_feature)
-        model_predict = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        action = self.model.predict(np.expand_dims(features, axis=0))[0]
+        model_predict = np.argmax(action)
         if not open_kan:
             if _can_kakan(tile_136, self.player.melds):  # KaKan
                 kan_type_feature[2] = 1
@@ -285,6 +296,8 @@ class Kan:
             else:
                 return None
         # random make a decision
+        action = True if kan_type else False
+        self.collector.record_decision(features, action)
         return kan_type #if random.randint(0, 1) else None
 
     def getFeature(self, tile136, kan_type_feature):
@@ -303,16 +316,20 @@ class Riichi:
         # load models from current working dir
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
         print('###### Riichi model initialized #######')
+        self.collector = ExperienceCollector('riichi')
 
     def should_call_riichi(self):
         # random make a decision
         # return (True, 10) if random.randint(0, 1) else (False, 10)
         features = self.getFeature()
-        prediction = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
+        action = self.model.predict(np.expand_dims(features, axis=0))[0]
+        prediction = np.argmax(action)
         if prediction == 0:
             print("Riichi Model choose not to riichi")
+            self.collector.record_decision(features, action)
             return False, prediction
         print("Riichi Model choose to riichi")
+        self.collector.record_decision(features, action)
         return True, prediction
 
     def getFeature(self):
@@ -328,6 +345,7 @@ class Discard:
         # load models from current working dir
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
         print('###### Discarded model initialized #######')
+        self.collector = ExperienceCollector('discard')
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi=False):
         '''
@@ -348,6 +366,7 @@ class Discard:
             ran = random.choice(self.player.closed_hand)
             print("Discarded Model predict {} not in closed hand.\nRandom choose {} from {} to discard".format(
                 tile_to_discard * 4, ran, self.player.closed_hand))
+            self.collector.record_decision(features, np.eye(34)[ran // 4])
             return ran
         # only if this game has akadora
         if self.player.table.has_aka_dora and akadora:
@@ -356,12 +375,15 @@ class Discard:
                 tile_to_discard_136.remove(akadora[-1])
                 print("Multiple tiles exists, AkaDora:", akadora[-1], "Discard the non red dora:",
                       tile_to_discard_136[0])
+                self.collector.record_decision(features, np.eye(34)[tile_to_discard_136[0]])
                 return tile_to_discard_136[0]
             else:
                 print("Discard the AkaDora:", tile_to_discard_136[0])
+                self.collector.record_decision(features, np.eye(34)[tile_to_discard_136[0]])
                 return tile_to_discard_136[0]
         else:
             print("Discarded Model:", "discard", tile_to_discard_136[-1], "from", self.player.closed_hand)
+            self.collector.record_decision(features, np.eye(34)[tile_to_discard_136[-1]])
             return tile_to_discard_136[-1]
 
     def getFeature(self, open_hands_136, closed_hands_136, with_riichi):

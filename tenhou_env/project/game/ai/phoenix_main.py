@@ -38,6 +38,14 @@ class Phoenix:
         self.hand_cache_estimation = {}
         self.finished_hand = HandCalculator()
 
+    def collect_experience(self):
+        for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
+            model.collector.complete_episode()
+    
+    def write_buffer(self):
+        for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
+            model.collector.to_buffer()
+
     def init_hand(self):
         self.player.logger.debug(
             log.INIT_HAND,
