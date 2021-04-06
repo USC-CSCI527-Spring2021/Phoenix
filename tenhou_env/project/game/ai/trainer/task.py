@@ -77,7 +77,7 @@ if __name__ == "__main__":
     os.system("/sbin/ldconfig -N -v $(sed 's/:/ /g' <<< $LD_LIBRARY_PATH) | grep libcupti")
 
     args = argument_parse()
-    from trainer.config import CHECKPOINT_DIR, BATCH_SIZE, create_or_join
+    from trainer.utils import CHECKPOINT_DIR, BATCH_SIZE, create_or_join
 
     BUFFER_SIZE = 10000
     if args.cloud_train:

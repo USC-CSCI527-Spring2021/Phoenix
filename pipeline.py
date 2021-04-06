@@ -18,8 +18,8 @@ from apache_beam.options.pipeline_options import PipelineOptions
 # import numpy as np
 from extract_features.FeatureGenerator import FeatureGenerator
 from logs_parser import discarded_model_dataset, chi_pon_kan_model
-from trainer.config import TRAIN_SPLIT
 from trainer.models import transform_discard_features
+from trainer.utils import TRAIN_SPLIT
 
 
 class PreprocessData(object):

@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization, \
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.models import Model
 
-from trainer.config import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
+from trainer.utils import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
 
 np.random.seed(RANDOM_SEED)
 

@@ -5,7 +5,6 @@ from time import sleep
 
 import dill as pickle
 import kerastuner as kt
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
@@ -37,6 +36,11 @@ def argument_parse():
         type=int,
         default=0,
         help='0 for no, 1 for hyper parameter tuning')
+    parser.add_argument(
+        '--class-weight',
+        type=int,
+        default=1,
+        help='0 for oversampling, 1 for class-weight')
     args = parser.parse_args()
     return args
 
@@ -71,38 +75,13 @@ def save_model(model_path, model):
         tf.io.gfile.rmtree(model_path)
 
 
-class History(keras.callbacks.Callback):
-    """
-    Callback that records events into a `History` object.
-
-    This callback is automatically applied to
-    every Keras model. The `History` object
-    gets returned by the `fit` method of models.
-    """
-
-    def on_train_begin(self, logs=None):
-        if not hasattr(self, 'epoch'):
-            self.epoch = []
-            self.history = {}
-
-    def on_epoch_end(self, epoch, logs=None):
-        logs = logs or {}
-        self.epoch.append(epoch)
-        for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
-
-
 if __name__ == "__main__":
-    # https://drive.google.com/uc\?id\=1iZpWSXRF9NlrLLwtxujLkAXk4k9KUgUN
-    # f = h5py.File('logs_parser/discarded_model_dataset_sum_2021.hdf5', 'r')
-    # states = f.get('hands')
-    # labels = f.get('discarded_tile')
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/jun/key.json"
     os.system("/sbin/ldconfig -N -v $(sed 's/:/ /g' <<< $LD_LIBRARY_PATH) | grep libcupti")
 
     args = argument_parse()
-    from trainer.config import CHECKPOINT_DIR, BATCH_SIZE, create_or_join
+    from trainer.utils import CHECKPOINT_DIR, BATCH_SIZE, create_or_join
 
     BUFFER_SIZE = 10000
     if args.cloud_train:
@@ -139,59 +118,30 @@ if __name__ == "__main__":
         print("Start Training in Local")
         strategy = "local"
 
-    # tfc.run(import kerastuner as kt
-    #     entry_point=None,
-    #     requirements_txt="requirements.txt",
-    #     distribution_strategy="auto",
-    #     chief_config=tfc.MachineConfig(
-    #         cpu_cores=8,
-    #         memory=30,
-    #         accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
-    #         accelerator_count=2,
-    #     ),
-    #     docker_image_bucket_name=GCP_BUCKET,
-    #     job_labels={"job": "discard_model"},
-    #     stream_logs=True,
-    # )
-    def count_class(counts, batch):
-        _, labels = list(batch)
-        for l in labels:
-            print(list(l))
-
-            if np.argmax(l) == 1:
-                counts[1] += 1
-            else:
-                counts[0] += 1
-        return counts
-
-
     checkpoint_path = create_or_join(os.path.join(CHECKPOINT_DIR, args.model_type))
     log_path = create_or_join("logs/" + args.model_type + timestamp)
     meta = tf.io.gfile.GFile(create_or_join('processed_data/{}/{}_meta'.format(args.model_type, args.model_type)), 'rb')
     preprocess_data = pickle.load(meta)
 
-
-    def read_tfrecord(serialized_example):
-        example = tf.io.parse_example(serialized_example, preprocess_data.input_feature_spec)
-        features = example['features']
-        labels = example['labels']
-        return features, labels
-
+    class_weight = None
+    num_classes = len(preprocess_data.classes_distribution)
+    if args.class_weight:
+        class_weight = {}
+        for i in range(num_classes):
+            class_weight[i] = preprocess_data.total / (num_classes * preprocess_data.classes_distribution[i])
+        print('Weight for classes:', class_weight)
+    else:
+        # oversampling
+        pass
 
     train_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "train-dataset*")
     val_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "eval-dataset*")
-    train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
+    train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(
+        lambda x: read_tfrecord(x, preprocess_data.input_feature_spec)) \
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
+    val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(
+        lambda x: read_tfrecord(x, preprocess_data.input_feature_spec)) \
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
-    counts = {1: 0, 0: 0}
-    for i in train_dataset:
-        _, labels = list(i)
-        for l in labels:
-            if np.argmax(l) == 1:
-                counts[1] += 1
-            else:
-                counts[0] += 1
 
     if args.hypertune:
         tuner = kt.Hyperband(
@@ -204,10 +154,11 @@ if __name__ == "__main__":
             directory=create_or_join("hyper_results_dir"),
             project_name='mahjong')
         print("hypertune: {}".format(args.model_type))
-        tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=5000,
+        tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
                      validation_steps=1000,
                      callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
     else:
+
         if args.model_type == 'discarded':
             input_shape = (16, 34, 1)
             model = make_or_restore_model(input_shape, args.model_type, strategy)
@@ -221,14 +172,6 @@ if __name__ == "__main__":
                                                 save_freq=5000,
                                                 )
             ]
-            model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                      # steps_per_epoch=1e4,
-                      # validation_steps=5e3,
-                      use_multiprocessing=True,
-                      workers=-1,
-                      callbacks=callbacks)
-            model.save(os.path.join(create_or_join("models"), args.model_type))
-            # save_model(os.path.join(create_or_join("models"), args.model_type), model)
         else:
             input_shape = (63, 34, 1)
             # steps_per_epoch = [20000, 5000, 5000, 5000]
@@ -257,27 +200,15 @@ if __name__ == "__main__":
                                                 save_freq=1000,
                                                 ),
             ]
-            model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                      # steps_per_epoch=preprocess_data.num_train // BATCH_SIZE,
-                      validation_steps=1000,
-                      use_multiprocessing=True,
-                      workers=-1,
-                      callbacks=callbacks)
-            model.save(os.path.join(create_or_join("models"), args.model_type))
-            # save_model(os.path.join(create_or_join("models"), args.model_type), model)
-
-        # if not args.cloud_train:
-        #     callbacks.append(keras.callbacks.ModelCheckpoint(checkpoint_path,
-        #                                         save_weights_only=True,
-        #                                         monitor='accuracy',
-        #                                         save_freq=10,
-        #                                         ))
-        # tf_dataset = tf.data.Dataset.from_generator(lambda: generator,
-        #                                             (tf.int8, tf.int8)).shuffle(BATCH_SIZE, RANDOM_SEED, True)
-        # train_dataset, val_dataset = split_dataset(tf_dataset)
-        # sys.stderr = sys.stdout
-        # sys.stdout = open('{}/{}.txt'.format('logs/stdout_logs', datetime.datetime.now().isoformat()), 'w')
-
+        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+                  # steps_per_epoch=preprocess_data.num_train // BATCH_SIZE,
+                  class_weight=class_weight,
+                  validation_steps=1000,
+                  use_multiprocessing=True,
+                  workers=-1,
+                  callbacks=callbacks)
+        model.save(os.path.join(create_or_join("models"), args.model_type))
+        # save_model(os.path.join(create_or_join("models"), args.model_type), model)
 
     # model.save(write_model_path)
     # if args.cloud_train:

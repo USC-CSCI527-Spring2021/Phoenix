@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization, \
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.models import Model
 
-from trainer.config import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
+from trainer.utils import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
 
 np.random.seed(RANDOM_SEED)
 
@@ -180,7 +180,16 @@ def rcpk_model(input_shape):
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.BinaryCrossentropy(),
-        metrics=keras.metrics.Accuracy())
+        metrics=[
+            keras.metrics.TruePositives(name='tp'),
+            keras.metrics.FalsePositives(name='fp'),
+            keras.metrics.TrueNegatives(name='tn'),
+            keras.metrics.FalseNegatives(name='fn'),
+            keras.metrics.BinaryAccuracy(name='accuracy'),
+            keras.metrics.Precision(name='precision'),
+            keras.metrics.Recall(name='recall'),
+            keras.metrics.AUC(name='auc'),
+        ])
     return model
 
 
@@ -205,6 +214,5 @@ def transform_discard_features(data):
         for tile in player:
             four_open_hands_mat[tile % 4][tile // 4] = 1
     features = np.vstack((hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat))
-    return {"features": features.reshape((features.shape[0], 34, 1)),
-            "labels": keras.utils.to_categorical(int(label // 4), 34)}
+    yield features.reshape((features.shape[0], 34, 1)), keras.utils.to_categorical(int(label // 4), 34)
     # return [features.reshape((features.shape[0], 34, 1)), label // 4]

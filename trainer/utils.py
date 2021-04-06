@@ -1,10 +1,12 @@
 import os
 
+import tensorflow as tf
+
 # GCP_BUCKET = 'mahjong-dataset'
 # GCP_BUCKET = 'mahjong-bucket'
 GCP_BUCKET = 'mahjong1'
 BATCH_SIZE = 64
-TRAIN_SPLIT = 0.8
+TRAIN_SPLIT = 0.7
 CHECKPOINT_DIR = "checkpoints"
 RANDOM_SEED = 1
 DISCARD_TABLE_BQ = "mahjong.discarded"
@@ -35,3 +37,10 @@ def create_or_join(dir_name):
         if not os.path.exists(os.path.join(root, dir_name)):
             os.makedirs(os.path.join(root, dir_name))
         return os.path.join(root, dir_name)
+
+
+def read_tfrecord(serialized_example, input_spec):
+    example = tf.io.parse_example(serialized_example, input_spec)
+    features = example['features']
+    labels = example['labels']
+    return features, labels
