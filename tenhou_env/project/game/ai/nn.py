@@ -453,4 +453,4 @@ class Discard:
             "discarded_tile": 0,
         }
         # if hands are none, get hands from self.player
-        return transform_discard_features(data)['features']  # change this according to actual shape
+        return next(transform_discard_features(data))[0] # change this according to actual shape
