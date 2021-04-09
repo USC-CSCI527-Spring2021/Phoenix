@@ -75,7 +75,12 @@ class Phoenix:
         if shanten != 0:                #can not riichi
             return self.discard.discard_tile(), False
         with_riichi, p = self.riichi.should_call_riichi()
-        tile_to_discard = self.discard.discard_tile(with_riichi=with_riichi)
+        if with_riichi：
+            # fix here: might need review
+            riichi_options = [tile in self.player.closed_hand if self.calculate_shanten_or_get_from_cache([t for t in self.player.closed_hand if t != tile]) == 0]
+            tile_to_discard = self.discard.discard_tile(with_riichi_options=riichi_options)
+        else:
+            tile_to_discard = self.discard.discard_tile()
         return tile_to_discard, with_riichi
 
     def try_to_call_meld(self, tile_136, is_kamicha_discard, meld_type):
@@ -168,10 +173,17 @@ class Phoenix:
         key = build_shanten_cache_key(closed_hand_34, use_chiitoitsu)
         if key in self.hand_cache_shanten:
             return self.hand_cache_shanten[key]
+        # if use_chiitoitsu and not self.player.is_open_hand:
+        #     result = self.shanten_calculator.calculate_shanten_for_chiitoitsu_hand(closed_hand_34)
+        # else:
+        #     result = self.shanten_calculator.calculate_shanten_for_regular_hand(closed_hand_34)
+        
+        # fix here: a little bit strange in use_chiitoitsu
+        shanten_results = []
         if use_chiitoitsu and not self.player.is_open_hand:
-            result = self.shanten_calculator.calculate_shanten_for_chiitoitsu_hand(closed_hand_34)
-        else:
-            result = self.shanten_calculator.calculate_shanten_for_regular_hand(closed_hand_34)
+            shanten_results.append(self.shanten_calculator.calculate_shanten_for_chiitoitsu_hand(closed_hand_34))
+        shanten_results.append(self.shanten_calculator.calculate_shanten_for_regular_hand(closed_hand_34))
+        result = min(shanten_results)
         self.hand_cache_shanten[key] = result
         return result
 
