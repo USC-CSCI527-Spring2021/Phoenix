@@ -5,6 +5,7 @@ import sys
 import multiprocessing
 import json
 import copy
+from actor_learner import Learner, Actor
 
 @ray.remote
 class ReplayBuffer:
@@ -128,6 +129,24 @@ class ParameterServer:
         with open(self.opt.save_dir + "/checkpoint/" + "checkpoint_weights.pickle", "wb") as pickle_out:
             pickle.dump(self.weights, pickle_out)
 
-@ray.remote(num_cpus=2, num_gpus=1, max_calls=1)    #centralized training
-def worker_train(ps, node_buffer, opt, learner_index):
-    
+@ray.remote(num_cpus=1, num_gpus=1, max_calls=1)    #centralized training
+def worker_train(ps, node_buffer, opt, model_type):
+    agent = Learner(opt, model_type)
+    weights = ray.get(ps.pull.remote(model_type))
+    agent.set_weights(weights)
+
+    cache = Cache(node_buffer)
+    cache.start()
+
+    cnt = 1
+    while True:
+        batch = cache.q1.start()
+        agent.train(batch, cnt)
+
+        if cnt % opt.push_freq == 0:
+            cache.q2.put(agent.get_weights)
+        cnt += 1
+
+@ray.remote
+def worker_rollout(ps, replay_buffer, opt, worker_index):
+    agent = Actor(opt, job='worker')

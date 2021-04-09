@@ -8,7 +8,7 @@ from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
 from game.ai.exp_buffer import ExperienceCollector
-
+from game.ai.models import rcpk_model, discard_model
 def getGeneralFeature(player):
     def _indicator2dora(dora_indicator):
         dora = dora_indicator // 4
@@ -130,11 +130,16 @@ def getGeneralFeature(player):
 class Chi:
     def __init__(self, player):
         self.player = player
-        # self.input_shape = (63, 34, 1)
+        self.input_shape = (63, 34, 1)
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
-        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+        if 'chi' not in player.config:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+        else:
+            self.model = rcpk_model(self.input_shape)
+            self.model.set_weights(player.config.weights['chi'])
+
         print('###### Chi model initialized #######')
         self.collector = ExperienceCollector('chi')
         self.collector.start_episode()
@@ -168,10 +173,15 @@ class Pon:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        # self.input_shape = (63, 34, 1)
+        self.input_shape = (63, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
-        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        if 'pon' not in player.config:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        else:
+            self.model = rcpk_model(self.input_shape)
+            self.model.set_weights(player.config.weights['pon'])
+
         print('###### Pon model initialized #######')
         self.collector = ExperienceCollector('pon')
 
@@ -206,11 +216,16 @@ class Pon:
 class Kan:
     def __init__(self, player):
         self.player = player
-        # self.input_shape = (66, 34, 1)
+        self.input_shape = (66, 34, 1)
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
-        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        if 'kan' not in player.config:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        else:
+            self.model = rcpk_model(self.input_shape)
+            self.model.set_weights(player.config.weights['kan'])
+
         print('###### Kan model initialized #######')
         self.collector = ExperienceCollector('kan')
 
@@ -315,10 +330,14 @@ class Riichi:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        # self.input_shape = (62, 34, 1)
+        self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
-        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        if 'riichi' not in player.config:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        else:
+            self.model = rcpk_model(self.input_shape)
+            self.model.set_weights(player.config.weights['riichi'])
         print('###### Riichi model initialized #######')
         self.collector = ExperienceCollector('riichi')
 
@@ -344,10 +363,14 @@ class Discard:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        # self.input_shape = (16, 34, 1)
+        self.input_shape = (16, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
+        if 'discard' not in player.config:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
+        else:
+            self.model = discard_model(self.input_shape)
+            self.model.set_weights(player.config.weights['discard'])
         print('###### Discarded model initialized #######')
         self.collector = ExperienceCollector('discard')
 
