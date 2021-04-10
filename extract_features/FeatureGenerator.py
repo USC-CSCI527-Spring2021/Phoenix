@@ -19,10 +19,14 @@ class FeatureGenerator:
         """
         self.shanten_calculator = Shanten()
 
+    def canwinbyreplace(self, closed_left_tiles_34, open_hand_34, tiles_could_draw, targetPoints, replacelimit):
+        # fix here: dfs
+        return 0
+
     def getPlayerTiles(self, player_tiles):
         closed_hand_136 = player_tiles.get('closed_hand:',[])
-        open_hand_136 = player_tiles.get('open_hand:',[])
-        discarded_tiles_136 = player_tiles.get('discarded_tiles:',[])
+        open_hand_136 = player_tiles.get('open_hand',[])
+        discarded_tiles_136 = player_tiles.get('discarded_tiles',[])
 
         closed_hand_feature = np.zeros((4, 34))
         open_hand_feature = np.zeros((4, 34))
@@ -54,7 +58,7 @@ class FeatureGenerator:
         player_seat = tiles_state_and_action["player_id"]
         enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
         if (len(enemies_tiles_list) == 3):
-            enemies_tiles_list.insert(player_seat, {})
+            enemies_tiles_list.insert(player_seat, tiles_state_and_action["player_tiles"])
         enemies_tiles_feature = np.empty((0, 34))
         for i in range(3):
             player_seat = (player_seat + 1) % 4
@@ -158,8 +162,53 @@ class FeatureGenerator:
             prevailing_wind_feature
         ))
 
+    def getLookAheadFeature(self, tiles_state_and_action):
+        # 0 for whether can be discarded
+        # 1 2 3 for shanten
+        # 4 for whether can get 1.2w points with replacing 3 tiles
+        # 5 6 7 for in Shimocha Toimen Kamicha discarded
+        lookAheadFeature = np.zeros((8, 34))
+        player_tiles = tiles_state_and_action["player_tiles"]
+        closed_hand_136 = player_tiles.get('closed_hand:',[])
+        open_hand_34 = TilesConverter.to_34_array(player_tiles.get('open_hand',[]))
+        discarded_tiles_136 = player_tiles.get('discarded_tiles',[])
+        player_seat = tiles_state_and_action["player_id"]
+        enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
+        dora_indicator_list = tiles_state_and_action["dora"]
+        if (len(enemies_tiles_list) == 3):
+            enemies_tiles_list.insert(player_seat, player_tiles)
+        tiles_could_draw = np.zeros(34)
+        tiles_on_board = []
+        for player in enemies_tiles_list:
+            for tile_set in [player.get('closed_hand:',[]), player.get('open_hand',[]), player.get('discarded_tiles',[])]:
+                for tile in tile_set:
+                    tiles_on_board.append(tile)
+        for dora_tile in dora_indicator_list:
+            tiles_on_board.append(dora_tile)
+        for tile in range(136):
+            if tile not in tiles_on_board:
+                tiles_could_draw[tile//4] += 1
+        for discard_tile in closed_hand_136:
+            col = discard_tile//4
+            if lookAheadFeature[0][col] == 1:
+                continue
+            lookAheadFeature[0][col] = 1
+            closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
+            shanten = self.shanten_calculator.calculate_shanten(closed_left_tiles_34)
+            for i in range(3):
+                if shanten <= i+1:
+                    lookAheadFeature[i+1][col] = 1
+            lookAheadFeature[4][col] = self.canwinbyreplace(closed_left_tiles_34, open_hand_34, tiles_could_draw, targetPoints = 12000, replacelimit = 3)
+            seat = player_seat
+            for i in range(3):
+                seat = (seat + 1) % 4
+                if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
+                    lookAheadFeature[i+5][col] = 1
+        return lookAheadFeature
+
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
+            self.getLookAheadFeature(tiles_state_and_action), #(8,34)
             self.getSelfTiles(tiles_state_and_action),  # (12,34)
             self.getDoraList(tiles_state_and_action),  # (5,34)
             self.getBoard1(tiles_state_and_action),  # (5,34)
