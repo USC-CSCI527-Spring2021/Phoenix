@@ -53,7 +53,7 @@ meld, discard_option = self.ai.try_to_call_meld(tile, is_kamicha_discard)
 ```
 - tile: int, 136_tile. Generated from TilesConverter.string_to_136_array[0].
 - is_kamicha_discard： bool. Discard tile is from opponent on the left(上家).
-- meld: meld==none for skip. meld.type=MeldPrint.CHI\PON, meld.tiles=list of int, size of 3, 136_array.
+- meld: meld==none for skip. meld.type=MeldPrint.CHI\PON, meld.tiles=list of int, size of 3, 136_array. meld.opened=bool.
 - discard_option: int, 136_tile. Tile to discard.
 
 ```python
