@@ -75,9 +75,9 @@ class Phoenix:
         if shanten != 0:                #can not riichi
             return self.discard.discard_tile(), False
         with_riichi, p = self.riichi.should_call_riichi()
-        if with_riichi：
+        if with_riichi:
             # fix here: might need review
-            riichi_options = [tile in self.player.closed_hand if self.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array([t for t in self.player.closed_hand if t != tile])) == 0]
+            riichi_options = [tile for tile in self.player.closed_hand if self.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array([t for t in self.player.closed_hand if t != tile])) == 0]
             tile_to_discard = self.discard.discard_tile(with_riichi_options=riichi_options)
         else:
             tile_to_discard = self.discard.discard_tile()
