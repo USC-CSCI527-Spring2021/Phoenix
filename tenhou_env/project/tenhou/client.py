@@ -27,8 +27,8 @@ class TenhouClient(Client):
     _count_of_empty_messages = 0
     _rating_string = None
 
-    def __init__(self, logger):
-        super().__init__()
+    def __init__(self, logger, bot_config=None):
+        super().__init__(bot_config)
         self.logger = logger
         self.statistics = Statistics()
 
