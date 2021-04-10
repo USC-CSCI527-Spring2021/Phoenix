@@ -74,10 +74,6 @@ def get_repeat_dealer_count(player_id, raw_repeat_dealer):
     return raw_repeat_dealer[player_id]
 
 
-def get_riichi_bets(player_id, raw_riichi_bets):
-    return raw_riichi_bets[player_id]
-
-
 def get_last_discarded_tile(player_id, four_discarded_hands):
     if len(four_discarded_hands[player_id]) == 0:
         return None
@@ -145,6 +141,12 @@ def is_FCH(player_call_actions_record):
     return True
 
 
+def getPrevailingWind(round_num):
+    prevailing_winds = ['E', 'S', 'W', 'N']
+
+    return prevailing_winds[round_num // 4]
+
+
 class ChiPonKanFeatureExtractor(beam.DoFn):
     def __init__(self, *unused_args, **unused_kwargs):
         super().__init__(*unused_args, **unused_kwargs)
@@ -154,17 +156,11 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         self.four_open_hands_list = []
         self.dora_list = []
         self.action_list = []
-        self.dealer_list = []
-        self.raw_repeat_dealer_list = []
-        self.raw_riichi_bets_list = []
+
         self.scores_list = []
-        self.raw_player_wind_list = []
-        self.prevailing_wind_list = []
 
         self.player_tiles_list = []
         self.enemies_tiles_list = []
-        self.player_wind_list = []
-        self.repeat_dealer_list = []
         self.riichi_bets_list = []
 
         self.last_player_discarded_tile_list = []
@@ -179,9 +175,6 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         self.four_player_open_hands_detail_list = []
         self.last_player_id_list = []
         self.open_hands_detail_list = []
-
-
-
 
         self.valid_chi_mentsu = {
             0: [[1, 2]],
@@ -218,30 +211,26 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
     def init_player_winds(self, dealer):
 
         if dealer == 0:
-            player_winds = ['E', 'N', 'W', 'S']
+            player_winds = ['E', 'S', 'W', 'N']
         elif dealer == 1:
-            player_winds = ['S', 'E', 'N', 'W']
+            player_winds = ['N', 'E', 'S', 'W']
         elif dealer == 2:
-            player_winds = ['W', 'S', 'E', 'N']
+            player_winds = ['W', 'N', 'E', 'S']
         else:
-            player_winds = ['N', 'W', 'S', 'E']
+            player_winds = ['S', 'W', 'N', 'E']
 
         return player_winds
 
-    def record_cur_state(self, player_id, closed_hands, open_hands, discarded_hands, doras, dealer, repeat_dealer,
-                         riichi_bets, scores, player_winds, prevailing_wind, taken_call_actions, open_hands_details):
+    def record_cur_state(self, player_id, closed_hands, open_hands, discarded_hands, doras,
+                              riichi_bets, scores, taken_call_actions, open_hands_details):
 
         self.player_id_list.append(player_id)
         self.four_closed_hands_list.append(copy.copy(closed_hands))
         self.four_open_hands_list.append(copy.copy(open_hands))
         self.four_discarded_hands_list.append(copy.copy(discarded_hands))
         self.dora_list.append(copy.copy(doras))
-        self.dealer_list.append(dealer)
-        self.raw_repeat_dealer_list.append(copy.copy(repeat_dealer))
         self.scores_list.append(copy.copy(scores))
-        self.raw_riichi_bets_list.append(copy.copy(riichi_bets))
-        self.raw_player_wind_list.append(copy.copy(player_winds))
-        self.prevailing_wind_list.append(prevailing_wind)
+        self.riichi_bets_list.append(riichi_bets)
         self.call_actions_record_list.append(copy.copy(taken_call_actions))
         self.four_player_open_hands_detail_list.append(copy.copy(open_hands_details))
 
@@ -278,7 +267,7 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         return closed_hands, open_hands, open_hands_details
 
     def pair_data(self):
-        last_player =  -1
+        last_player = -1
 
         for i in range(len(self.player_id_list)):
 
@@ -287,9 +276,6 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
             four_closed_hands = self.four_closed_hands_list[i]
             four_open_hands = self.four_open_hands_list[i]
             four_discarded_hands = self.four_discarded_hands_list[i]
-            raw_player_wind = self.raw_player_wind_list[i]
-            raw_repeat_dealer = self.raw_repeat_dealer_list[i]
-            raw_riichi_bets = self.raw_riichi_bets_list[i]
 
             call_actions_record = self.call_actions_record_list[i]
             open_hands_details = self.four_player_open_hands_detail_list[i]
@@ -300,12 +286,6 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
             self.enemies_tiles_list.append(
                 get_three_enemies_hands(player_id, four_closed_hands, four_open_hands, four_discarded_hands))
 
-            # get corresponding palyer wind
-            self.player_wind_list.append(get_player_wind(player_id, raw_player_wind))
-
-            self.repeat_dealer_list.append(get_repeat_dealer_count(player_id, raw_repeat_dealer))
-
-            self.riichi_bets_list.append(get_riichi_bets(player_id, raw_riichi_bets))
 
             self.open_hands_detail_list.append(open_hands_details[player_id])
 
@@ -361,12 +341,12 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
                     self.could_minkan_list.append(0)
 
 
-    def get_round_info(self, dataset, repeat_dealer, player_winds, prevailing_wind):
+    def get_round_info(self, dataset):
 
         init_data = dataset[0]["data"]
         dealer = int(init_data["oya"])
         scores = init_data["scores"]
-        riichi_bets = [0, 0, 0, 0]
+        riichi_bets = init_data['reach']
         doras = [init_data["dora"]]
 
         # player_tiles, get from init
@@ -386,16 +366,15 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
                 player_id = action["data"]["player"]
 
                 if action['data']['step'] == 1:
-                    self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras, dealer,
-                                          repeat_dealer, riichi_bets, scores, player_winds,
-                                          prevailing_wind, taken_call_actions, open_hands_details)
+                    self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras,
+                                          riichi_bets, scores, taken_call_actions, open_hands_details)
                     self.action_list.append([act])
                     taken_call_actions[player_id] = copy.copy(taken_call_actions[player_id])
                     taken_call_actions[player_id].append(act)
 
                 if action['data']['step'] == 2:
 
-                    riichi_bets[player_id] += 1
+                    riichi_bets += 1
                     if 'scores' not in action['data']:
                         scores[player_id] -= 1000
                     else:
@@ -407,9 +386,8 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
 
             elif act == "CALL":
                 action_data = action["data"]
-                self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras, dealer,
-                                          repeat_dealer, riichi_bets, scores, player_winds,
-                                          prevailing_wind, taken_call_actions, open_hands_details)
+                self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras,
+                                      riichi_bets, scores, taken_call_actions, open_hands_details)
                 closed_hands, open_hands, open_hands_details = self.call_operations(action_data, closed_hands, open_hands, taken_call_actions, open_hands_details)
 
 
@@ -421,9 +399,8 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
                 # 记录作出这个action之前场面的情况，当前玩家，与其他玩家，摸牌
                 if act == "DRAW":
                     # record cur state for four players, and cur player id
-                    self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras, dealer,
-                                          repeat_dealer, riichi_bets, scores, player_winds,
-                                          prevailing_wind, taken_call_actions, open_hands_details)
+                    self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras,
+                                          riichi_bets, scores, taken_call_actions, open_hands_details)
                     self.action_list.append([act, tile])
 
                     # update state
@@ -466,55 +443,74 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
             # if len(data["meta"]['UN'][3]["name"]) == 0:
             #     continue
 
-            last_dealer = -1
-            repeat_dealer = [0, 0, 0, 0]
-            prevailing_wind = 'E'
-
             for j in range(len(data["rounds"])):
 
+                self.player_id_list = []
+                self.four_closed_hands_list = []
+                self.four_discarded_hands_list = []
+                self.four_open_hands_list = []
+                self.dora_list = []
+                self.action_list = []
+
+                self.scores_list = []
+
+                self.player_tiles_list = []
+                self.enemies_tiles_list = []
+                self.riichi_bets_list = []
+
+                self.last_player_discarded_tile_list = []
+
+                self.could_chi_list = []
+                self.could_pon_list = []
+                self.could_minkan_list = []
+
+                self.call_actions_record_list = []
+                self.is_FCH_list = []
+                self.player_call_actions_record_list = []
+                self.four_player_open_hands_detail_list = []
+                self.last_player_id_list = []
+                self.open_hands_detail_list = []
+
                 dealer = int(data['rounds'][j][0]["data"]["oya"])
-                player_winds = self.init_player_winds(dealer)
+                players_winds = self.init_player_winds(dealer)
 
-                if j > 3 and dealer == 0:
-                    prevailing_wind = 'S'
+                repeat_dealer = int(data['rounds'][j][0]["data"]['combo'])
 
-                if dealer == last_dealer:
-                    repeat_dealer[dealer] += 1
+                round_num = int(data['rounds'][j][0]["data"]['round'])
+                prevailing_wind = getPrevailingWind(round_num)
 
-                self.get_round_info(data['rounds'][j], repeat_dealer, player_winds, prevailing_wind)
+                self.get_round_info(data['rounds'][j])
 
-                last_dealer = dealer
+                self.pair_data()
+                print("new log content\n")
+                for k in range(len(self.player_id_list)):
 
-            self.pair_data()
+                    # if the player reached, remove the rest of data
+                    if "REACH" in self.player_call_actions_record_list[k]:
+                        continue
 
-            for k in range(len(self.player_id_list)):
+                    res = {
+                        u'player_id': self.player_id_list[k],
+                        u'dealer': dealer,
+                        u'repeat_dealer': repeat_dealer,
+                        u'riichi_bets': self.riichi_bets_list[k],
+                        u'player_wind': players_winds[self.player_id_list[k]],
+                        u'prevailing_wind': prevailing_wind,
+                        u'player_tiles': self.player_tiles_list[k],
+                        u'open_hands_detail': self.open_hands_detail_list[k],
+                        u'enemies_tiles': self.enemies_tiles_list[k],
+                        u'dora': self.dora_list[k],
+                        u'scores': self.scores_list[k],
+                        u'last_player_discarded_tile': self.last_player_discarded_tile_list[k],
+                        u'could_chi': self.could_chi_list[k],
+                        u'could_pon': self.could_pon_list[k],
+                        u'could_minkan': self.could_minkan_list[k],
+                        u'is_FCH': self.is_FCH_list[k],
+                        u'action': self.action_list[k]
+                    }
+                    print(res)
+                    yield res
 
-                # if the player reached, remove the rest of data 
-                if "REACH" in self.player_call_actions_record_list[k]:
-                    continue
-
-                res = {
-                    u'player_id': self.player_id_list[k],
-                    u'dealer': self.dealer_list[k],
-                    u'repeat_dealer': self.repeat_dealer_list[k],
-                    u'riichi_bets': self.riichi_bets_list[k],
-                    u'player_wind': self.player_wind_list[k],
-                    u'prevailing_wind': self.prevailing_wind_list[k],
-                    u'player_tiles': self.player_tiles_list[k],
-                    u'open_hands_detail': self.open_hands_detail_list[k],
-                    u'enemies_tiles': self.enemies_tiles_list[k],
-                    u'dora': self.dora_list[k],
-                    u'scores': self.scores_list[k],
-                    u'last_player_discarded_tile': self.last_player_discarded_tile_list[k],
-                    u'could_chi': self.could_chi_list[k],
-                    u'could_pon': self.could_pon_list[k],
-                    u'could_minkan': self.could_minkan_list[k],
-                    u'is_FCH': self.is_FCH_list[k],
-                    u'action': self.action_list[k]
-                }
-                yield res
-                # output.append(res)
-            # return output
         except:
             pass
 # In[ ]:
