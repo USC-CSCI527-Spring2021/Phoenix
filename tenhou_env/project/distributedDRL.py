@@ -6,6 +6,17 @@ import multiprocessing
 import json
 import copy
 from actor_learner import Learner, Actor
+import pickle
+import tensorflow as tf
+import time
+
+flags = tf.compat.v1.flags
+FLAGS = tf.compat.v1.flags.FLAGS
+model_types = ['chi', 'pon', 'kan', 'riichi', 'discard']
+flags.DEFINE_integer("num_nodes", 1, "number of nodes")
+flags.DEFINE_integer("num_workers", 12, "number of workers")
+
+
 
 @ray.remote
 class ReplayBuffer:
@@ -57,12 +68,49 @@ class ReplayBuffer:
         if not buffer_path:
             buffer_path = self.opt.save_dir + '/' + self.buffer_type + '.npy'
         info = np.load(buffer_path)
-        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'],
-                 info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
+        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], \
+            info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
         print("****** buffer " + self.buffer_type + " restored! ******")
         print("****** buffer " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
               self.actor_steps, self.learner_steps)
 
+
+
+class Cache():
+
+    def __init__(self, node_buffer):
+        # cache for training data and model weights
+        print('os.pid:', os.getpid())
+        self.node_buffer = node_buffer
+        self.q1 = {k: multiprocessing.Queue(12) for k in model_types}
+        self.q2 = multiprocessing.Queue(5)
+        self.p1 = multiprocessing.Process(target=self.ps_update, args=(self.q1, self.q2, self.node_buffer))
+        self.p1.daemon = True
+
+    def ps_update(self, q1, q2, node_buffer):
+        print('os.pid of put_data():', os.getpid())
+
+        node_idx = np.random.choice(opt.num_nodes, 1)[0]
+        for model_type in model_types:
+            q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
+
+        while True:
+            for model_type in model_types:
+
+                if q1[model_type].qsize() < 10:
+                    node_idx = np.random.choice(opt.num_nodes, 1)[0]
+                    q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
+
+            if not q2.empty():
+                keys, values = q2.get()
+                [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
+
+    def start(self):
+        self.p1.start()
+        self.p1.join(10)
+
+    def end(self):
+        self.p1.terminate()
 
 @ray.remote
 class ParameterServer:
@@ -71,55 +119,52 @@ class ParameterServer:
 
         self.opt = opt
         self.learner_step = 0
-        net = Learner(opt, job="ps")
-        keys, values = net.get_weights()
+
 
         # --- make dir for all nodes and save parameters ---
-        try:
-            os.makedirs(opt.save_dir)
-            os.makedirs(opt.save_dir + '/checkpoint')
-        except OSError:
-            pass
-        all_parameters = copy.deepcopy(vars(opt))
-        all_parameters["obs_space"] = ""
-        all_parameters["act_space"] = ""
-        with open(opt.save_dir + "/" + 'All_Parameters.json', 'w') as fp:
-            json.dump(all_parameters, fp, indent=4, sort_keys=True)
+        # try:
+        #     os.makedirs(opt.save_dir)
+        #     os.makedirs(opt.save_dir + '/checkpoint')
+        # except OSError:
+        #     pass
+        # all_parameters = copy.deepcopy(vars(opt))
+        # all_parameters["obs_space"] = ""
+        # all_parameters["act_space"] = ""
+        # with open(opt.save_dir + "/" + 'All_Parameters.json', 'w') as fp:
+            # json.dump(all_parameters, fp, indent=4, sort_keys=True)
         # --- end ---
 
         self.weights = None
 
-        if not checkpoint_path:
-            checkpoint_path = opt.save_dir + "/checkpoint"
+        # if not checkpoint_path:
+        #     checkpoint_path = opt.save_dir + "/checkpoint"
 
-        if opt.recover:
-            with open(checkpoint_path + "/checkpoint_weights.pickle", "rb") as pickle_in:
-                self.weights = pickle.load(pickle_in)
-                print("****** weights restored! ******")
+        # if opt.recover:
+        #     with open(checkpoint_path + "/checkpoint_weights.pickle", "rb") as pickle_in:
+        #         self.weights = pickle.load(pickle_in)
+        #         print("****** weights restored! ******")
 
-        if weights_file:
-            try:
-                with open(weights_file, "rb") as pickle_in:
-                    self.weights = pickle.load(pickle_in)
-                    print("****** weights restored! ******")
-            except:
-                print("------------------------------------------------")
-                print(weights_file)
-                print("------ error: weights file doesn't exist! ------")
-                exit()
+        # if weights_file:
+        #     try:
+        #         with open(weights_file, "rb") as pickle_in:
+        #             self.weights = pickle.load(pickle_in)
+        #             print("****** weights restored! ******")
+        #     except:
+        #         print("------------------------------------------------")
+        #         print(weights_file)
+        #         print("------ error: weights file doesn't exist! ------")
+        #         exit()
 
-        if not opt.recover and not weights_file:
-            values = [value.copy() for value in values]
-            self.weights = dict(zip(keys, values))
+        # if not opt.recover and not weights_file:
+        #     values = [value.copy() for value in values]
+        #     self.weights = dict(zip(keys, values))
 
-    def push(self, keys, values):
-        values = [value.copy() for value in values]
-        for key, value in zip(keys, values):
-            self.weights[key] = value
-        self.learner_step += opt.push_freq
+    def push(self, model_type, weights):
+        self.weights[model_type] = weights
+        self.learner_step += self.opt.push_freq
 
     def pull(self, keys):
-        return [self.weights[key] for key in keys]
+        return self.weights
 
     def get_weights(self):
         return copy.deepcopy(self.weights)
@@ -140,7 +185,7 @@ def worker_train(ps, node_buffer, opt, model_type):
 
     cnt = 1
     while True:
-        batch = cache.q1.start()
+        batch = cache.q1[model_type].start()
         agent.train(batch, cnt)
 
         if cnt % opt.push_freq == 0:
@@ -148,5 +193,52 @@ def worker_train(ps, node_buffer, opt, model_type):
         cnt += 1
 
 @ray.remote
-def worker_rollout(ps, replay_buffer, opt, worker_index):
+def worker_rollout(ps, replay_buffer, opt):
     agent = Actor(opt, job='worker')
+    
+    while True:
+        weights = ray.get(ps.pull.remote())
+        agent.set_weights(weights)
+        agent.run()
+
+class Options:
+    def __init__(self, num_nodes, num_workers):
+        self.num_nodes = num_nodes
+        self.num_workers = num_workers
+
+if __name__ == '__main__':
+    ray.init()  #specify cluster address here
+
+    node_ps = []
+    node_buffer = []
+    opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
+
+    for node_index in range(FLAGS.num_nodes):
+        node_ps.append(ParameterServer.options(resources={"node"+str(node_index):1}).remote(opt, node_index))
+        print(f"Node{node_index} Parameter Server all set.")
+
+
+        node_buffer.append([ReplayBuffer.options(resources={"node"+str(node_index):1}).remote(opt, node_index, model_type) for model_type in model_types])
+        print(f"Node{node_index} Experience buffer all set.")
+
+        for i in range(FLAGS.num_workers):
+            worker_rollout.options(resources={"node"+str(node_index):1}).remote(node_ps[node_index], node_buffer[node_index], opt)
+            time.sleep(0.19)
+        print(f"Node{node_index} roll out worker all up.")
+    
+
+    print("Ray total resources:", ray.cluster_resources())
+    print("available resources:", ray.available_resources())
+
+    nodes_info = {
+        "node_buffer": np.array(node_buffer),
+        "num_nodes": opt.num_nodes
+    }
+    f_name = './nodes_info.pickle'
+    with open(f_name, "wb") as pickle_out:
+        pickle.dump(nodes_info, pickle_out)
+        print("****** save nodes_info ******")   
+
+    task_train = []
+    for model_type in model_types:
+        task_train.append(worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type))

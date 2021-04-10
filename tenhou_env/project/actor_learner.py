@@ -30,8 +30,8 @@ class Actor:
         self.job = job
         self.bot_config = BotDefaultConfig()
 
-    def set_weights(self, model_type, weights):
-        self.bot_config.weights = {model_type: weights}
+    def set_weights(self, weights):
+        self.bot_config.weights = weights       #a dict for all models
 
     def get_weights(self):
         pass
