@@ -482,7 +482,7 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
                 self.get_round_info(data['rounds'][j])
 
                 self.pair_data()
-                print("new log content\n")
+
                 for k in range(len(self.player_id_list)):
 
                     # if the player reached, remove the rest of data
@@ -508,7 +508,6 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
                         u'is_FCH': self.is_FCH_list[k],
                         u'action': self.action_list[k]
                     }
-                    print(res)
                     yield res
 
         except:
