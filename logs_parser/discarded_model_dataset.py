@@ -351,8 +351,8 @@ class DiscardedFeatureExtractor(beam.DoFn):
 	                            'scores': self.scores_list[k],
 	                            'discarded_tile': self.action_list[k]
 							}
-							print(res)
-							# yield res
+							# print(res)
+							yield res
 			except:
 				pass
 
