@@ -41,7 +41,7 @@ class Phoenix:
     def collect_experience(self):
         for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
             model.collector.complete_episode()
-    
+
     def write_buffer(self):
         for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
             model.collector.to_buffer()
@@ -66,13 +66,13 @@ class Phoenix:
         '''
         return discarded_tile and with_riichi
         '''
-        if discard_tile is not None:    #discard after meld
+        if discard_tile is not None:  # discard after meld
             return discard_tile, False
-        if self.player.is_open_hand:    #can not riichi
+        if self.player.is_open_hand:  # can not riichi
             return self.discard.discard_tile(), False
 
-        shanten = self.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array(self.player.closed_hand))      
-        if shanten != 0:                #can not riichi
+        shanten = self.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array(self.player.closed_hand))
+        if shanten != 0:  # can not riichi
             return self.discard.discard_tile(), False
         with_riichi, p = self.riichi.should_call_riichi()
         if with_riichi:
@@ -126,14 +126,13 @@ class Phoenix:
         return meld, discard_option
 
     def should_call_kyuushu_kyuuhai(self):
-        #try kokushi strategy if with 10 types
+        # try kokushi strategy if with 10 types
         tiles_34 = TilesConverter.to_34_array(self.player.tiles)
         types = sum([1 for t in tiles_34 if t > 0])
         if types >= 10:
             return False
         else:
             return True
-
 
     def should_call_win(self, tile, is_tsumo, enemy_seat=None, is_chankan=False):
         # don't skip win in riichi
@@ -177,7 +176,7 @@ class Phoenix:
         #     result = self.shanten_calculator.calculate_shanten_for_chiitoitsu_hand(closed_hand_34)
         # else:
         #     result = self.shanten_calculator.calculate_shanten_for_regular_hand(closed_hand_34)
-        
+
         # fix here: a little bit strange in use_chiitoitsu
         shanten_results = []
         if use_chiitoitsu and not self.player.is_open_hand:
@@ -186,7 +185,6 @@ class Phoenix:
         result = min(shanten_results)
         self.hand_cache_shanten[key] = result
         return result
-
 
     def calculate_exact_hand_value_or_get_from_cache(
         self,
@@ -324,8 +322,8 @@ class Phoenix:
             )
 
         if combinations:
-            combinations = combinations[0]        
-        # possible_melds = []
+            combinations = combinations[0]
+            # possible_melds = []
         melds_chi, melds_pon = [], []
         for best_meld_34 in combinations:
             # we can call pon from everyone
@@ -338,7 +336,7 @@ class Phoenix:
                 if best_meld_34 not in melds_chi:
                     melds_chi.append(best_meld_34)
 
-        return melds_chi, melds_pon          
+        return melds_chi, melds_pon
 
     def enemy_called_riichi(self, enemy_seat):
         """

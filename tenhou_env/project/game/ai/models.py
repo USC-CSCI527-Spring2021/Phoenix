@@ -107,10 +107,11 @@ def hypertune(hp):
         x = Conv2D(hp.Int('filters_' + str(i), 32, 512, step=32, default=256),
                    (3, 1),
                    padding="same", data_format="channels_last")(x)
-    for i in range(hp.Int('num_res_block', 1, 50, 5, default=5)):
-        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [32, 64, 128, 256, 512], default=256),
+    for i in range(hp.Choice('num_res_block', [5, 10, 20, 30, 40, 50], default=5)):
+        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [64, 128, 256, 512], default=256),
                            _project_shortcut=True)
-
+        x = residual_block(x, hp.Choice('filters_res_block' + str(i), [64, 128, 256, 512], default=256),
+                           _project_shortcut=True)
     x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
     x = Flatten()(x)
     outputs = Dense(34, activation="softmax")(x)
@@ -136,6 +137,7 @@ def discard_model(input_shape):
     for _ in range(3):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
     for _ in range(5):
+        x = residual_block(x, 256, _project_shortcut=True)
         x = residual_block(x, 256, _project_shortcut=True)
 
     x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
@@ -164,6 +166,7 @@ def rcpk_model(input_shape):
         x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
     for _ in range(5):
         x = residual_block(x, 256, _project_shortcut=True)
+        x = residual_block(x, 256, _project_shortcut=True)
     for _ in range(3):
         x = Conv2D(32, (3, 1), padding="same", data_format="channels_last")(x)
     x = Flatten()(x)
@@ -176,7 +179,16 @@ def rcpk_model(input_shape):
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.BinaryCrossentropy(),
-        metrics=keras.metrics.Accuracy())
+        metrics=[
+            keras.metrics.TruePositives(name='tp'),
+            keras.metrics.FalsePositives(name='fp'),
+            keras.metrics.TrueNegatives(name='tn'),
+            keras.metrics.FalseNegatives(name='fn'),
+            keras.metrics.BinaryAccuracy(name='accuracy'),
+            keras.metrics.Precision(name='precision'),
+            keras.metrics.Recall(name='recall'),
+            keras.metrics.AUC(name='auc'),
+        ])
     return model
 
 
@@ -201,6 +213,5 @@ def transform_discard_features(data):
         for tile in player:
             four_open_hands_mat[tile % 4][tile // 4] = 1
     features = np.vstack((hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat))
-    return {"features": features.reshape((features.shape[0], 34, 1)),
-            "labels": keras.utils.to_categorical(int(label // 4), 34)}
+    yield features.reshape((features.shape[0], 34, 1)), keras.utils.to_categorical(int(label // 4), 34)
     # return [features.reshape((features.shape[0], 34, 1)), label // 4]

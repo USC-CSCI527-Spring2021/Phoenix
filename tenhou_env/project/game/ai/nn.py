@@ -13,7 +13,7 @@ from game.ai.exp_buffer import ExperienceCollector
 from game.ai.models import rcpk_model, discard_model
 
 
-def getGeneralFeature(player, additional_data = None):
+def getGeneralFeature(player, additional_data=None):
     def _indicator2dora(dora_indicator):
         dora = dora_indicator // 4
         if dora < 27:  # EAST
@@ -36,7 +36,7 @@ def getGeneralFeature(player, additional_data = None):
     def _transscore(score):
         feature = np.zeros((34))
         if score > 50000:
-            score = 50000 
+            score = 50000
         a = score // (50000.0 / 33)
         feature[int(a)] = 1
         return feature
@@ -53,14 +53,14 @@ def getGeneralFeature(player, additional_data = None):
         if additional_data and additional_data.has_key("closed_hands_136"):
             closed_hand = additional_data["closed_hands_136"]
         else:
-            closed_hand = player.closed_hand #[tile for tile in player.tiles if tile not in open_hand]
+            closed_hand = player.closed_hand  # [tile for tile in player.tiles if tile not in open_hand]
         discarded_tiles = player.discards
-        
+
         for val in closed_hand:
-            idx=0
-            while(closed_hand_feature[idx][val//4] == 1):
-                idx+=1
-            closed_hand_feature[idx][val//4] = 1
+            idx = 0
+            while (closed_hand_feature[idx][val // 4] == 1):
+                idx += 1
+            closed_hand_feature[idx][val // 4] = 1
         for val in open_hand:
             idx = 0
             while (open_hand_feature[idx][val // 4] == 1):
@@ -73,11 +73,11 @@ def getGeneralFeature(player, additional_data = None):
             while (discarded_tiles_feature[idx][val // 4] == 1):
                 idx += 1
             discarded_tiles_feature[idx][val // 4] = 1
-        
-        return np.concatenate((closed_hand_feature,open_hand_feature,discarded_tiles_feature))
 
-    def _getSelfTiles(player): 
-        return _getPlayerTiles(player) 
+        return np.concatenate((closed_hand_feature, open_hand_feature, discarded_tiles_feature))
+
+    def _getSelfTiles(player):
+        return _getPlayerTiles(player)
 
     def _getEnemiesTiles(player):
         return np.concatenate((
@@ -85,27 +85,26 @@ def getGeneralFeature(player, additional_data = None):
             _getPlayerTiles(player.table.get_player(2)),
             _getPlayerTiles(player.table.get_player(3))
         ))
-    
-    def _getDoraList(player):  
+
+    def _getDoraList(player):
         dora_indicators = player.table.dora_indicators
         dora_feature = np.zeros((5, 34))
         for idx, dora_indicator in enumerate(dora_indicators):
             dora_feature[idx][_indicator2dora(dora_indicator)] = 1
         return dora_feature
 
-    def _getScoreList1(player): 
+    def _getScoreList1(player):
         scores_feature = np.zeros((4, 34))
         for i in range(4):
             scores_feature[i] = _transscore(player.table.get_player(i).scores)
         return scores_feature
 
-    def _getBoard1(player): 
-        
+    def _getBoard1(player):
+
         dealer_feature = np.zeros((1, 34))
         dealer_seat = player.table.dealer_seat
         player_seat = player.seat
-        dealer_feature[0][(dealer_seat+4-player_seat)%4] = 1
-
+        dealer_feature[0][(dealer_seat + 4 - player_seat) % 4] = 1
 
         repeat_dealer_feature = np.zeros((1, 34))
         repeat_dealer = player.table.count_of_honba_sticks
@@ -129,13 +128,14 @@ def getGeneralFeature(player, additional_data = None):
             prevailing_wind_feature
         ))
 
-    return np.concatenate((            
-        _getSelfTiles(player), #(12,34)
-        _getDoraList(player), #(5,34)
-        _getBoard1(player), #(5,34)
-        _getEnemiesTiles(player), #(36,34)
-        _getScoreList1(player) #(4,34)
+    return np.concatenate((
+        _getSelfTiles(player),  # (12,34)
+        _getDoraList(player),  # (5,34)
+        _getBoard1(player),  # (5,34)
+        _getEnemiesTiles(player),  # (36,34)
+        _getScoreList1(player)  # (4,34)
     ))
+
 
 class Chi:
     def __init__(self, player):
@@ -155,23 +155,12 @@ class Chi:
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
-<<<<<<< HEAD
         predictions = self.model.predict(features)
         pidx = np.argmax(predictions[:,1])
         choice = np.argmax(predictions[pidx])
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
         if choice == 0:
-            print("Chi Model choose not to chi")
-            return False, predictions[pidx][choice], melds_chi[pidx]
-        else:
-            print("Chi Model choose to chi")
-            return True, predictions[pidx][choice], melds_chi[pidx]
-=======
-        actions = self.model.predict(features)
-        pidx = np.argmax(actions[:,1])
-        prediction = np.argmax(actions[pidx])
-        if prediction == 0:
             self.player.logger.debug(
                 log.MELD_CALL,
                 "Chi Model choose not to chi",
@@ -179,25 +168,27 @@ class Chi:
                     f"Hand: {self.player.format_hand_for_print(tile_136)}",
                 ],
             )
-            return False, prediction
-        self.player.logger.debug(
-            log.MELD_CALL,
-            "Chi Model choose to chi",
-            context=[
-                f"Hand: {self.player.format_hand_for_print(tile_136)}",
-            ],
-        )
-        return True, prediction
->>>>>>> rewrote the debug message for each model
+            return False, predictions[pidx][choice], melds_chi[pidx]
+        else:
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Chi Model choose to chi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                ],
+            )
+            return True, predictions[pidx][choice], melds_chi[pidx]
 
     def getFeature(self, melds_chi):
         def _get_x(meld_chi):
             tile_136_feature = np.zeros((1, 34))
             for tile in meld_chi:
-                tile_136_feature[0][tile//4] = 1
+                tile_136_feature[0][tile // 4] = 1
             x = np.concatenate((tile_136_feature, getGeneralFeature(self.player)))
             return np.expand_dims(x.reshape((x.shape[0], x.shape[1], 1)), axis=0)
-        return np.concatenate([_get_x(meld_chi) for meld_chi in melds_chi],axis=0)
+
+        return np.concatenate([_get_x(meld_chi) for meld_chi in melds_chi], axis=0)
+
 
 class Pon:
     def __init__(self, player):
@@ -217,21 +208,11 @@ class Pon:
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
-<<<<<<< HEAD
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
         if choice == 0:
-            print("Pon Model choose not to pon")
-            return False, predictions[choice]
-        else:
-            print("Pon Model choose to pon")
-            return True, predictions[choice]
-=======
-        action = self.model.predict(np.expand_dims(features, axis=0))[0]
-        prediction = np.argmax(action)
-        if prediction == 0:
             self.player.logger.debug(
                 log.MELD_CALL,
                 "Pon Model choose not to pon",
@@ -239,22 +220,23 @@ class Pon:
                     f"Hand: {self.player.format_hand_for_print(tile_136)}",
                 ],
             )
-            return False, prediction
-        self.player.logger.debug(
-            log.MELD_CALL,
-            "Pon Model choose to pon",
-            context=[
-                f"Hand: {self.player.format_hand_for_print(tile_136)}",
-            ],
-        )
-        return True, prediction
->>>>>>> rewrote the debug message for each model
+            return False, predictions[choice]
+        else:
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Pon Model choose to pon",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                ],
+            )
+            return True, predictions[choice]
 
     def getFeature(self, tile_136):
         tile_136_feature = np.zeros((1, 34))
         tile_136_feature[0][tile_136 // 4] = 1
         x = np.concatenate((tile_136_feature, getGeneralFeature(self.player)))
         return x.reshape((x.shape[0], x.shape[1], 1))
+
 
 class Kan:
     def __init__(self, player):
@@ -276,14 +258,15 @@ class Kan:
         def _can_minkan(tile, closed_hand):
             count = np.zeros(34)
             for t in closed_hand:
-                count[t//4]+=1
-            if count[tile//4]==3:
+                count[t // 4] += 1
+            if count[tile // 4] == 3:
                 return True
             return False
+
         def _can_ankan(tile, closed_hand):
             count = np.zeros(34)
             for t in closed_hand:
-                count[t//4]+=1
+                count[t // 4] += 1
             if count[tile // 4] == 4:
                 return True
             return False
@@ -293,6 +276,7 @@ class Kan:
                 if (meld.type == MeldPrint.PON) and (tile // 4 == meld.tiles[0] // 4):
                     return True
             return False
+
         kan_type_feature = np.zeros((3, 34))
         closed_hand = self.player.closed_hand
         features = self.getFeature(tile_136, kan_type_feature)
@@ -305,7 +289,7 @@ class Kan:
                 if model_predict:
                     self.player.logger.debug(
                         log.MELD_CALL,
-                        "Kan Model choose to "+kan_type,
+                        "Kan Model choose to " + kan_type,
                         context=[
                             f"Hand: {self.player.format_hand_for_print(tile_136)}",
                         ],
@@ -339,8 +323,8 @@ class Kan:
                     )
             else:
                 return None
-        else: 
-            if _can_minkan(tile_136, closed_hand):#MinKan
+        else:
+            if _can_minkan(tile_136, closed_hand):  # MinKan
                 kan_type_feature[0] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
@@ -361,21 +345,16 @@ class Kan:
                     )
             else:
                 return None
-<<<<<<< HEAD
         actions = np.eye(predictions.shape[-1])[model_predict]
         self.collector.record_decision(features, actions, predictions)
         return kan_type 
-=======
-        action = True if kan_type else False
-        self.collector.record_decision(features, action)
-        return kan_type
->>>>>>> rewrote the debug message for each model
 
     def getFeature(self, tile136, kan_type_feature):
         tile136_feature = np.zeros((1, 34))
-        tile136_feature[0][tile136 // 4] = 1        
+        tile136_feature[0][tile136 // 4] = 1
         x = np.concatenate((kan_type_feature, tile136_feature, getGeneralFeature(self.player)))
         return x.reshape((x.shape[0], x.shape[1], 1))
+
 
 class Riichi:
     def __init__(self, player):
@@ -422,6 +401,7 @@ class Riichi:
         x = getGeneralFeature(self.player)
         return x.reshape((x.shape[0], x.shape[1], 1))
 
+
 class Discard:
     def __init__(self, player):
         self.player = player
@@ -455,8 +435,7 @@ class Discard:
             if score > max_score or (score == max_score and is_aka_dora(choice, True)):
                 max_score = score
                 choice = option
-        self.player.logger.debug(log.DISCARD,
-                                         context="Discard Model: discard {} from {}"
+        self.player.logger.debug(log.DISCARD,context="Discard Model: discard {} from {}"
                                          .format(option, closed_hands_136 if closed_hands_136 else self.player.closed_hand)
         actions = np.eye(predictions.shape[-1])[choice // 4]
         self.collector.record_decision(features, actions, predictions)
@@ -464,7 +443,7 @@ class Discard:
 
     def getFeature(self, all_hands_136=None, closed_hands_136=None):
         open_hands_136 = [tile for tile in all_hands_136 if tile not in closed_hands_136]
-        x = getGeneralFeature(self.player, {"open_hands_136":open_hands_136, "closed_hands_136":closed_hands_136})
+        x = getGeneralFeature(self.player, {"open_hands_136": open_hands_136, "closed_hands_136": closed_hands_136})
         return x.reshape((x.shape[0], x.shape[1], 1))
 
 # class Discard:

@@ -154,7 +154,7 @@ class Pipeline():
 
     def process(self, job_dir):
         dataset_prefix = os.path.join(job_dir, 'processed_data', self.job_type)
-        csv_path = glob.glob(os.path.join(job_dir, "dataset/2022.csv"))
+        csv_path = glob.glob(os.path.join(job_dir, "dataset/*.csv"))
         # delete existing processed data
         if tf.io.gfile.exists(dataset_prefix):
             tf.io.gfile.rmtree(dataset_prefix)

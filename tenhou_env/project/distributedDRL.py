@@ -132,7 +132,7 @@ class ParameterServer:
         # all_parameters["obs_space"] = ""
         # all_parameters["act_space"] = ""
         # with open(opt.save_dir + "/" + 'All_Parameters.json', 'w') as fp:
-            # json.dump(all_parameters, fp, indent=4, sort_keys=True)
+        #     json.dump(all_parameters, fp, indent=4, sort_keys=True)
         # --- end ---
 
         self.weights = None
@@ -175,7 +175,7 @@ class ParameterServer:
         with open(self.opt.save_dir + "/checkpoint/" + "checkpoint_weights.pickle", "wb") as pickle_out:
             pickle.dump(self.weights, pickle_out)
 
-@ray.remote(num_cpus=1, num_gpus=1, max_calls=1)    #centralized training
+@ray.remote(num_cpus=1, num_gpus=0, max_calls=1)    #centralized training
 def worker_train(ps, node_buffer, opt, model_type):
     agent = Learner(opt, model_type)
     weights = ray.get(ps.pull.remote(model_type))
@@ -284,7 +284,7 @@ if __name__ == '__main__':
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
 
     for node_index in range(FLAGS.num_nodes):
-        node_ps.append(ParameterServer.options(resources={"node"+str(node_index):1}).remote(opt, node_index))
+        node_ps.append(ParameterServer.options(resources={"node"+str(node_index):1}).remote(opt, "./", "", node_index))
         print(f"Node{node_index} Parameter Server all set.")
 
 
@@ -312,4 +312,3 @@ if __name__ == '__main__':
     task_train = []
     for model_type in model_types:
         task_train.append(worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type))
-
