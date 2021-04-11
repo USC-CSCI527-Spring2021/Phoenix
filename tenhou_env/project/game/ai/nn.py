@@ -148,21 +148,22 @@ class Chi:
             self.model = rcpk_model(self.input_shape)
             self.model.set_weights(player.config.weights['chi'])
         print('###### Chi model initialized #######')
-        self.collector = ExperienceCollector('chi')
+        self.collector = ExperienceCollector('chi', player.config.buffer)
         self.collector.start_episode()
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
-        actions = self.model.predict(features)
-        pidx = np.argmax(actions[:,1])
-        prediction = np.argmax(actions[pidx])
-        if prediction == 0:
+        predictions = self.model.predict(features)
+        pidx = np.argmax(predictions[:,1])
+        choice = np.argmax(predictions[pidx])
+        actions = np.eye(predictions.shape[-1])[choice]
+        self.collector.record_decision(features, actions, predictions)
+        if choice == 0:
             print("Chi Model choose not to chi")
-            self.collector.record_decision(features, actions)
-            return False, actions[pidx][1], melds_chi[pidx]
-        print("Chi Model choose to chi")
-        self.collector.record_decision(features, actions)
-        return True, actions[pidx][1], melds_chi[pidx]
+            return False, predictions[pidx][choice], melds_chi[pidx]
+        else:
+            print("Chi Model choose to chi")
+            return True, predictions[pidx][choice], melds_chi[pidx]
 
     def getFeature(self, melds_chi):
         def _get_x(meld_chi):
@@ -187,19 +188,20 @@ class Pon:
             self.model.set_weights(player.config.weights['pon'])
 
         print('###### Pon model initialized #######')
-        self.collector = ExperienceCollector('pon')
+        self.collector = ExperienceCollector('pon', player.config.buffer)
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
-        action = self.model.predict(np.expand_dims(features, axis=0))[0]
-        prediction = np.argmax(action)
-        if prediction == 0:
+        predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        choice = np.argmax(predictions)
+        actions = np.eye(predictions.shape[-1])[choice]
+        self.collector.record_decision(features, actions, predictions)
+        if choice == 0:
             print("Pon Model choose not to pon")
-            self.collector.record_decision(features, action)
-            return False, prediction
-        print("Pon Model choose to pon")
-        self.collector.record_decision(features, action)
-        return True, prediction
+            return False, predictions[choice]
+        else:
+            print("Pon Model choose to pon")
+            return True, predictions[choice]
 
     def getFeature(self, tile_136):
         tile_136_feature = np.zeros((1, 34))
@@ -221,7 +223,7 @@ class Kan:
             self.model.set_weights(player.config.weights['kan'])
 
         print('###### Kan model initialized #######')
-        self.collector = ExperienceCollector('kan')
+        self.collector = ExperienceCollector('kan', player.config.buffer)
 
     def should_call_kan(self, tile_136, open_kan, from_riichi=False):
         def _can_minkan(tile, closed_hand):
@@ -247,8 +249,8 @@ class Kan:
         kan_type_feature = np.zeros((3, 34))
         closed_hand = self.player.closed_hand
         features = self.getFeature(tile_136, kan_type_feature)
-        action = self.model.predict(np.expand_dims(features, axis=0))[0]
-        model_predict = np.argmax(action)
+        predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        model_predict = np.argmax(predictions)
         if not open_kan:
             if _can_kakan(tile_136, self.player.melds):  # KaKan
                 kan_type_feature[2] = 1
@@ -276,8 +278,8 @@ class Kan:
                     print("Kan model choose not to ", kan_type)
             else:
                 return None
-        action = True if kan_type else False
-        self.collector.record_decision(features, action)
+        actions = np.eye(predictions.shape[-1])[model_predict]
+        self.collector.record_decision(features, actions, predictions)
         return kan_type 
 
     def getFeature(self, tile136, kan_type_feature):
@@ -300,19 +302,20 @@ class Riichi:
             self.model.set_weights(player.config.weights['riichi'])
 
         print('###### Riichi model initialized #######')
-        self.collector = ExperienceCollector('riichi')
+        self.collector = ExperienceCollector('riichi', player.config.buffer)
 
     def should_call_riichi(self):
         features = self.getFeature()
-        action = self.model.predict(np.expand_dims(features, axis=0))[0]
-        prediction = np.argmax(action)
-        if prediction == 0:
+        predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        choice = np.argmax(predictions)
+        actions = np.eye(predictions.shape[-1])[choice]
+        self.collector.record_decision(features, actions, predictions)
+        if choice == 0:
             print("Riichi Model choose not to riichi")
-            self.collector.record_decision(features, action)
-            return False, prediction
-        print("Riichi Model choose to riichi")
-        self.collector.record_decision(features, action)
-        return True, prediction
+            return False, predictions[choice]
+        else:
+            print("Riichi Model choose to riichi")
+            return True, predictions[choice]
 
     def getFeature(self):
         x = getGeneralFeature(self.player)
@@ -332,7 +335,7 @@ class Discard:
             self.model.set_weights(player.config.weights['discard'])
 
         print('###### Discarded model initialized #######')
-        self.collector = ExperienceCollector('discard')
+        self.collector = ExperienceCollector('discard', player.config.buffer)
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi_options=None):
         # discard_options
@@ -340,21 +343,21 @@ class Discard:
             discard_options = with_riichi_options
         else:
             discard_options = closed_hands_136 if closed_hands_136 else self.player.closed_hand
-        # if there is only one discard option
-        if len(discard_options) == 1:
-            return discard_options[0]
+
         # get feature and prediction
         features = self.getFeature(all_hands_136, closed_hands_136)
-        action = self.model.predict(np.expand_dims(features, axis=0))[0]
+        predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         max_score = 0
-        prediction = discard_options[0] # type: tile_136
-        for discard_option in discard_options:
-            score = action[discard_option // 4]
-            if score > max_score or (score == max_score and is_aka_dora(prediction, True)):
+        choice = discard_options[0] # type: tile_136
+        for option in discard_options:
+            score = predictions[option // 4]
+            if score > max_score or (score == max_score and is_aka_dora(choice, True)):
                 max_score = score
-                prediction = discard_option
-        print("Discarded Model:", "discard", prediction, "from", closed_hands_136 if closed_hands_136 else self.player.closed_hand)
-        return prediction
+                choice = option
+        print("Discarded Model:", "discard", option, "from", closed_hands_136 if closed_hands_136 else self.player.closed_hand)
+        actions = np.eye(predictions.shape[-1])[choice // 4]
+        self.collector.record_decision(features, predictions, actions)
+        return choice
 
     def getFeature(self, all_hands_136=None, closed_hands_136=None):
         open_hands_136 = [tile for tile in all_hands_136 if tile not in closed_hands_136]
