@@ -1,17 +1,11 @@
-class ExperienceBuffer:
-    def __init__(self, state, action, importance, rewards):
-        self.state = state
-        self.action = action
-        self.importance = importance
-        self.rewards = rewards
-
 class ExperienceCollector:
-    def __init__(self, model_type):
+    def __init__(self, model_type, buffer):
         self.model_type = model_type
         self.states = []
         self.actions = []
         self.importances = []
         self.rewards = []
+        self.buffer = buffer
 
         self.current_episode_states = []
         self.current_episode_actions = []
@@ -39,4 +33,5 @@ class ExperienceCollector:
         self.current_episode_importances = []
     
     def to_buffer(self):
-        pass
+        for sample in list(zip(self.states, self.rewards, self.importances, self.actions)):
+            self.buffer.store(*sample)

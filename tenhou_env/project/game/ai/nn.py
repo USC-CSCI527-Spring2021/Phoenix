@@ -356,7 +356,7 @@ class Discard:
                 choice = option
         print("Discarded Model:", "discard", option, "from", closed_hands_136 if closed_hands_136 else self.player.closed_hand)
         actions = np.eye(predictions.shape[-1])[choice // 4]
-        self.collector.record_decision(features, predictions, actions)
+        self.collector.record_decision(features, actions, predictions)
         return choice
 
     def getFeature(self, all_hands_136=None, closed_hands_136=None):

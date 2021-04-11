@@ -61,7 +61,7 @@ def residual_block(y, filter, _strides=(1, 1), _project_shortcut=False):
     return y
 
 
-def make_or_restore_model(input_shape, model_type, strategy):
+def make_or_restore_model(input_shape, model_type, strategy='local'):
     """
     create or restore the model trained before
     :param model: keras model class

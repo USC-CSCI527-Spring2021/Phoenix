@@ -9,6 +9,7 @@ from actor_learner import Learner, Actor
 import pickle
 import tensorflow as tf
 import time
+from options import Options
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
@@ -32,12 +33,12 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.actor_steps, self.learner_steps = 0, 0
         
-    def store(self, obs, act, rew, next_obs):
+    def store(self, obs, rew, pred, act):
         # self.obs1_buf[self.ptr] = obs
         # self.obs2_buf[self.ptr] = next_obs
         # self.acts_buf[self.ptr] = act
         # self.rews_buf[self.ptr] = rew
-        self.buf[self.ptr] = [obs, act, rew, next_obs]
+        self.buf[self.ptr] = [obs, rew, pred, act]
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
         self.actor_steps += 1
@@ -194,17 +195,86 @@ def worker_train(ps, node_buffer, opt, model_type):
 
 @ray.remote
 def worker_rollout(ps, replay_buffer, opt):
-    agent = Actor(opt, job='worker')
+    agent = Actor(opt, job='worker', buffer=replay_buffer)
     
     while True:
         weights = ray.get(ps.pull.remote())
         agent.set_weights(weights)
         agent.run()
 
-class Options:
-    def __init__(self, num_nodes, num_workers):
-        self.num_nodes = num_nodes
-        self.num_workers = num_workers
+@ray.remote
+def worker_test(ps, node_buffer, opt):
+    agent = Actor(opt, job="test", buffer=ReplayBuffer)
+    init_time = time.time()
+    save_times = 0
+    checkpoint_times = 0
+
+    while True:
+        weights = ray.get(ps.get_weights.remote())
+        agent.set_weights(weights)
+        last_actor_step, last_learner_step, _ = get_al_status(node_buffer)
+        start_time = time.time()
+
+        for i in range(10):
+            agent.run()
+
+        last_actor_step, last_learner_step, _ = get_al_status(node_buffer)
+        actor_step = np.sum(last_actor_step) - np.sum(start_actor_step)
+        learner_step = np.sum(last_learner_step) - np.sum(start_learner_step)
+        alratio = actor_step / (learner_step + 1)
+        update_frequency = int(learner_step / (time.time() - start_time))
+        total_learner_step = np.sum(last_learner_step)
+
+        print("---------------------------------------------------")
+        print("frame freq:", np.round((last_actor_step - start_actor_step) / (time.time() - start_time)))
+        print("actor_steps:", np.sum(last_actor_step), "learner_step:", total_learner_step)
+        print("actor leaner ratio: %.2f" % alratio)
+        print("learner freq:", update_frequency)
+        print("Ray total resources:", ray.cluster_resources())
+        print("available resources:", ray.available_resources())
+        print("---------------------------------------------------")
+
+        total_time = time.time() - init_time
+
+        if total_learner_step // opt.save_interval > save_times:
+            with open(opt.save_dir + "/" + str(total_learner_step / 1e6) + "_weights.pickle", "wb") as pickle_out:
+                pickle.dump(weights, pickle_out)
+                print("****** Weights saved by time! ******")
+            save_times = total_learner_step // opt.save_interval
+
+        # save everything every checkpoint_freq s
+        if total_time // opt.checkpoint_freq > checkpoint_times:
+            print("save everything!")
+            save_start_time = time.time()
+
+            ps_save_op = [node_ps[i].save_weights.remote() for i in range(opt.num_nodes)]
+            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types) for node_index in range(opt.num_nodes)]
+            ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)       #5 models + ps
+
+            print("total time for saving :", time.time() - save_start_time)
+            checkpoint_times = total_time // opt.checkpoint_freq
+
+
+def get_al_status(node_buffer):
+
+    buffer_learner_step = []
+    buffer_actor_step = []
+    buffer_cur_size = []
+
+    for node_index in range(opt.num_nodes):
+        for model_type in range(model_types):
+            learner_step, actor_step, cur_size = ray.get(node_buffer[node_index][model_type].get_counts.remote())
+            buffer_learner_step.append(learner_step)
+            buffer_actor_step.append(actor_step)
+            buffer_cur_size.append(cur_size)
+
+    return np.array(buffer_actor_step), np.array(buffer_learner_step), np.array(buffer_cur_size)
+
+
+# class Options:
+#     def __init__(self, num_nodes, num_workers):
+#         self.num_nodes = num_nodes
+#         self.num_workers = num_workers
 
 if __name__ == '__main__':
     ray.init()  #specify cluster address here
@@ -242,3 +312,4 @@ if __name__ == '__main__':
     task_train = []
     for model_type in model_types:
         task_train.append(worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type))
+

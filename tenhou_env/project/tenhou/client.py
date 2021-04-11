@@ -461,7 +461,7 @@ class TenhouClient(Client):
         self.logger.info("Log: {}".format(log_link))
         self.logger.info("Final results: {}".format(self.table.get_players_sorted_by_scores()))
 
-        self.table.player.ai.write_buffer()
+        
         # we need to finish the game, and only after this try to send statistics
         # if order will be different, tenhou will return 404 on log download endpoint
         self.end_game()
