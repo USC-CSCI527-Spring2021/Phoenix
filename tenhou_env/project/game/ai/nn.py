@@ -1,16 +1,14 @@
 from __future__ import absolute_import
 
 import os
-import random
 
 import numpy as np
+import utils.decisions_constants as log
+from game.ai.exp_buffer import ExperienceCollector
+from game.ai.models import rcpk_model, discard_model
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
-import utils.decisions_constants as log
-
-from game.ai.exp_buffer import ExperienceCollector
-from game.ai.models import rcpk_model, discard_model
 
 
 def getGeneralFeature(player, additional_data=None):
@@ -435,8 +433,8 @@ class Discard:
             if score > max_score or (score == max_score and is_aka_dora(choice, True)):
                 max_score = score
                 choice = option
-        self.player.logger.debug(log.DISCARD,context="Discard Model: discard {} from {}"
-                                         .format(option, closed_hands_136 if closed_hands_136 else self.player.closed_hand)
+        self.player.logger.debug(log.DISCARD, context="Discard Model: discard {} from {}"
+                                 .format(option, closed_hands_136 if closed_hands_136 else self.player.closed_hand))
         actions = np.eye(predictions.shape[-1])[choice // 4]
         self.collector.record_decision(features, actions, predictions)
         return choice

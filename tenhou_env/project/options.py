@@ -1,8 +1,5 @@
-import numpy as np
-import os
-import sys
 import datetime
-from math import ceil
+import os
 
 
 class Options:
@@ -30,7 +27,7 @@ class Options:
 
 
         self.buffer_size = int(1e6)
-        self.buffer_size = self.buffer_size // self.num_buffers
+        # self.buffer_size = self.buffer_size // self.num_buffers
 
         # self.start_steps = int(1e4) // self.num_buffers
 

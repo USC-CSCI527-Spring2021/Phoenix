@@ -1,14 +1,14 @@
-import ray
-import numpy as np
-import os
-import sys
-import multiprocessing
-import json
 import copy
-from actor_learner import Learner, Actor
+import multiprocessing
+import os
 import pickle
-import tensorflow as tf
 import time
+
+import numpy as np
+import ray
+import tensorflow as tf
+
+from actor_learner import Learner, Actor
 from options import Options
 
 flags = tf.compat.v1.flags
@@ -248,7 +248,8 @@ def worker_test(ps, node_buffer, opt):
             save_start_time = time.time()
 
             ps_save_op = [node_ps[i].save_weights.remote() for i in range(opt.num_nodes)]
-            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types) for node_index in range(opt.num_nodes)]
+            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+                              node_index in range(opt.num_nodes)]
             ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)       #5 models + ps
 
             print("total time for saving :", time.time() - save_start_time)
@@ -277,14 +278,16 @@ def get_al_status(node_buffer):
 #         self.num_workers = num_workers
 
 if __name__ == '__main__':
-    ray.init()  #specify cluster address here
+    ray.init(local_mode=True)  # Local Mode
+    # ray.init()  #specify cluster address here
 
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
 
     for node_index in range(FLAGS.num_nodes):
-        node_ps.append(ParameterServer.options(resources={"node"+str(node_index):1}).remote(opt, "./", "", node_index))
+        node_ps.append(
+            ParameterServer.options(resources={"node" + str(node_index): 1}).remote(opt, "./", "", node_index))
         print(f"Node{node_index} Parameter Server all set.")
 
 

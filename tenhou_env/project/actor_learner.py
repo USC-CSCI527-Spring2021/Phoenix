@@ -1,32 +1,31 @@
-import numpy as np
-import tensorflow as tf
 from tensorflow import keras
-import ray
-from tenhou.client import TenhouClient
-from utils.logger import set_up_logging
+from keras.optimizers import Adam
+from tensorflow import keras
+
 from game.ai.configs.default import BotDefaultConfig
 from game.ai.models import make_or_restore_model
 from game.ai.utils import *
-from keras import Input
-from keras.optimizers import Adam
+from tenhou.client import TenhouClient
+from utils.logger import set_up_logging
+
 
 class Learner:
     def __init__(self, opt, model_type):
         self.opt = opt
         self.model_type = model_type
-        
-        self.actor = make_or_restore_model(input_shape_dict[model_type], model_type, "local")
-        state_input = Input(self.actor.input.shape)
+
+        self.actor = make_or_restore_model(input_shape_dict[model_type], model_type)
+        state_input = self.actor.input
         advantage = Input(shape=(1,))
-        old_prediction = Input(shape=(actor.output.shape))
+        old_prediction = self.actor.output
 
         output = self.actor(state_input)
         self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
         self.model.compile(optimizer=Adam(lr=(LR)),
-                      loss=[proximal_policy_optimization_loss(
-                          advantage=advantage,
-                          old_prediction = old_prediction
-                      )])
+                           loss=[proximal_policy_optimization_loss(
+                               advantage=advantage,
+                               old_prediction=old_prediction
+                           )])
         self.model.summary()        
 
     def get_weights(self):
@@ -81,4 +80,3 @@ class Actor:
                 client.end_game(False)  
                 
         client.table.player.ai.write_buffer()
-                  
