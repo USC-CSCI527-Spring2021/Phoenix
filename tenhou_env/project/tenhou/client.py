@@ -480,6 +480,7 @@ class TenhouClient(Client):
         self.game_is_continue = False
         if success:
             self._send_message("<BYE />")
+            
 
         if self.keep_alive_thread:
             self.keep_alive_thread.join()
