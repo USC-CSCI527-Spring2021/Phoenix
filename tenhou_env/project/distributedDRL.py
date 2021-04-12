@@ -1,21 +1,21 @@
-import copy
-import multiprocessing
-import os
-import pickle
-import time
-
-import numpy as np
 import ray
-import tensorflow as tf
-
+import numpy as np
+import os
+import sys
+import multiprocessing
+import json
+import copy
 from actor_learner import Learner, Actor
+import pickle
+import tensorflow as tf
+import time
 from options import Options
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
 model_types = ['chi', 'pon', 'kan', 'riichi', 'discard']
 flags.DEFINE_integer("num_nodes", 1, "number of nodes")
-flags.DEFINE_integer("num_workers", 12, "number of workers")
+flags.DEFINE_integer("num_workers", 5, "number of workers")
 
 
 
@@ -115,12 +115,12 @@ class Cache():
 
 @ray.remote
 class ParameterServer:
-    def __init__(self, opt, weights_file, checkpoint_path, ps_index):
+    def __init__(self, opt, ps_index, weights_file=None, checkpoint_path=None):
         # each node will have a Parameter Server
 
         self.opt = opt
         self.learner_step = 0
-
+        self.ps_index = ps_index
 
         # --- make dir for all nodes and save parameters ---
         # try:
@@ -132,29 +132,27 @@ class ParameterServer:
         # all_parameters["obs_space"] = ""
         # all_parameters["act_space"] = ""
         # with open(opt.save_dir + "/" + 'All_Parameters.json', 'w') as fp:
-        #     json.dump(all_parameters, fp, indent=4, sort_keys=True)
+            # json.dump(all_parameters, fp, indent=4, sort_keys=True)
         # --- end ---
 
-        self.weights = None
-
-        # if not checkpoint_path:
-        #     checkpoint_path = opt.save_dir + "/checkpoint"
+        if not checkpoint_path:
+            checkpoint_path = opt.save_dir + "/checkpoint"
 
         # if opt.recover:
         #     with open(checkpoint_path + "/checkpoint_weights.pickle", "rb") as pickle_in:
         #         self.weights = pickle.load(pickle_in)
         #         print("****** weights restored! ******")
 
-        # if weights_file:
-        #     try:
-        #         with open(weights_file, "rb") as pickle_in:
-        #             self.weights = pickle.load(pickle_in)
-        #             print("****** weights restored! ******")
-        #     except:
-        #         print("------------------------------------------------")
-        #         print(weights_file)
-        #         print("------ error: weights file doesn't exist! ------")
-        #         exit()
+        if weights_file:
+            try:
+                with open(weights_file, "rb") as pickle_in:
+                    self.weights = pickle.load(pickle_in)
+                    print("****** weights restored! ******")
+            except:
+                print("------------------------------------------------")
+                print(weights_file)
+                print("------ error: weights file doesn't exist! ------")
+                exit()
 
         # if not opt.recover and not weights_file:
         #     values = [value.copy() for value in values]
@@ -194,7 +192,6 @@ def worker_train(ps, node_buffer, opt, model_type):
             cache.q2.put(agent.get_weights)
         cnt += 1
 
-
 @ray.remote
 def worker_rollout(ps, replay_buffer, opt):
     agents = []
@@ -221,11 +218,10 @@ def worker_test(ps, node_buffer, opt):
     while True:
         weights = ray.get(ps.get_weights.remote())
         agent.set_weights(weights)
-        last_actor_step, last_learner_step, _ = get_al_status(node_buffer)
+        start_actor_step, start_learner_step, _ = get_al_status(node_buffer)
         start_time = time.time()
 
-        for i in range(10):
-            agent.run()
+        agent.run()
 
         last_actor_step, last_learner_step, _ = get_al_status(node_buffer)
         actor_step = np.sum(last_actor_step) - np.sum(start_actor_step)
@@ -257,8 +253,7 @@ def worker_test(ps, node_buffer, opt):
             save_start_time = time.time()
 
             ps_save_op = [node_ps[i].save_weights.remote() for i in range(opt.num_nodes)]
-            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
-                              node_index in range(opt.num_nodes)]
+            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types) for node_index in range(opt.num_nodes)]
             ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)       #5 models + ps
 
             print("total time for saving :", time.time() - save_start_time)
@@ -272,7 +267,7 @@ def get_al_status(node_buffer):
     buffer_cur_size = []
 
     for node_index in range(opt.num_nodes):
-        for model_type in range(model_types):
+        for model_type in model_types:
             learner_step, actor_step, cur_size = ray.get(node_buffer[node_index][model_type].get_counts.remote())
             buffer_learner_step.append(learner_step)
             buffer_actor_step.append(actor_step)
@@ -321,6 +316,7 @@ if __name__ == '__main__':
         pickle.dump(nodes_info, pickle_out)
         print("****** save nodes_info ******")   
 
-    task_train = []
-    for model_type in model_types:
-        task_train.append(worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type))
+    task_train = [worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type) for model_type in model_types]
+
+    task_test = worker_test.remote(node_ps[0], node_buffer, opt)
+    ray.wait([task_test])
