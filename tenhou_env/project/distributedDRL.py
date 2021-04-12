@@ -165,6 +165,7 @@ class ParameterServer:
         self.learner_step += self.opt.push_freq
 
     def pull(self, keys):
+        # return weights base on player
         return self.weights
 
     def get_weights(self):
@@ -193,14 +194,22 @@ def worker_train(ps, node_buffer, opt, model_type):
             cache.q2.put(agent.get_weights)
         cnt += 1
 
+
 @ray.remote
 def worker_rollout(ps, replay_buffer, opt):
-    agent = Actor(opt, job='worker', buffer=replay_buffer)
-    
+    agents = []
+    for i in range(1, 5):
+        agent = Actor(opt, job='worker{}'.format(i), buffer=replay_buffer)
+        agent.player_idx = i
+        agents.append(agent)
     while True:
         weights = ray.get(ps.pull.remote())
-        agent.set_weights(weights)
-        agent.run()
+        one_game = []
+        for agent in agents:
+            agent.set_weights(weights)
+            one_game.append(agent.run())
+        # wait for all players to end..
+        ray.get(one_game)
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):

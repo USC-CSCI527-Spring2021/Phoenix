@@ -1,12 +1,14 @@
-from tensorflow import keras
-from keras.optimizers import Adam
+import importlib
+import os
+
+import ray
 from tensorflow import keras
 
 from game.ai.configs.default import BotDefaultConfig
-from game.ai.models import make_or_restore_model
 from game.ai.utils import *
 from tenhou.client import TenhouClient
 from utils.logger import set_up_logging
+from utils.settings_handler import settings
 
 
 class Learner:
@@ -14,19 +16,20 @@ class Learner:
         self.opt = opt
         self.model_type = model_type
 
-        self.actor = make_or_restore_model(input_shape_dict[model_type], model_type)
-        state_input = self.actor.input
-        advantage = Input(shape=(1,))
-        old_prediction = self.actor.output
+        self.actor = keras.models.load_model(os.path.join(os.getcwd(), 'models', model_type))
 
-        output = self.actor(state_input)
-        self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
-        self.model.compile(optimizer=Adam(lr=(LR)),
-                           loss=[proximal_policy_optimization_loss(
-                               advantage=advantage,
-                               old_prediction=old_prediction
-                           )])
-        self.model.summary()        
+        # state_input = self.actor.input
+        # advantage = keras.Input(shape=(1,))
+        # old_prediction = self.actor.output
+        #
+        # output = self.actor(state_input)
+        # self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
+        # self.model.compile(optimizer=Adam(lr=(LR)),
+        #                    loss=[proximal_policy_optimization_loss(
+        #                        advantage=advantage,
+        #                        old_prediction=old_prediction
+        #                    )])
+        # self.model.summary()
 
     def get_weights(self):
         return self.actor.get_weights()
@@ -36,7 +39,8 @@ class Learner:
 
     def train(self, batch, cnt):
         feature, advantage, old_prediction, action = batch
-        actor_loss = self.model.fit(x=[feature, advantage, old_prediction], y=[action], shuffle=True, epochs=EPOCHS, verbose=False)
+        actor_loss = self.actor.fit(x=[feature, advantage, old_prediction], y=[action], shuffle=True, epochs=EPOCHS,
+                                    verbose=False)
         # writer
         # self.writer.add_scalar('Actor loss', actor_loss.history['loss'][-1], self.gradient_steps)  
         if cnt % 500 == 0:
@@ -49,6 +53,7 @@ class Actor:
         self.job = job
         self.bot_config = BotDefaultConfig()
         self.bot_config.buffer = buffer
+        self.player_idx = 1
 
     def set_weights(self, weights):
         self.bot_config.weights = weights       #a dict for all models
@@ -56,10 +61,17 @@ class Actor:
     def get_weights(self):
         pass
 
+    @ray.remote
     def run(self):
+        module = importlib.import_module(f"settings.bot_{self.player_idx}_settings")
+        for key, value in vars(module).items():
+            # let's use only upper case settings
+            if key.isupper():
+                settings.__setattr__(key, value)
+
         logger = set_up_logging()
 
-        client = TenhouClient(logger, bot_config=self.bot_config)     
+        client = TenhouClient(logger, bot_config=self.bot_config)
 
         for _ in range(self.opt.num_games):
             client.connect()

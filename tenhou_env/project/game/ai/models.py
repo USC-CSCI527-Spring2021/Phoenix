@@ -146,7 +146,7 @@ def discard_model(input_shape):
     outputs = Dense(34, activation="softmax")(x)
     # model = keras.applications.ResNet50V2(weights=None, input_shape=(64, 34, 1), classes=34, include_top=True)
     model = Model(k_input, outputs)
-    model.summary()
+    # model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.CategoricalCrossentropy(),
@@ -176,7 +176,7 @@ def rcpk_model(input_shape):
     outputs = Dense(2, activation="softmax")(x)
 
     model = Model(k_input, outputs)
-    model.summary()
+    # model.summary()
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.BinaryCrossentropy(),
