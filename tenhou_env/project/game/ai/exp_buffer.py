@@ -35,3 +35,4 @@ class ExperienceCollector:
     def to_buffer(self):
         for sample in list(zip(self.states, self.rewards, self.importances, self.actions)):
             self.buffer.store(*sample)
+        self.states, self.rewards, self.actions, self.importances = [], [], [], []
