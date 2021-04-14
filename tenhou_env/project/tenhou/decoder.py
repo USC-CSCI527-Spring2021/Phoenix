@@ -78,6 +78,11 @@ class TenhouDecoder:
         tiles = [int(i) for i in tiles.split(",")]
         return tiles
 
+    def parse_gain(self, message):
+        sc = self.get_attribute_content(message, "sc")
+        gains = [int(i) for i in sc.split(",")]
+        return gains[1::2]
+
     def parse_final_scores_and_uma(self, message):
         data = self.get_attribute_content(message, "owari")
         data = [float(i) for i in data.split(",")]

@@ -444,6 +444,24 @@ class Discard:
         x = getGeneralFeature(self.player, {"open_hands_136": open_hands_136, "closed_hands_136": closed_hands_136})
         return x.reshape((x.shape[0], x.shape[1], 1))
 
+class GlobalRewardPredictor:
+    def __init__(self):
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'grp'))
+        # self.model.summary()
+
+
+    def get_global_reward(self, features):
+        '''
+        input shape: (None, constants.round_num, constants.pred_dim)/(None, 15, 15)
+        '''
+        
+        # init_score = np.asarray(init_score)/1e5
+        # gains = np.asarray(gains)/1e5
+        # embed = np.expand_dims(np.concatenate((init_score, gains, dan, dealer, repeat_dealer, riichi_bets), axis=-1), axis=0)
+        # # print('input_shape', embed.shape)
+        # assert embed.shape[-2:] == (15, 15)
+        return self.model.predict(features)[0]
+
 # class Discard:
 #     def __init__(self, player):
 #         self.player = player
