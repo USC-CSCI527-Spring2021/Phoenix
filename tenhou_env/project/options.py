@@ -5,7 +5,6 @@ import os
 class Options:
     def __init__(self, num_nodes, num_workers):
         # parameters set
-
         self.num_nodes = num_nodes
         self.num_workers = num_workers
         self.num_games = 10

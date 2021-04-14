@@ -1,15 +1,14 @@
 import datetime
-import itertools
 import logging
 import os
 import random
 from optparse import OptionParser
 
+from tqdm import trange
+
 import game.bots_battle
-from game.bots_battle.battle_config import BattleConfig
 from game.bots_battle.game_manager import GameManager
 from game.bots_battle.local_client import LocalClient
-from tqdm import trange
 from utils.logger import DATE_FORMAT, LOG_FORMAT
 from utils.settings_handler import settings
 
@@ -20,7 +19,7 @@ if not os.path.exists(battle_results_folder):
     os.mkdir(battle_results_folder)
 
 
-def main(number_of_games, print_logs):
+def main(number_of_games, print_logs, bot_configs):
     seeds = []
     seed_file = "seeds.txt"
     if os.path.exists(seed_file):
@@ -32,9 +31,9 @@ def main(number_of_games, print_logs):
     if not os.path.exists(replays_directory):
         os.mkdir(replays_directory)
 
-    possible_configurations = list(itertools.combinations(BattleConfig.CLIENTS_CONFIGS, 4))
-    assert len(BattleConfig.CLIENTS_CONFIGS) == 12
-    assert len(possible_configurations) == 495
+    # possible_configurations = list(itertools.combinations(BattleConfig.CLIENTS_CONFIGS, 4))
+    # assert len(BattleConfig.CLIENTS_CONFIGS) == 12
+    # assert len(possible_configurations) == 495
 
     chosen_configuration = 0
     for i in trange(number_of_games):
@@ -44,10 +43,9 @@ def main(number_of_games, print_logs):
             seed_value = random.getrandbits(64)
 
         replay_name = GameManager.generate_replay_name()
-
         clients = [
-            LocalClient(possible_configurations[chosen_configuration][x](), print_logs, replay_name, i)
-            for x in range(0, 4)
+            # LocalClient(possible_configurations[chosen_configuration][x](), print_logs, replay_name, i)
+            LocalClient(bot_configs[x], print_logs, replay_name, i) for x in range(0, 4)
         ]
         manager = GameManager(clients, replays_directory, replay_name)
 
@@ -58,9 +56,9 @@ def main(number_of_games, print_logs):
             manager.replay.save_failed_log()
             logger.error(f"Hanchan seed={seed_value} crashed", exc_info=e)
 
-        chosen_configuration += 1
-        if chosen_configuration == len(possible_configurations):
-            chosen_configuration = 0
+        # chosen_configuration += 1
+        # if chosen_configuration == len(possible_configurations):
+        #     chosen_configuration = 0
 
 
 def _set_up_bots_battle_game_logger():

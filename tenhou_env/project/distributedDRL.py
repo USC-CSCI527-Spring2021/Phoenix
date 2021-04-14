@@ -1,21 +1,23 @@
-import ray
-import numpy as np
-import os
-import sys
-import multiprocessing
-import json
 import copy
-from actor_learner import Learner, Actor
+import glob
+import multiprocessing
+import os
 import pickle
-import tensorflow as tf
 import time
+
+import keras
+import numpy as np
+import ray
+import tensorflow as tf
+
+from actor_learner import Learner, Actor
 from options import Options
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
 model_types = ['chi', 'pon', 'kan', 'riichi', 'discard']
 flags.DEFINE_integer("num_nodes", 1, "number of nodes")
-flags.DEFINE_integer("num_workers", 5, "number of workers")
+flags.DEFINE_integer("num_workers", 1, "number of workers")
 
 
 
@@ -115,13 +117,13 @@ class Cache():
 
 @ray.remote
 class ParameterServer:
-    def __init__(self, opt, ps_index, weights_file=None, checkpoint_path=None):
+    def __init__(self, opt, ps_index, weights_files=None, checkpoint_path=None):
         # each node will have a Parameter Server
 
         self.opt = opt
         self.learner_step = 0
         self.ps_index = ps_index
-
+        self.weights = {}
         # --- make dir for all nodes and save parameters ---
         # try:
         #     os.makedirs(opt.save_dir)
@@ -143,14 +145,18 @@ class ParameterServer:
         #         self.weights = pickle.load(pickle_in)
         #         print("****** weights restored! ******")
 
-        if weights_file:
+        if weights_files:
             try:
-                with open(weights_file, "rb") as pickle_in:
-                    self.weights = pickle.load(pickle_in)
-                    print("****** weights restored! ******")
+                for f in weights_files:
+                    weights = keras.models.load_model(f).get_weights()
+                    model_type = f.split("/")[-1]
+                    self.weights[model_type] = weights
+                    # with open(f, "rb") as pickle_in:
+                    #     self.weights[f.split("/")[-1]] = pickle.load(pickle_in)
+                print(f"******{model_type} weights restored! ******")
             except:
                 print("------------------------------------------------")
-                print(weights_file)
+                print(weights_files)
                 print("------ error: weights file doesn't exist! ------")
                 exit()
 
@@ -162,8 +168,7 @@ class ParameterServer:
         self.weights[model_type] = weights
         self.learner_step += self.opt.push_freq
 
-    def pull(self, keys):
-        # return weights base on player
+    def pull(self):
         return self.weights
 
     def get_weights(self):
@@ -192,21 +197,16 @@ def worker_train(ps, node_buffer, opt, model_type):
             cache.q2.put(agent.get_weights)
         cnt += 1
 
+
 @ray.remote
-def worker_rollout(ps, replay_buffer, opt):
-    agents = []
-    for i in range(1, 5):
-        agent = Actor(opt, job='worker{}'.format(i), buffer=replay_buffer)
-        agent.player_idx = i
-        agents.append(agent)
+def worker_rollout(ps, replay_buffer, opt, player_idx):
+    agent = Actor(opt, job='worker', buffer=replay_buffer)
+    agent.player_idx = player_idx
     while True:
+        # weights = ray.get(ps.pull.remote())
         weights = ray.get(ps.pull.remote())
-        one_game = []
-        for agent in agents:
-            agent.set_weights(weights)
-            one_game.append(agent.run())
-        # wait for all players to end..
-        ray.get(one_game)
+        agent.set_weights(weights)
+        agent.run()
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):
@@ -253,7 +253,8 @@ def worker_test(ps, node_buffer, opt):
             save_start_time = time.time()
 
             ps_save_op = [node_ps[i].save_weights.remote() for i in range(opt.num_nodes)]
-            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types) for node_index in range(opt.num_nodes)]
+            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+                              node_index in range(opt.num_nodes)]
             ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)       #5 models + ps
 
             print("total time for saving :", time.time() - save_start_time)
@@ -282,16 +283,21 @@ def get_al_status(node_buffer):
 #         self.num_workers = num_workers
 
 if __name__ == '__main__':
+
     ray.init(local_mode=True)  # Local Mode
     # ray.init()  #specify cluster address here
 
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
+    opt.isOnline = 1
 
     for node_index in range(FLAGS.num_nodes):
         node_ps.append(
-            ParameterServer.options(resources={"node" + str(node_index): 1}).remote(opt, "./", "", node_index))
+            ParameterServer.options(resources={"node" + str(node_index): 1}).remote(opt, node_index,
+                                                                                    [f'{os.getcwd()}/{f}' for f in
+                                                                                     glob.glob('models/*') if
+                                                                                     "." not in f], ""))
         print(f"Node{node_index} Parameter Server all set.")
 
 
@@ -299,7 +305,12 @@ if __name__ == '__main__':
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
-            worker_rollout.options(resources={"node"+str(node_index):1}).remote(node_ps[node_index], node_buffer[node_index], opt)
+            if opt.isOnline:
+                for player_idx in range(1, 5):
+                    worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
+                                                                                           node_buffer[node_index], opt,
+                                                                                           player_idx)
+            # else:
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")
     

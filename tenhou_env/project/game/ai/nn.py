@@ -142,7 +142,7 @@ class Chi:
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
-        if 'chi' not in player.config:
+        if 'chi' not in player.config.weights:
             self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
         else:
             self.model = rcpk_model(self.input_shape)
@@ -195,7 +195,7 @@ class Pon:
         self.input_shape = (63, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
-        if 'pon' not in player.config:
+        if 'pon' not in player.config.weights:
             self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
         else:
             self.model = rcpk_model(self.input_shape)
@@ -243,7 +243,7 @@ class Kan:
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
-        if 'kan' not in player.config:
+        if 'kan' not in player.config.weights:
             self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
         else:
             self.model = rcpk_model(self.input_shape)
@@ -361,7 +361,7 @@ class Riichi:
         self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
-        if 'riichi' not in player.config:
+        if 'riichi' not in player.config.weights:
             self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
         else:
             self.model = rcpk_model(self.input_shape)
@@ -407,7 +407,7 @@ class Discard:
         self.input_shape = (16, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        if 'discard' not in player.config:
+        if 'discard' not in player.config.weights:
             self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
         else:
             self.model = discard_model(self.input_shape)

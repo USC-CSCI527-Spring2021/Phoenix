@@ -9,4 +9,4 @@ sentry-sdk==0.19.2
 
 numpy
 
-tensorflow=2.4.1
+tensorflow

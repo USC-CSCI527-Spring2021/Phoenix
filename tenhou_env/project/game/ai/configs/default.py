@@ -11,5 +11,6 @@ class BotDefaultConfig:
     TUNE_DANGER_BORDER_TEMPAI_VALUE = 0
     TUNE_DANGER_BORDER_1_SHANTEN_VALUE = 0
     TUNE_DANGER_BORDER_2_SHANTEN_VALUE = 0
+    weights = {}
 
     # TODO move all separate configs as subclasses here

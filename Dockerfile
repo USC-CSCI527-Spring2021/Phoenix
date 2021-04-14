@@ -1,13 +1,13 @@
 FROM tensorflow/tensorflow:2.4.1
 
-WORKDIR /
-COPY extract_features /extract_features
-COPY logs_parser /logs_parser
-COPY trainer /trainer
-COPY models /models
-COPY tenhou_env /tenhou_env
-COPY requirements.txt /requirements.txt
-COPY setup.py /setup.py
-RUN pip install --no-cache-dir -r /requirements.txt
+RUN useradd -ms /bin/bash docker-user
 
-ENTRYPOINT ["python","-m", "trainer.task"]
+WORKDIR /app/
+
+COPY tenhou_env/requirements /requirements
+RUN pip install --no-cache-dir -r /requirements/dev.txt
+
+COPY trainer /trainer
+COPY tenhou_env/project .
+
+USER docker-user

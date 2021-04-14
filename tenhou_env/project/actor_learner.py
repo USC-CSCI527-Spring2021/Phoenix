@@ -1,7 +1,6 @@
 import importlib
 import os
 
-import ray
 from tensorflow import keras
 
 from game.ai.configs.default import BotDefaultConfig
@@ -61,34 +60,35 @@ class Actor:
     def get_weights(self):
         pass
 
-    @ray.remote
     def run(self):
-        module = importlib.import_module(f"settings.bot_{self.player_idx}_settings")
-        for key, value in vars(module).items():
-            # let's use only upper case settings
-            if key.isupper():
-                settings.__setattr__(key, value)
+        assert self.bot_config.weights, "should set weights before run the game"
 
-        logger = set_up_logging()
+        if self.opt.isOnline:
+            module = importlib.import_module(f"settings.bot_{self.player_idx}_settings")
+            for key, value in vars(module).items():
+                # let's use only upper case settings
+                if key.isupper():
+                    settings.__setattr__(key, value)
 
-        client = TenhouClient(logger, bot_config=self.bot_config)
+            logger = set_up_logging()
 
-        for _ in range(self.opt.num_games):
-            client.connect()
+            client = TenhouClient(logger, bot_config=self.bot_config)
 
-            try:
-                was_auth = client.authenticate()
+            for _ in range(self.opt.num_games):
+                client.connect()
 
-                if was_auth:
-                    client.start_game()
-                else:
+                try:
+                    was_auth = client.authenticate()
+
+                    if was_auth:
+                        client.start_game()
+                    else:
+                        client.end_game()
+                except KeyboardInterrupt:
+                    logger.info("Ending the game...")
                     client.end_game()
-            except KeyboardInterrupt:
-                logger.info("Ending the game...")
-                client.end_game()
-            except Exception as e:
-                logger.exception("Unexpected exception", exc_info=e)
-                logger.info("Ending the game...")
-                client.end_game(False)  
-                
-        client.table.player.ai.write_buffer()
+                except Exception as e:
+                    logger.exception("Unexpected exception", exc_info=e)
+                    logger.info("Ending the game...")
+                    client.end_game(False)
+            client.table.player.ai.write_buffer()
