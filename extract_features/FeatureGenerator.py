@@ -13,6 +13,7 @@ from mahjong.hand_calculating.scores import ScoresCalculator
 from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
 import hashlib
 import marshal
+from joblib import Parallel, delayed
 from tensorflow.keras.utils import to_categorical
 
 class FeatureGenerator:
@@ -280,26 +281,54 @@ class FeatureGenerator:
             for tile_set in [player.get('closed_hand:',[]), player.get('open_hand',[]), player.get('discarded_tiles',[])]:
                 for tile in tile_set:
                     tiles_could_draw[tile//4] -= 1
+        print(enemies_tiles_list[0].get('discarded_tiles',[]))
         for dora_tile in dora_indicators:
             tiles_could_draw[tile//4] -= 1
-        for discard_tile in closed_hand_136:
-            col = discard_tile//4
-            if lookAheadFeature[0][col] == 1:
-                continue
-            lookAheadFeature[0][col] = 1
-            closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
-            shanten = self.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
-            for i in range(3):
-                if shanten <= i+1:
-                    lookAheadFeature[i+1][col] = 1
-            lookAheadFeature[4][col] = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators, 
-                tiles_could_draw, targetPoints = 2000, replacelimit = 2)
-            seat = player_seat
-            for i in range(3):
-                seat = (seat + 1) % 4
-                if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
-                    lookAheadFeature[i+5][col] = 1
-        return lookAheadFeature
+
+        def feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list):
+            feature = np.zeros((8, 1))
+            discard_tiles = [x for x in [i*4,i*4+1,i*4+2,i*4+3] if x in closed_hand_136]
+            if len(discard_tiles) != 0 :
+                discard_tile = discard_tiles[0]
+                feature[0] = 1
+                closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
+                shanten = self.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
+                for i in range(3):
+                    if shanten <= i:
+                        feature[i+1] = 1
+                feature[4] = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
+                    tiles_could_draw, targetPoints = 2000, replacelimit = 2)
+                seat = player_seat
+                for i in range(3):
+                    seat = (seat + 1) % 4
+                    if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
+                        feature[i+5] = 1
+            return feature              
+        
+        results = Parallel(n_jobs=8)(
+            delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list) 
+            for i in range(34))
+        return np.concatenate(results,axis=1)  
+
+        # for discard_tile in closed_hand_136:
+        #     col = discard_tile//4
+        #     if lookAheadFeature[0][col] == 1:
+        #         continue
+        #     lookAheadFeature[0][col] = 1
+        #     closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
+        #     shanten = self.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
+        #     for i in range(3):
+        #         if shanten <= i+1:
+        #             lookAheadFeature[i+1][col] = 1
+        #     lookAheadFeature[4][col] = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators, 
+        #         tiles_could_draw, targetPoints = 2000, replacelimit = 2)
+        #     seat = player_seat
+        #     for i in range(3):
+        #         seat = (seat + 1) % 4
+        #         if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
+        #             lookAheadFeature[i+5][col] = 1
+
+        # return lookAheadFeature
 
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
