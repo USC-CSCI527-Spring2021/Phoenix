@@ -345,6 +345,8 @@ class TenhouClient(Client):
 
                 # the end of round
                 if "<AGARI" in message or "<RYUUKYOKU" in message:
+                    gains = self.decoder.parse_gain(message)
+                    self.table.gains = gains
                     self.table.player.ai.collect_experience()     
                     self._random_sleep(3, 5)
                     self._send_message("<NEXTREADY />")

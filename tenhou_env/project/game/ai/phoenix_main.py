@@ -1,8 +1,9 @@
 from typing import List
+import numpy as np
 
 import utils.decisions_constants as log
 from game.ai.hand_builder import HandBuilder
-from game.ai.nn import Chi, Pon, Kan, Riichi, Discard
+from game.ai.nn import Chi, Pon, Kan, Riichi, Discard, GlobalRewardPredictor
 from mahjong.constants import DISPLAY_WINDS
 from mahjong.hand_calculating.divider import HandDivider
 from mahjong.hand_calculating.hand import HandCalculator
@@ -12,7 +13,7 @@ from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
 from mahjong.utils import is_chi, is_man, is_pin, is_pon, is_sou
 from utils.cache import build_estimate_hand_value_cache_key, build_shanten_cache_key
-
+from game.ai.utils import RANKS, pred_emb_dim, round_num
 
 class Phoenix:
     def __init__(self, player):
@@ -24,6 +25,7 @@ class Phoenix:
         self.kan = Kan(player)
         self.riichi = Riichi(player)
         self.discard = Discard(player)
+        self.grp = GlobalRewardPredictor()
         self.hand_builder = HandBuilder(player, self)
         self.shanten_calculator = Shanten()
         self.hand_cache_shanten = {}
@@ -37,10 +39,29 @@ class Phoenix:
         self.hand_cache_shanten = {}
         self.hand_cache_estimation = {}
         self.finished_hand = HandCalculator()
+        self.grp_features = []
 
     def collect_experience(self):
+        
+        #collect round info
+        init_scores = np.array(self.table.init_scores)/1e5
+        gains = np.array(self.table.gains)/1e5
+        dans = np.array([RANKS.index(p.rank) for p in self.player.table.players])
+        dealer = int(self.player.dealer_seat)
+        repeat_dealer = self.player.table.count_of_honba_sticks
+        riichi_bets = self.player.table.count_of_riichi_sticks
+
+        features = np.concatenate((init_scores, gains, dans, np.array([dealer, repeat_dealer, riichi_bets])), axis=0)
+        self.grp_features.append(features)
+
+        #prepare input
+        grp_input = [np.zeros(pred_emb_dim)] * max(round_num-len(self.grp_features), 0) + self.grp_features[:]
+        
+        reward = self.grp.get_global_reward(np.expand_dims(np.asarray(grp_input), axis=0))[0][self.player.seat]
+
         for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
-            model.collector.complete_episode()
+            model.collector.complete_episode(reward)
+        
     
     def write_buffer(self):
         for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
