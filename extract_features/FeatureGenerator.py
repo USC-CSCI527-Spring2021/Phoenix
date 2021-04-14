@@ -55,51 +55,51 @@ class FeatureGenerator:
         self.hand_cache_points[key] = result
         return result
 
-    def canwinbyreplace(self, closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, targetPoints, replacelimit):
-        def _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, targetPoints, replacelimit):
+    def canwinbyreplace(self, closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
+        def _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
             if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) > replacelimit:
-                return False
-            if replacelimit == 0:      
+                return 0
+            result = 0
+            if replacelimit == 0: 
                 for idx in range(34):
                     if tiles_could_draw[idx] > 0:
                         closed_left_tiles_34[idx] += 1
                         if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) == -1:
                             ponits = self.calculate_ponits_or_get_from_cache(closed_left_tiles_34,idx*4,melds,dora_indicators)
-                            if  ponits >= targetPoints:
-                                # print(closed_left_tiles_34)
-                                # print(melds)
-                                # print(dora_indicators)
-                                return True
+                            # if  ponits >= targetPoints:
+                            #     return True
+                            result = max(result,ponits)
                         closed_left_tiles_34[idx] -= 1
+                
             else:
-                result = False
+                # result = False
                 for idx,count in enumerate(tiles_could_draw):
                     if count > 0:
                         tiles_could_draw[idx] -= 1
                         closed_left_tiles_34[idx] += 1
-                        result = _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, targetPoints, replacelimit)
-                        if result == True:
-                            return True
+                        ponits = _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
+                        # if result == True:
+                        #     return True
+                        result = max(result,ponits)
                         closed_left_tiles_34[idx] -= 1
                         tiles_could_draw[idx] += 1
-            return False
+            return result
         
-        def _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, targetPoints, replacelimit):
-            result = False
+        def _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
+            result = 0
             for idx,count in enumerate(closed_left_tiles_34):
                 if count > 0:
                     closed_left_tiles_34[idx] -= 1
                     replacelimit -= 1
-                    result = _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, targetPoints, replacelimit)
-                    if result == True:
-                        return True
+                    ponits = _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
+                    # if result == True:
+                    #     return True
+                    result = max(result,ponits)
                     replacelimit += 1
                     closed_left_tiles_34[idx] += 1
             return result
-        if _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, targetPoints, replacelimit):
-            return 1
-        else:
-            return 0
+
+        return _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
 
     def open_hands_detail_to_melds(self, open_hands_detail):
         melds = []
@@ -263,9 +263,9 @@ class FeatureGenerator:
     def getLookAheadFeature(self, tiles_state_and_action):
         # 0 for whether can be discarded
         # 1 2 3 for shanten
-        # 4 for whether can get 1.2w points with replacing 3 tiles ---- need review: takes too long!
-        # 5 6 7 for in Shimocha Toimen Kamicha discarded
-        lookAheadFeature = np.zeros((8, 34))
+        # 4 5 6 7 for whether can get 2k 4k 6k 8k points with replacing 3 tiles ---- need review: takes too long!
+        # 8 9 10 for in Shimocha Toimen Kamicha discarded
+        # lookAheadFeature = np.zeros((11, 34))
         player_tiles = tiles_state_and_action["player_tiles"]
         closed_hand_136 = player_tiles.get('closed_hand:',[])
         open_hands_detail = tiles_state_and_action["open_hands_detail"]
@@ -286,7 +286,7 @@ class FeatureGenerator:
             tiles_could_draw[tile//4] -= 1
 
         def feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list):
-            feature = np.zeros((8, 1))
+            feature = np.zeros((11, 1))
             discard_tiles = [x for x in [i*4,i*4+1,i*4+2,i*4+3] if x in closed_hand_136]
             if len(discard_tiles) != 0 :
                 discard_tile = discard_tiles[0]
@@ -296,13 +296,18 @@ class FeatureGenerator:
                 for i in range(3):
                     if shanten <= i:
                         feature[i+1] = 1
-                feature[4] = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
-                    tiles_could_draw, targetPoints = 2000, replacelimit = 2)
+                maxscore = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
+                    tiles_could_draw, replacelimit = 2)
+                #feature[4] = 
+                scores = [2000, 4000, 6000, 8000]
+                for i in range(4):
+                    if maxscore >= scores[i]:
+                        feature[i+4] = 1
                 seat = player_seat
                 for i in range(3):
                     seat = (seat + 1) % 4
                     if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
-                        feature[i+5] = 1
+                        feature[i+8] = 1
             return feature              
         
         results = Parallel(n_jobs=8)(
