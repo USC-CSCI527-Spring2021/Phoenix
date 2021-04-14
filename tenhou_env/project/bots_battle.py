@@ -8,7 +8,6 @@ from tqdm import trange
 
 import game.bots_battle
 from game.bots_battle.game_manager import GameManager
-from game.bots_battle.local_client import LocalClient
 from utils.logger import DATE_FORMAT, LOG_FORMAT
 from utils.settings_handler import settings
 
@@ -19,7 +18,7 @@ if not os.path.exists(battle_results_folder):
     os.mkdir(battle_results_folder)
 
 
-def main(number_of_games, print_logs, bot_configs):
+def main(number_of_games, print_logs, clients, replay_name):
     seeds = []
     seed_file = "seeds.txt"
     if os.path.exists(seed_file):
@@ -35,18 +34,15 @@ def main(number_of_games, print_logs, bot_configs):
     # assert len(BattleConfig.CLIENTS_CONFIGS) == 12
     # assert len(possible_configurations) == 495
 
-    chosen_configuration = 0
+    # chosen_configuration = 0
     for i in trange(number_of_games):
         if i < len(seeds):
             seed_value = seeds[i]
         else:
             seed_value = random.getrandbits(64)
 
-        replay_name = GameManager.generate_replay_name()
-        clients = [
-            # LocalClient(possible_configurations[chosen_configuration][x](), print_logs, replay_name, i)
-            LocalClient(bot_configs[x], print_logs, replay_name, i) for x in range(0, 4)
-        ]
+        # replay_name = GameManager.generate_replay_name()
+
         manager = GameManager(clients, replays_directory, replay_name)
 
         try:

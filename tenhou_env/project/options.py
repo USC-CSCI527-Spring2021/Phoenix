@@ -4,6 +4,8 @@ import os
 
 class Options:
     def __init__(self, num_nodes, num_workers):
+        # online or Local
+        self.isOnline = 1
         # parameters set
         self.num_nodes = num_nodes
         self.num_workers = num_workers
@@ -54,3 +56,4 @@ class Options:
 
         self.log_dir = self.summary_dir + "/" + str(datetime.datetime.now()) + "-workers_num:" + \
                        str(self.num_workers)
+

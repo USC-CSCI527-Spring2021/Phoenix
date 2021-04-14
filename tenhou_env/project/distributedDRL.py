@@ -117,13 +117,26 @@ class Cache():
 
 @ray.remote
 class ParameterServer:
+    """
+    One PS contains 1 or 4 clients weights
+    {
+        0: {
+            chi: [],
+            ...
+        },
+        1: {},
+        3: {},
+        4: {},
+    }
+    """
+
     def __init__(self, opt, ps_index, weights_files=None, checkpoint_path=None):
         # each node will have a Parameter Server
 
         self.opt = opt
         self.learner_step = 0
         self.ps_index = ps_index
-        self.weights = {}
+        self.weights = {} if opt.isOnline else {i: {} for i in range(4)}
         # --- make dir for all nodes and save parameters ---
         # try:
         #     os.makedirs(opt.save_dir)
@@ -146,14 +159,19 @@ class ParameterServer:
         #         print("****** weights restored! ******")
 
         if weights_files:
+            assert len(weights_files) == 5, f"only {len(weights_files)} model files, need 5"
             try:
                 for f in weights_files:
                     weights = keras.models.load_model(f).get_weights()
                     model_type = f.split("/")[-1]
-                    self.weights[model_type] = weights
+                    self.weights[0][model_type] = weights
                     # with open(f, "rb") as pickle_in:
                     #     self.weights[f.split("/")[-1]] = pickle.load(pickle_in)
-                print(f"******{model_type} weights restored! ******")
+                # all client should start with the same weights
+                if not opt.isOnline:
+                    for i in range(1, 4):
+                        self.weights[i] = self.weights[0]
+                print(f"****** weights restored! ******")
             except:
                 print("------------------------------------------------")
                 print(weights_files)
@@ -203,7 +221,6 @@ def worker_rollout(ps, replay_buffer, opt, player_idx):
     agent = Actor(opt, job='worker', buffer=replay_buffer)
     agent.player_idx = player_idx
     while True:
-        # weights = ray.get(ps.pull.remote())
         weights = ray.get(ps.pull.remote())
         agent.set_weights(weights)
         agent.run()
@@ -290,7 +307,7 @@ if __name__ == '__main__':
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
-    opt.isOnline = 1
+    opt.isOnline = 0
 
     for node_index in range(FLAGS.num_nodes):
         node_ps.append(
@@ -305,12 +322,10 @@ if __name__ == '__main__':
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
-            if opt.isOnline:
-                for player_idx in range(1, 5):
-                    worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
-                                                                                           node_buffer[node_index], opt,
-                                                                                           player_idx)
-            # else:
+            for player_idx in range(4):
+                worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
+                                                                                       node_buffer[node_index], opt,
+                                                                                       player_idx)
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")
     

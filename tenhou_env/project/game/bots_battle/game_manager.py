@@ -137,6 +137,7 @@ class GameManager:
 
             # important increment, we are building wall seed based on the round number
             self.round_number += 1
+            # collect experiences
 
         winner = self.recalculate_players_position()
         # winner takes riichi sticks

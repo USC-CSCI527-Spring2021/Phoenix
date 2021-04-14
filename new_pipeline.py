@@ -10,8 +10,9 @@ import tensorflow as tf
 from extract_features.FeatureGenerator import FeatureGenerator
 from logs_parser import chi_pon_kan_model, discarded_model_dataset
 from trainer.models import transform_discard_features
-from trainer.utils import TRAIN_SPLIT, BATCH_SIZE
+from trainer.utils import TRAIN_SPLIT, BATCH_SIZE, RANDOM_SEED
 
+tf.random.set_seed(RANDOM_SEED)
 
 def _float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
@@ -49,8 +50,7 @@ class Pipeline():
         self.job_type = job_type
         self.counter = 0
         self.write_count = [0] * 34 if self.job_type == "discarded" else [0, 0]
-        self.classes_distribution = [
-                                        0] * 34 if self.job_type == "discarded" else [0, 0]
+        self.classes_distribution = [0] * 34 if self.job_type == "discarded" else [0, 0]
         # self.train = []
         # self.eval = []
         if self.job_type == "discarded":
@@ -154,7 +154,7 @@ class Pipeline():
 
     def process(self, job_dir):
         dataset_prefix = os.path.join(job_dir, 'processed_data', self.job_type)
-        csv_path = glob.glob(os.path.join(job_dir, "dataset/*.csv"))
+        csv_path = glob.glob(os.path.join(job_dir, "dataset/2022.csv"))
         # delete existing processed data
         if tf.io.gfile.exists(dataset_prefix):
             tf.io.gfile.rmtree(dataset_prefix)
@@ -198,28 +198,40 @@ class Pipeline():
             tf.io.gfile.rmtree(oversampling_prefix)
         tf.io.gfile.makedirs(oversampling_prefix)
 
-        tfrecords = glob.glob(os.path.join("./processed_data", self.job_type, "*-*"))
-        full_dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BATCH_SIZE)
+        train_dataset = []
+        test_dataset = []
+        val_dataset = []
+        tot = 0
+        for i, class_dist in enumerate(self.classes_distribution):
+            tfrecords = glob.glob(os.path.join("./processed_data", self.job_type, f"{i}-*"))
+            dataset = tf.data.TFRecordDataset(tfrecords)
+            t_size = class_dist // TRAIN_SPLIT
+            v_size = class_dist // ((1 - TRAIN_SPLIT) // 2)
+            tot += t_size
+            train_dataset.append(dataset.take(t_size))
+            dataset.skip(t_size)
+            test_dataset.append(dataset.take(v_size))
+            val_dataset.append(dataset.skip(v_size))
 
-        train_dataset = full_dataset.take(train_size)
-        test_dataset = full_dataset.skip(train_size)
-        val_dataset = test_dataset.skip(val_size)
-        test_dataset = test_dataset.take(test_size)
+        # train_dataset = tf.concat(train_dataset).shuffle(BATCH_SIZE)
+        test_dataset = tf.concat(test_dataset).shuffle(BATCH_SIZE)
+        val_dataset = tf.concat(val_dataset).shuffle(BATCH_SIZE)
 
         self.write_tfrecords(oversampling_prefix, "val", val_dataset, val_size)
         self.write_tfrecords(oversampling_prefix, "test", test_dataset, test_size)
 
-        final_dataset = [[] for _ in range(len(self.classes_distribution))]
-        tot = 0
-        for raw in train_dataset:
-            raw_dict = tf.io.parse_example(raw, meta_data.input_feature_spec)
-            label = raw_dict['labels']
-            l = int(np.argmax(label))
-            tot += 1
-            final_dataset[l].append(raw)
-        final_dataset = [tf.data.Dataset.from_tensor_slices(data) for data in final_dataset]
-        resampled_ds = tf.data.experimental.sample_from_datasets(final_dataset,
-                                                                 weights=[1 / len(final_dataset)] * len(final_dataset))
+        # final_dataset = [[] for _ in range(len(self.classes_distribution))]
+        # tot = 0
+        # for raw in train_dataset:
+        #     raw_dict = tf.io.parse_example(raw, meta_data.input_feature_spec)
+        #     label = raw_dict['labels']
+        #     l = int(np.argmax(label))
+        #     tot += 1
+        #     final_dataset[l].append(raw)
+        # final_dataset = [tf.data.Dataset.from_tensor_slices(data) for data in final_dataset]
+        resampled_ds = tf.data.experimental \
+            .sample_from_datasets(train_dataset,
+                                  weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(BATCH_SIZE)
         self.write_tfrecords(oversampling_prefix, "train", resampled_ds, tot)
 
 
