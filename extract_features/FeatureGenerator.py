@@ -480,7 +480,7 @@ class FeatureGenerator:
         if tiles_state_and_action["is_FCH"] == 1:
             tiles_34 = TilesConverter.to_34_array(tiles_state_and_action["player_tiles"]["closed_hand:"])
             # min_shanten = self.shanten_calculator.calculate_shanten(tiles_34)
-            min_shanten = self.closed_left_tiles_34(tiles_34)
+            min_shanten = self.calculate_shanten_or_get_from_cache(tiles_34)
             if min_shanten == 0:
                 x = self.getGeneralFeature(tiles_state_and_action)
                 if action[0] == 'REACH':
