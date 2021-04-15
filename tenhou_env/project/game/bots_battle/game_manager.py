@@ -103,6 +103,8 @@ class GameManager:
             self.init_round()
 
             results = self.play_round()
+            for client in self.clients:
+                client.table.player.ai.collect_experience()
 
             dealer_won = False
             was_retake = False
@@ -484,8 +486,13 @@ class GameManager:
             # retake
             if not len(self.tiles):
                 continue_to_play = False
-
+        
         result = self.process_the_end_of_the_round([], 0, None, None, False)
+        #update gains
+        gains = [c.player.scores - c.player.init_scores for c in self.clients]
+        for client in self.clients:
+            client.table.gains = gains
+        ###
         return [result]
 
     def check_clients_possible_ron(self, current_client, tile, is_tsumogiri, is_chankan=False) -> []:
