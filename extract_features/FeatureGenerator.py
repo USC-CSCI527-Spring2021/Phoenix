@@ -281,7 +281,7 @@ class FeatureGenerator:
             for tile_set in [player.get('closed_hand:',[]), player.get('open_hand',[]), player.get('discarded_tiles',[])]:
                 for tile in tile_set:
                     tiles_could_draw[tile//4] -= 1
-        print(enemies_tiles_list[0].get('discarded_tiles',[]))
+        # print(enemies_tiles_list[0].get('discarded_tiles',[]))
         for dora_tile in dora_indicators:
             tiles_could_draw[tile//4] -= 1
 
@@ -507,3 +507,4 @@ if __name__ == "__main__":
             fg.PonFeatureGenerator(tiles_state_and_action)
             fg.KanFeatureGenerator(tiles_state_and_action)
             fg.RiichiFeatureGenerator(tiles_state_and_action)
+            fg.DiscardFeatureGenerator(tiles_state_and_action)
