@@ -2,7 +2,7 @@ from typing import Optional
 
 import utils.decisions_constants as log
 from game.ai.configs.default import BotDefaultConfig
-from game.ai.main import MahjongAI
+# from game.ai.main import MahjongAI
 from game.ai.phoenix_main import Phoenix
 from mahjong.constants import CHUN, EAST, HAKU, HATSU, NORTH, SOUTH, WEST
 from mahjong.tile import Tile, TilesConverter
@@ -163,7 +163,7 @@ class PlayerInterface:
 
 
 class Player(PlayerInterface):
-    ai: Optional[MahjongAI] = None
+    ai: Optional[Phoenix] = None
     config: Optional[BotDefaultConfig] = None
     last_draw = None
     in_tempai = False

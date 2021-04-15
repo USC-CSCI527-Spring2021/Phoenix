@@ -166,5 +166,6 @@ extract_features/assist/
 google.json
 *.json
 /model_backup
+/models_back
 /hyper_results_dir
 with_oversampling_data

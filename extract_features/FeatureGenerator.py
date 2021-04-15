@@ -3,18 +3,23 @@
 # usage:
 #   at the bottom of this file
 
+import hashlib
 import json
+import marshal
+
 import numpy as np
+from joblib import Parallel, delayed
+from joblib.externals.loky import set_loky_pickler
+from mahjong.hand_calculating.hand import HandCalculator
+from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
+from mahjong.hand_calculating.scores import ScoresCalculator
+from mahjong.meld import Meld
 from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
-from mahjong.meld import Meld
-from mahjong.hand_calculating.hand import HandCalculator
-from mahjong.hand_calculating.scores import ScoresCalculator
-from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
-import hashlib
-import marshal
-from joblib import Parallel, delayed
 from tensorflow.keras.utils import to_categorical
+
+set_loky_pickler('dill')
+
 
 class FeatureGenerator:
     def __init__(self):
@@ -289,22 +294,24 @@ class FeatureGenerator:
                     if shanten <= i:
                         feature[i+1] = 1
                 maxscore = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
-                    tiles_could_draw, replacelimit = 2)
+                                                tiles_could_draw, replacelimit=2)
                 scores = [2000, 4000, 6000, 8000]
                 for i in range(4):
                     if maxscore >= scores[i]:
-                        feature[i+4] = 1
+                        feature[i + 4] = 1
                 seat = player_seat
                 for i in range(3):
                     seat = (seat + 1) % 4
-                    if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
-                        feature[i+8] = 1
-            return feature              
-        
-        results = Parallel(n_jobs=8)(
-            delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list) 
+                    if discard_tile // 4 in [t // 4 for t in enemies_tiles_list[seat].get('discarded_tiles', [])]:
+                        feature[i + 8] = 1
+            return feature
+
+        # results = [feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list) for i in range(34)]
+        results = Parallel(n_jobs=-1)(
+            delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
+                                     enemies_tiles_list)
             for i in range(34))
-        return np.concatenate(results,axis=1)  
+        return np.concatenate(results, axis=1)
 
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
