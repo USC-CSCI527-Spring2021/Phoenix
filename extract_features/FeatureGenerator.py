@@ -66,20 +66,15 @@ class FeatureGenerator:
                         closed_left_tiles_34[idx] += 1
                         if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) == -1:
                             ponits = self.calculate_ponits_or_get_from_cache(closed_left_tiles_34,idx*4,melds,dora_indicators)
-                            # if  ponits >= targetPoints:
-                            #     return True
                             result = max(result,ponits)
                         closed_left_tiles_34[idx] -= 1
                 
             else:
-                # result = False
                 for idx,count in enumerate(tiles_could_draw):
                     if count > 0:
                         tiles_could_draw[idx] -= 1
                         closed_left_tiles_34[idx] += 1
                         ponits = _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-                        # if result == True:
-                        #     return True
                         result = max(result,ponits)
                         closed_left_tiles_34[idx] -= 1
                         tiles_could_draw[idx] += 1
@@ -92,8 +87,6 @@ class FeatureGenerator:
                     closed_left_tiles_34[idx] -= 1
                     replacelimit -= 1
                     ponits = _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-                    # if result == True:
-                    #     return True
                     result = max(result,ponits)
                     replacelimit += 1
                     closed_left_tiles_34[idx] += 1
@@ -281,7 +274,6 @@ class FeatureGenerator:
             for tile_set in [player.get('closed_hand:',[]), player.get('open_hand',[]), player.get('discarded_tiles',[])]:
                 for tile in tile_set:
                     tiles_could_draw[tile//4] -= 1
-        # print(enemies_tiles_list[0].get('discarded_tiles',[]))
         for dora_tile in dora_indicators:
             tiles_could_draw[tile//4] -= 1
 
@@ -298,7 +290,6 @@ class FeatureGenerator:
                         feature[i+1] = 1
                 maxscore = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
                     tiles_could_draw, replacelimit = 2)
-                #feature[4] = 
                 scores = [2000, 4000, 6000, 8000]
                 for i in range(4):
                     if maxscore >= scores[i]:
@@ -315,29 +306,9 @@ class FeatureGenerator:
             for i in range(34))
         return np.concatenate(results,axis=1)  
 
-        # for discard_tile in closed_hand_136:
-        #     col = discard_tile//4
-        #     if lookAheadFeature[0][col] == 1:
-        #         continue
-        #     lookAheadFeature[0][col] = 1
-        #     closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
-        #     shanten = self.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
-        #     for i in range(3):
-        #         if shanten <= i+1:
-        #             lookAheadFeature[i+1][col] = 1
-        #     lookAheadFeature[4][col] = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators, 
-        #         tiles_could_draw, targetPoints = 2000, replacelimit = 2)
-        #     seat = player_seat
-        #     for i in range(3):
-        #         seat = (seat + 1) % 4
-        #         if discard_tile//4 in [t//4 for t in enemies_tiles_list[seat].get('discarded_tiles',[])]:
-        #             lookAheadFeature[i+5][col] = 1
-
-        # return lookAheadFeature
-
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
-            self.getLookAheadFeature(tiles_state_and_action), #(8,34)
+            self.getLookAheadFeature(tiles_state_and_action), #(11,34)
             self.getSelfTiles(tiles_state_and_action),  # (12,34)
             self.getDoraList(tiles_state_and_action),  # (5,34)
             self.getBoard1(tiles_state_and_action),  # (5,34)
@@ -503,8 +474,8 @@ if __name__ == "__main__":
     with open(filename) as infile:
         for line in infile:
             tiles_state_and_action = json.loads(line)
-            fg.ChiFeatureGenerator(tiles_state_and_action)
-            fg.PonFeatureGenerator(tiles_state_and_action)
-            fg.KanFeatureGenerator(tiles_state_and_action)
-            fg.RiichiFeatureGenerator(tiles_state_and_action)
-            fg.DiscardFeatureGenerator(tiles_state_and_action)
+            fg.ChiFeatureGenerator(tiles_state_and_action) #(74,34)
+            fg.PonFeatureGenerator(tiles_state_and_action) #(74,34)
+            fg.KanFeatureGenerator(tiles_state_and_action) #(77,34)
+            fg.RiichiFeatureGenerator(tiles_state_and_action) #(73,34)
+            fg.DiscardFeatureGenerator(tiles_state_and_action) #(73,34)
