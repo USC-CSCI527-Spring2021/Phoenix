@@ -80,7 +80,7 @@ class TenhouDecoder:
 
     def parse_gain(self, message):
         sc = self.get_attribute_content(message, "sc")
-        gains = [int(i) for i in sc.split(",")]
+        gains = [int(i) * 100.0 for i in sc.split(",")]
         return gains[1::2]
 
     def parse_final_scores_and_uma(self, message):

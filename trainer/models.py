@@ -192,27 +192,3 @@ def rcpk_model(input_shape):
         ])
     return model
 
-
-def transform_discard_features(data):
-    """
-    Transform discard raw data to input features and labels
-    :param data: each row of discard raw data
-    :return: features and labels
-    """
-    draw, hands, discard_pool, open_hands, label = data['draw_tile'], data['hands'], \
-                                                   data['discarded_tiles_pool'], data[
-                                                       'four_players_open_hands'], \
-                                                   data['discarded_tile']
-    hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat = np.zeros((4, 34)), np.zeros((4, 34)), np.zeros(
-        (4, 34)), np.zeros((4, 34))
-    for tile in hands:
-        hands_mat[tile % 4][tile // 4] = 1
-    draw_mat[0][draw // 4] = 1
-    for discard_tile in discard_pool:
-        discard_pool_mat[discard_tile % 4][discard_tile // 4] = 1
-    for player in open_hands:
-        for tile in player:
-            four_open_hands_mat[tile % 4][tile // 4] = 1
-    features = np.vstack((hands_mat, draw_mat, discard_pool_mat, four_open_hands_mat))
-    yield features.reshape((features.shape[0], 34, 1)), keras.utils.to_categorical(int(label // 4), 34)
-    # return [features.reshape((features.shape[0], 34, 1)), label // 4]

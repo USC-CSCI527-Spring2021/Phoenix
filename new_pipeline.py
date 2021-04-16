@@ -9,7 +9,6 @@ import tensorflow as tf
 
 from extract_features.FeatureGenerator import FeatureGenerator
 from logs_parser import chi_pon_kan_model, discarded_model_dataset
-from trainer.models import transform_discard_features
 from trainer.utils import TRAIN_SPLIT, BATCH_SIZE, RANDOM_SEED
 
 tf.random.set_seed(RANDOM_SEED)
@@ -62,16 +61,16 @@ class Pipeline():
             "discarded": {
                 "table_bq_table": 'mahjong.discarded',
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((16, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((73, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((34,), tf.float32),
                 },
                 "process_fn": discarded_model_dataset.DiscardedFeatureExtractor(),
-                "transform_fn": transform_discard_features,
+                "transform_fn": FeatureGenerator().DiscardFeatureGenerator,
             },
             "chi": {
                 "table_bq_table": "mahjong.chi",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((63, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((74, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -80,7 +79,7 @@ class Pipeline():
             "pon": {
                 "table_bq_table": "mahjong.pon",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((63, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((74, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -89,7 +88,7 @@ class Pipeline():
             "kan": {
                 "table_bq_table": "mahjong.kan",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((66, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((77, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -98,7 +97,7 @@ class Pipeline():
             "riichi": {
                 "table_bq_table": "mahjong.riichi",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((62, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((73, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -106,32 +105,31 @@ class Pipeline():
             }
         }
 
-    def write_tfrecords(self, path_prefix, types=None, tfdata=None, train_test_val_total=None):
+    def write_tfrecords(self, path_prefix, types=None, tfdata=None):
         # case 1: write multiple labels sepratetly
-        if types is not None and not tfdata and not train_test_val_total:
+        if types is not None and not tfdata:
             out_path = "{}/{}-dataset-{}".format(path_prefix, types, self.write_count[types])
             writer = tf.data.experimental.TFRecordWriter(out_path)
             writer.write(
                 tf.data.Dataset.from_tensor_slices(self.dataset[types]))
         # case 2: write train, test or val dataset directly with sharding
-        if tfdata and types and train_test_val_total:
-            if train_test_val_total <= 40000:
-                out_path = "{}/{}-dataset-1".format(path_prefix, types)
-                writer = tf.data.experimental.TFRecordWriter(out_path)
-                writer.write(tfdata)
-            else:
-                c = 0
-                while train_test_val_total:
-                    if train_test_val_total < 40000:
-                        out_path = "{}/{}-dataset-{}".format(path_prefix, types, c)
-                        writer = tf.data.experimental.TFRecordWriter(out_path)
-                        writer.write(tfdata)
+        if tfdata and types:
+            c = 0
+            while True:
+                try:
                     tmp = tfdata.take(40000)
+                    if len(tmp) != 40000:
+                        raise
                     out_path = "{}/{}-dataset-{}".format(path_prefix, types, c)
                     writer = tf.data.experimental.TFRecordWriter(out_path)
                     writer.write(tmp)
                     tfdata = tfdata.skip(40000)
                     c += 1
+                except:
+                    out_path = "{}/{}-dataset-{}".format(path_prefix, types, c + 1)
+                    writer = tf.data.experimental.TFRecordWriter(out_path)
+                    writer.write(tfdata)
+                    break
 
     def feature_writer(self, dataset_prefix, data):
         try:
@@ -165,6 +163,8 @@ class Pipeline():
             logs_col = df["log_content"]
             for log_str in logs_col:
                 self.log_count += 1
+                # if self.log_count <67:
+                #     continue
                 extractors = self.params[self.job_type]["process_fn"].process(
                     log_str)
                 for data in extractors:
@@ -188,11 +188,6 @@ class Pipeline():
 
         print("Classes distribution:", self.classes_distribution)
 
-        meta_data = pickle.load(open(os.path.join(dataset_prefix, "{}_meta".format(self.job_type)), 'rb'))
-        train_size = int(TRAIN_SPLIT * meta_data.total)
-        val_size = int((1 - TRAIN_SPLIT) / 2 * meta_data.total)
-        test_size = int((1 - TRAIN_SPLIT) / 2 * meta_data.total)
-
         oversampling_prefix = os.path.join(job_dir, 'with_oversampling_data', self.job_type)
         if tf.io.gfile.exists(oversampling_prefix):
             tf.io.gfile.rmtree(oversampling_prefix)
@@ -205,20 +200,24 @@ class Pipeline():
         for i, class_dist in enumerate(self.classes_distribution):
             tfrecords = glob.glob(os.path.join("./processed_data", self.job_type, f"{i}-*"))
             dataset = tf.data.TFRecordDataset(tfrecords)
-            t_size = class_dist // TRAIN_SPLIT
-            v_size = class_dist // ((1 - TRAIN_SPLIT) // 2)
+            t_size = int(class_dist * TRAIN_SPLIT)
+            v_size = int(class_dist * ((1 - TRAIN_SPLIT) / 2))
             tot += t_size
             train_dataset.append(dataset.take(t_size))
             dataset.skip(t_size)
             test_dataset.append(dataset.take(v_size))
             val_dataset.append(dataset.skip(v_size))
+        tmp_test = test_dataset[0]
+        for d in test_dataset[1:]:
+            tmp_test.concatenate(d)
+        test_dataset = tmp_test.shuffle(BATCH_SIZE)
+        tmp_val = val_dataset[0]
+        for d in val_dataset[1:]:
+            tmp_val.concatenate(d)
+        val_dataset = tmp_val.shuffle(BATCH_SIZE)
 
-        # train_dataset = tf.concat(train_dataset).shuffle(BATCH_SIZE)
-        test_dataset = tf.concat(test_dataset).shuffle(BATCH_SIZE)
-        val_dataset = tf.concat(val_dataset).shuffle(BATCH_SIZE)
-
-        self.write_tfrecords(oversampling_prefix, "val", val_dataset, val_size)
-        self.write_tfrecords(oversampling_prefix, "test", test_dataset, test_size)
+        self.write_tfrecords(oversampling_prefix, "val", val_dataset)
+        self.write_tfrecords(oversampling_prefix, "test", test_dataset)
 
         # final_dataset = [[] for _ in range(len(self.classes_distribution))]
         # tot = 0
@@ -229,10 +228,11 @@ class Pipeline():
         #     tot += 1
         #     final_dataset[l].append(raw)
         # final_dataset = [tf.data.Dataset.from_tensor_slices(data) for data in final_dataset]
+        # [409, 392]
         resampled_ds = tf.data.experimental \
             .sample_from_datasets(train_dataset,
                                   weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(BATCH_SIZE)
-        self.write_tfrecords(oversampling_prefix, "train", resampled_ds, tot)
+        self.write_tfrecords(oversampling_prefix, "train", resampled_ds)
 
 
 # with tf.io.gfile.GFile(os.path.join(dataset_prefix, "pon_meta"), 'wb') as f:

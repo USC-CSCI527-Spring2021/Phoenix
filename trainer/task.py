@@ -20,7 +20,7 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=100,
+        default=1,
         help='number of times to go through the data, default=5000')
     # parser.add_argument(
     #     '--batch-size',
@@ -193,24 +193,20 @@ if __name__ == "__main__":
         for i in range(num_classes):
             class_weight[i] = preprocess_data.total / (num_classes * preprocess_data.classes_distribution[i])
         print('Weight for classes:', class_weight)
+        train_tfrecords = tf.io.gfile.glob(
+            create_or_join("processed_data/{}/".format(args.model_type)) + "train-dataset*")
+        val_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "eval-dataset*")
     else:
         # oversampling
-        pass
+        train_tfrecords = tf.io.gfile.glob(
+            create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "train-dataset*")
+        val_tfrecords = tf.io.gfile.glob(
+            create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "eval-dataset*")
 
-    train_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "train-dataset*")
-    val_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "eval-dataset*")
     train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
     val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
-    counts = {1: 0, 0: 0}
-    for i in train_dataset:
-        _, labels = list(i)
-        for l in labels:
-            if np.argmax(l) == 1:
-                counts[1] += 1
-            else:
-                counts[0] += 1
 
     if args.hypertune:
         tuner = kt.Hyperband(
@@ -229,7 +225,7 @@ if __name__ == "__main__":
     else:
 
         if args.model_type == 'discarded':
-            input_shape = (16, 34, 1)
+            input_shape = (73, 34, 1)
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
                 keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
@@ -247,16 +243,16 @@ if __name__ == "__main__":
             # validation_steps = [2500, 2500, 2500, 2500]
             # types = 0
             if args.model_type == 'chi':
-                input_shape = (63, 34, 1)
+                input_shape = (74, 34, 1)
             elif args.model_type == 'pon':
-                input_shape = (63, 34, 1)
+                input_shape = (74, 34, 1)
                 # types = 1
                 # generator = FG.PonFeatureGenerator()
             elif args.model_type == 'kan':
-                input_shape = (66, 34, 1)
+                input_shape = (77, 34, 1)
                 # types = 2
             elif args.model_type == 'riichi':
-                input_shape = (62, 34, 1)
+                input_shape = (73, 34, 1)
                 # types = 3
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
@@ -269,16 +265,23 @@ if __name__ == "__main__":
                                                 save_freq=1000,
                                                 ),
             ]
-            # save_model(os.path.join(create_or_join("models"), args.model_type), model)
-        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                  steps_per_epoch=100,
-                  class_weight=class_weight,
-                  validation_steps=1000,
-                  use_multiprocessing=True,
-                  workers=-1,
-                  callbacks=callbacks)
+        try:
+            model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+                      steps_per_epoch=10,
+                      class_weight=class_weight,
+                      validation_steps=1000,
+                      use_multiprocessing=True,
+                      workers=-1,
+                      callbacks=callbacks)
+        except KeyboardInterrupt:
+            model.save(os.path.join(create_or_join("models"), args.model_type))
+            model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+            print('Keyboard Interrupted, Model and weights saved')
+            import sys
+
+            sys.exit(0)
         model.save(os.path.join(create_or_join("models"), args.model_type))
-        model.save_weights(os.path.join(create_or_join("models_weights"), args.model_type))
+        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
         # save_model(os.path.join(create_or_join("models"), args.model_type), model)
 
         # if not args.cloud_train:

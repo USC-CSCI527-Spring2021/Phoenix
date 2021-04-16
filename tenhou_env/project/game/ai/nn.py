@@ -138,7 +138,7 @@ def getGeneralFeature(player, additional_data=None):
 class Chi:
     def __init__(self, player):
         self.player = player
-        self.input_shape = (63, 34, 1)
+        self.input_shape = (74, 34, 1)
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
@@ -192,7 +192,7 @@ class Pon:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        self.input_shape = (63, 34, 1)
+        self.input_shape = (74, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
         if 'pon' not in player.config.weights:
@@ -239,7 +239,7 @@ class Pon:
 class Kan:
     def __init__(self, player):
         self.player = player
-        self.input_shape = (66, 34, 1)
+        self.input_shape = (77, 34, 1)
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
@@ -358,7 +358,7 @@ class Riichi:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        self.input_shape = (62, 34, 1)
+        self.input_shape = (73, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
         if 'riichi' not in player.config.weights:
@@ -404,14 +404,14 @@ class Discard:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        self.input_shape = (16, 34, 1)
+        self.input_shape = (73, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        if 'discard' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
+        if 'discarded' not in player.config.weights:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
         else:
             self.model = discard_model(self.input_shape)
-            self.model.set_weights(player.config.weights['discard'])
+            self.model.set_weights(player.config.weights['discarded'])
 
         print('###### Discarded model initialized #######')
         self.collector = ExperienceCollector('discard', player.config.buffer)
@@ -459,6 +459,7 @@ class Discard:
 class GlobalRewardPredictor:
     def __init__(self):
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'grp'))
+        print("###### Global Reward Predictor model initialized #######")
         # self.model.summary()
 
 
@@ -473,66 +474,3 @@ class GlobalRewardPredictor:
         # # print('input_shape', embed.shape)
         # assert embed.shape[-2:] == (15, 15)
         return self.model.predict(features)[0]
-
-# class Discard:
-#     def __init__(self, player):
-#         self.player = player
-#         # self.strategy = 'local'
-#         # self.input_shape = (16, 34, 1)
-#         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
-#         # load models from current working dir
-#         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
-#         print('###### Discarded model initialized #######')
-#         self.collector = ExperienceCollector('discard')
-
-#     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi=False):
-#         '''
-#         The reason why these two should be input:
-#         if the "discard" action is from "discard after meld", since we have decided to meld, what
-#         to do next is to decide what to discard, but the meld has not happened (and could also be
-#         interrupted), so we could only use discard model based on supposed hands after melding
-
-#         '''
-#         # random output a tile
-#         # tile_to_discard_136 = random.choice(self.player.closed_hand)
-#         features = self.getFeature(all_hands_136, closed_hands_136, with_riichi)
-#         tile_to_discard = np.argmax(self.model.predict(np.expand_dims(features, axis=0))[0])
-#         tile_to_discard_136 = [h for h in self.player.closed_hand if h // 4 == tile_to_discard]
-#         akadora = [tile for tile in tile_to_discard_136 if is_aka_dora(tile, True)]
-#         # No discard candidate
-#         if not tile_to_discard_136:
-#             ran = random.choice(self.player.closed_hand)
-#             print("Discarded Model predict {} not in closed hand.\nRandom choose {} from {} to discard".format(
-#                 tile_to_discard * 4, ran, self.player.closed_hand))
-#             self.collector.record_decision(features, np.eye(34)[ran // 4])
-#             return ran
-#         # only if this game has akadora
-#         if self.player.table.has_aka_dora and akadora:
-#             if len(tile_to_discard_136) > 1:
-#                 # if multiple tiles exists, return the one which is not red dora
-#                 tile_to_discard_136.remove(akadora[-1])
-#                 print("Multiple tiles exists, AkaDora:", akadora[-1], "Discard the non red dora:",
-#                       tile_to_discard_136[0])
-#                 self.collector.record_decision(features, np.eye(34)[tile_to_discard_136[0]])
-#                 return tile_to_discard_136[0]
-#             else:
-#                 print("Discard the AkaDora:", tile_to_discard_136[0])
-#                 self.collector.record_decision(features, np.eye(34)[tile_to_discard_136[0]])
-#                 return tile_to_discard_136[0]
-#         else:
-#             print("Discarded Model:", "discard", tile_to_discard_136[-1], "from", self.player.closed_hand)
-#             self.collector.record_decision(features, np.eye(34)[tile_to_discard_136[-1]])
-#             return tile_to_discard_136[-1]
-
-#     def getFeature(self, open_hands_136, closed_hands_136, with_riichi):
-#         from trainer.models import transform_discard_features
-#         data = {
-#             "draw_tile": self.player.tiles[-1],
-#             "hands": self.player.tiles,
-#             "discarded_tiles_pool": self.player.table.revealed_tiles_136,
-#             "four_players_open_hands": self.player.table.melded_tiles,
-#             ## fake data here, pass in just to get function running
-#             "discarded_tile": 0,
-#         }
-#         # if hands are none, get hands from self.player
-#         return transform_discard_features(data)['features']  # change this according to actual shape

@@ -56,17 +56,16 @@ class Actor:
         self.bot_config = BotDefaultConfig()
         self.bot_config.buffer = buffer
         self.player_idx = 0
-        # weights for clients
-        self.weights = {}
 
     def set_weights(self, weights):
-        self.weights = weights  # a dict for all models
+        self.bot_config.weights = weights  # a dict for all models
 
     def get_weights(self):
         pass
 
     def run(self):
-        assert self.weights, "should set weights before run the actor"
+        assert self.bot_config.weights, "should set weights before run the actor"
+        assert len(self.bot_config.weights) == 6, "Require 6 model weights"
         if self.opt.isOnline:
             module = importlib.import_module(f"settings.bot_{self.player_idx}_settings")
             for key, value in vars(module).items():
@@ -75,7 +74,6 @@ class Actor:
                     settings.__setattr__(key, value)
 
             logger = set_up_logging()
-            self.bot_config.weights = self.weights
             client = TenhouClient(logger, bot_config=self.bot_config)
 
             for _ in range(self.opt.num_games):
@@ -97,17 +95,15 @@ class Actor:
                     client.end_game(False)
             client.table.player.ai.write_buffer()
         else:
-            assert len(self.weights) == 4, "need 4 clients weights to start"
             _set_up_bots_battle_game_logger()
             print_logs = False
             clients = []
             for i in range(self.opt.num_games):
                 one_game_clients = []
                 replay_name = GameManager.generate_replay_name()
-                for client_idx in range(4):
-                    config = BotDefaultConfig()
-                    config.weights = self.weights[client_idx]
-                    one_game_clients.append(LocalClient(config, print_logs, replay_name, i))
+                for i in range(4):
+                    self.bot_config.name = f"bot{i}"
+                    one_game_clients.append(LocalClient(self.bot_config, print_logs, replay_name, i))
                 # start a local game
                 bot_battle_main(1, print_logs, one_game_clients, replay_name)
                 # end of a local game

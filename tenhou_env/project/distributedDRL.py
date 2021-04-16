@@ -20,7 +20,6 @@ flags.DEFINE_integer("num_nodes", 1, "number of nodes")
 flags.DEFINE_integer("num_workers", 1, "number of workers")
 
 
-
 @ray.remote
 class ReplayBuffer:
     def __init__(self, opt, buffer_index, buffer_type):
@@ -34,7 +33,7 @@ class ReplayBuffer:
         self.buf = []
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.actor_steps, self.learner_steps = 0, 0
-        
+
     def store(self, obs, rew, pred, act):
         # self.obs1_buf[self.ptr] = obs
         # self.obs2_buf[self.ptr] = next_obs
@@ -53,10 +52,10 @@ class ReplayBuffer:
         #             acts=self.acts_buf[idxs],
         #             rews=self.rews_buf[idxs])
         return self.buf[idxs]
-    
+
     def get_counts(self):
         return self.learner_steps, self.actor_steps, self.size
-    
+
     def save(self):
         info = {'buffer': self.buf,
                 'ptr': self.ptr,
@@ -66,17 +65,19 @@ class ReplayBuffer:
                 'actor_steps': self.actor_steps}
         np.save(self.opt.save_dir + '/' + self.buffer_type, info)
         print("**** buffer " + self.buffer_type + " saved! *******")
-    
+
     def load(self, buffer_path):
         if not buffer_path:
             buffer_path = self.opt.save_dir + '/' + self.buffer_type + '.npy'
         info = np.load(buffer_path)
         self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], \
-            info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
+                                                                                             info['ptr'], info['size'], \
+                                                                                             info['max_size'], info[
+                                                                                                 'learner_steps'], info[
+                                                                                                 'actor_steps']
         print("****** buffer " + self.buffer_type + " restored! ******")
         print("****** buffer " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
               self.actor_steps, self.learner_steps)
-
 
 
 class Cache():
@@ -115,19 +116,11 @@ class Cache():
     def end(self):
         self.p1.terminate()
 
+
 @ray.remote
 class ParameterServer:
     """
     One PS contains 1 or 4 clients weights
-    {
-        0: {
-            chi: [],
-            ...
-        },
-        1: {},
-        3: {},
-        4: {},
-    }
     """
 
     def __init__(self, opt, ps_index, weights_files=None, checkpoint_path=None):
@@ -136,7 +129,7 @@ class ParameterServer:
         self.opt = opt
         self.learner_step = 0
         self.ps_index = ps_index
-        self.weights = {} if opt.isOnline else {i: {} for i in range(4)}
+        self.weights = {}
         # --- make dir for all nodes and save parameters ---
         # try:
         #     os.makedirs(opt.save_dir)
@@ -147,7 +140,7 @@ class ParameterServer:
         # all_parameters["obs_space"] = ""
         # all_parameters["act_space"] = ""
         # with open(opt.save_dir + "/" + 'All_Parameters.json', 'w') as fp:
-            # json.dump(all_parameters, fp, indent=4, sort_keys=True)
+        # json.dump(all_parameters, fp, indent=4, sort_keys=True)
         # --- end ---
 
         if not checkpoint_path:
@@ -159,19 +152,16 @@ class ParameterServer:
         #         print("****** weights restored! ******")
 
         if weights_files:
-            assert len(weights_files) == 5, f"only {len(weights_files)} model files, need 5"
+            assert len(weights_files) == 6, f"only {len(weights_files)} model files, need 6"
+            print("****** ps start loading weights ******")
             try:
                 for f in weights_files:
                     weights = keras.models.load_model(f).get_weights()
                     model_type = f.split("/")[-1]
-                    self.weights[0][model_type] = weights
+                    self.weights[model_type] = weights
                     # with open(f, "rb") as pickle_in:
                     #     self.weights[f.split("/")[-1]] = pickle.load(pickle_in)
-                # all client should start with the same weights
-                if not opt.isOnline:
-                    for i in range(1, 4):
-                        self.weights[i] = self.weights[0]
-                print(f"****** weights restored! ******")
+                print("****** weights restored! ******")
             except:
                 print("------------------------------------------------")
                 print(weights_files)
@@ -197,7 +187,8 @@ class ParameterServer:
         with open(self.opt.save_dir + "/checkpoint/" + "checkpoint_weights.pickle", "wb") as pickle_out:
             pickle.dump(self.weights, pickle_out)
 
-@ray.remote(num_cpus=1, num_gpus=0, max_calls=1)    #centralized training
+
+@ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt, model_type):
     agent = Learner(opt, model_type)
     weights = ray.get(ps.pull.remote(model_type))
@@ -224,6 +215,7 @@ def worker_rollout(ps, replay_buffer, opt, player_idx):
         weights = ray.get(ps.pull.remote())
         agent.set_weights(weights)
         agent.run()
+
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):
@@ -272,14 +264,13 @@ def worker_test(ps, node_buffer, opt):
             ps_save_op = [node_ps[i].save_weights.remote() for i in range(opt.num_nodes)]
             buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
                               node_index in range(opt.num_nodes)]
-            ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)       #5 models + ps
+            ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)  # 5 models + ps
 
             print("total time for saving :", time.time() - save_start_time)
             checkpoint_times = total_time // opt.checkpoint_freq
 
 
 def get_al_status(node_buffer):
-
     buffer_learner_step = []
     buffer_actor_step = []
     buffer_cur_size = []
@@ -317,8 +308,9 @@ if __name__ == '__main__':
                                                                                      "." not in f], ""))
         print(f"Node{node_index} Parameter Server all set.")
 
-
-        node_buffer.append([ReplayBuffer.options(resources={"node"+str(node_index):1}).remote(opt, node_index, model_type) for model_type in model_types])
+        node_buffer.append(
+            [ReplayBuffer.options(resources={"node" + str(node_index): 1}).remote(opt, node_index, model_type) for
+             model_type in model_types])
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
@@ -328,7 +320,6 @@ if __name__ == '__main__':
                                                                                        player_idx)
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")
-    
 
     print("Ray total resources:", ray.cluster_resources())
     print("available resources:", ray.available_resources())
@@ -340,9 +331,10 @@ if __name__ == '__main__':
     f_name = './nodes_info.pickle'
     with open(f_name, "wb") as pickle_out:
         pickle.dump(nodes_info, pickle_out)
-        print("****** save nodes_info ******")   
+        print("****** save nodes_info ******")
 
-    task_train = [worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type) for model_type in model_types]
+    task_train = [worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type) for
+                  model_type in model_types]
 
     task_test = worker_test.remote(node_ps[0], node_buffer, opt)
     ray.wait([task_test])
