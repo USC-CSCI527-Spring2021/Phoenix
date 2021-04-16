@@ -426,8 +426,8 @@ class Discard:
         # get feature and prediction
 
         if not all_hands_136:
-            all_hands_136 = player.tiles
-            closed_hands_136 = player.closed_hand
+            all_hands_136 = self.player.tiles
+            closed_hands_136 = self.player.closed_hand
 
         features = self.getFeature(all_hands_136, closed_hands_136)
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
