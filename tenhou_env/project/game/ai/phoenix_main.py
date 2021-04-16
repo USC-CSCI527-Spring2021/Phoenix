@@ -223,8 +223,8 @@ class Phoenix:
             tiles = self.player.tiles[:]
         else:
             tiles = tiles[:]
-
-        tiles += [win_tile_136]
+        if win_tile_136 not in tiles:
+            tiles += [win_tile_136]
 
         additional_han = 0
         if is_chankan:
