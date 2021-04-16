@@ -437,7 +437,7 @@ class GameManager:
                     self.current_client_seat = self._move_position(other_client.seat, shift=-1)
                     continue
 
-                meld, discard_option = other_client.player.try_to_call_meld(tile, is_kamicha_discard)
+                meld, discard_option = other_client.player.try_to_call_meld(tile, is_kamicha_discard, 5)
 
                 other_client.table.revealed_tiles[tile_34] += 1
 

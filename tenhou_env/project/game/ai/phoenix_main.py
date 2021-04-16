@@ -116,15 +116,13 @@ class Phoenix:
         # print(tile_136)
         # print(self.player.closed_hand)
         melds_chi, melds_pon = self.get_possible_meld(tile_136, is_kamicha_discard)
-        if meld_type & 4:
+        if melds_chi and meld_type & 4:
             should_chi, chi_score, tiles_chi = self.chi.should_call_chi(tile_136, melds_chi)
             # fix here: tiles_chi is now the first possible meld ---fixed! 
-            assert melds_chi
             # tiles_chi = melds_chi[0]
             meld_chi = Meld(meld_type="chi", tiles=tiles_chi) if meld_chi else None
-        elif meld_type & 1:
+        if melds_pon and meld_type & 1:
             should_pon, pon_score = self.pon.should_call_pon(tile_136, is_kamicha_discard)
-            assert melds_pon
             tiles_pon = melds_pon[0]
             meld_pon = Meld(meld_type="pon", tiles=tiles_pon) if meld_pon else None
 
