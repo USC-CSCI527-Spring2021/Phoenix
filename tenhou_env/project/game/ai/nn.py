@@ -44,11 +44,11 @@ def getGeneralFeature(player, additional_data=None):
         open_hand_feature = np.zeros((4, 34))
         discarded_tiles_feature = np.zeros((4, 34))
 
-        if additional_data and additional_data.has_key("open_hands_136"):
+        if additional_data and "open_hands_136" in additional_data:
             open_hand = additional_data["open_hands_136"]
         else:
             open_hand = [tile for meld in player.melds for tile in meld.tiles]
-        if additional_data and additional_data.has_key("closed_hands_136"):
+        if additional_data and "closed_hands_136" in additional_data:
             closed_hand = additional_data["closed_hands_136"]
         else:
             closed_hand = player.closed_hand  # [tile for tile in player.tiles if tile not in open_hand]
@@ -147,7 +147,7 @@ class Chi:
         else:
             self.model = rcpk_model(self.input_shape)
             self.model.set_weights(player.config.weights['chi'])
-        print('###### Chi model initialized #######')
+        # print('###### Chi model initialized #######')
         self.collector = ExperienceCollector('chi', player.config.buffer)
         self.collector.start_episode()
 
@@ -201,7 +201,7 @@ class Pon:
             self.model = rcpk_model(self.input_shape)
             self.model.set_weights(player.config.weights['pon'])
 
-        print('###### Pon model initialized #######')
+        # print('###### Pon model initialized #######')
         self.collector = ExperienceCollector('pon', player.config.buffer)
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
@@ -249,7 +249,7 @@ class Kan:
             self.model = rcpk_model(self.input_shape)
             self.model.set_weights(player.config.weights['kan'])
 
-        print('###### Kan model initialized #######')
+        # print('###### Kan model initialized #######')
         self.collector = ExperienceCollector('kan', player.config.buffer)
 
     def should_call_kan(self, tile_136, open_kan, from_riichi=False):
@@ -367,7 +367,7 @@ class Riichi:
             self.model = rcpk_model(self.input_shape)
             self.model.set_weights(player.config.weights['riichi'])
 
-        print('###### Riichi model initialized #######')
+        # print('###### Riichi model initialized #######')
         self.collector = ExperienceCollector('riichi', player.config.buffer)
 
     def should_call_riichi(self):
@@ -412,8 +412,7 @@ class Discard:
         else:
             self.model = discard_model(self.input_shape)
             self.model.set_weights(player.config.weights['discarded'])
-
-        print('###### Discarded model initialized #######')
+        # print('###### Discarded model initialized #######')
         self.collector = ExperienceCollector('discard', player.config.buffer)
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi_options=None):
@@ -459,7 +458,7 @@ class Discard:
 class GlobalRewardPredictor:
     def __init__(self):
         self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'grp'))
-        print("###### Global Reward Predictor model initialized #######")
+        # print("###### Global Reward Predictor model initialized #######")
         # self.model.summary()
 
 

@@ -105,7 +105,9 @@ class Actor:
                     self.bot_config.name = f"bot{i}"
                     one_game_clients.append(LocalClient(self.bot_config, print_logs, replay_name, i))
                 # start a local game
+                print("One local game played!")
                 bot_battle_main(1, print_logs, one_game_clients, replay_name)
+                print("One local game end!")
                 # end of a local game
                 clients.append(one_game_clients)
             # Write to buffer
