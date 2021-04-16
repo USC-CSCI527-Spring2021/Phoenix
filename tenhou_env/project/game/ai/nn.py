@@ -431,11 +431,16 @@ class Discard:
         self.collector = ExperienceCollector('discard', player.config.buffer)
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi_options=None):
+        
         # discard_options
         if with_riichi_options:
             discard_options = with_riichi_options
         else:
             discard_options = closed_hands_136 if closed_hands_136 else self.player.closed_hand
+            
+        if not all_hands_136:
+            all_hands_136 = self.player.tiles
+            closed_hands_136 = self.player.closed_hand
 
         # get feature and prediction
         features = self.getFeature(all_hands_136, closed_hands_136)
@@ -452,7 +457,13 @@ class Discard:
         self.collector.record_decision(features, actions, predictions)
         return choice
 
-    def getFeature(self, all_hands_136=None, closed_hands_136=None):
+    def getFeature(self, all_hands_136, closed_hands_136):
+        '''
+        Here all_hands_136 and closed_hands_136 are "virtual" results after meld.
+        Since "discard_tile" could be called in try_to_call_meld, and your meld choice could be
+        interruptted. Like chi is interruptted by other's pon. So you can only use virtual results
+        instead of current table data
+        '''        
         open_hands_136 = [tile for tile in all_hands_136 if tile not in closed_hands_136]
         x = getGeneralFeature(self.player, {"open_hands_136":open_hands_136, "closed_hands_136":closed_hands_136})
         return x.reshape((x.shape[0], x.shape[1], 1))
