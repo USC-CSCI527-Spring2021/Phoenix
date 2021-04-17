@@ -103,7 +103,9 @@ class GameManager:
             self.init_round()
 
             results = self.play_round()
+            #update gains
             for client in self.clients:
+                client.table.gains = [p.scores-p.init_score for p in client.table.players]            
                 client.table.player.ai.collect_experience()
 
             dealer_won = False
@@ -493,10 +495,6 @@ class GameManager:
                 continue_to_play = False
         
         result = self.process_the_end_of_the_round([], 0, None, None, False)
-        #update gains
-        gains = [c.player.scores - c.table.init_scores[i] * 100 for i, c in enumerate(self.clients)]
-        for client in self.clients:
-            client.table.gains = gains
         ###
         return [result]
 

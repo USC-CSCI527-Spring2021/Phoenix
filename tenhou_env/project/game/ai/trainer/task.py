@@ -209,7 +209,7 @@ if __name__ == "__main__":
                                                          monitor='accuracy',
                                                          save_freq=500,
                                                          ))
-        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=1000,
+        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset, steps_per_epoch=3,
                   validation_steps=100,
                   use_multiprocessing=True,
                   workers=-1,

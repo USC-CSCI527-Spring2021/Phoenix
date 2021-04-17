@@ -180,6 +180,7 @@ class Player(PlayerInterface):
 
         self.last_draw = None
         self.in_tempai = False
+        self.init_score = 25000
 
         if self.ai:
             self.ai.erase_state()

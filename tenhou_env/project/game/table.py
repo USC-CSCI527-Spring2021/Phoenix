@@ -17,6 +17,7 @@ class Table:
     discarded_pool_136 = None
 
     dealer_seat = 0
+    gains = []
     round_number = -1
     round_wind_number = 0
     count_of_riichi_sticks = 0
@@ -58,8 +59,7 @@ class Table:
 
         # we need it to properly display log for each round
         self.round_number += 1
-        self.init_scores = scores
-
+        
         self.meld_was_called = False
         self.dealer_seat = dealer_seat
         self.round_wind_number = round_wind_number
@@ -75,9 +75,11 @@ class Table:
         self.add_dora_indicator(dora_indicator)
 
         # erase players state
-        for player in self.players:
+        for i, player in enumerate(self.players):
+            player.init_score = scores[i]
             player.erase_state()
             player.dealer_seat = dealer_seat
+            
         self.set_players_scores(scores)
 
         # 136 - total count of tiles
