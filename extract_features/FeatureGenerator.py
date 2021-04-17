@@ -8,8 +8,8 @@ import json
 import marshal
 
 import numpy as np
-from joblib import Parallel, delayed
-from joblib.externals.loky import set_loky_pickler
+# from joblib import Parallel, delayed
+# from joblib.externals.loky import set_loky_pickler
 from mahjong.hand_calculating.hand import HandCalculator
 from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
 from mahjong.hand_calculating.scores import ScoresCalculator
@@ -18,7 +18,8 @@ from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
 from tensorflow.keras.utils import to_categorical
 
-set_loky_pickler('dill')
+
+# set_loky_pickler('dill')
 
 
 class FeatureGenerator:
@@ -311,10 +312,12 @@ class FeatureGenerator:
                         feature[i + 8] = 1
             return feature
 
-        results = Parallel(n_jobs=8)(
-            delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
-                                     enemies_tiles_list)
-            for i in range(34))
+        # results = Parallel(n_jobs=8)(
+        #     delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
+        #                              enemies_tiles_list)
+        #     for i in range(34))
+        results = [feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
+                                   enemies_tiles_list) for i in range(34)]
         return np.concatenate(results, axis=1)
 
     def getGeneralFeature(self, tiles_state_and_action):
