@@ -80,7 +80,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    init_model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+    init_model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
 
     if checkpoints:
         latest_checkpoint = checkpoint
@@ -96,7 +96,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
             print("Start {} model in distribute mode".format(model_type))
         return model
     print("Creating a new {} model".format(model_type))
-    return discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+    return discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
 
 
 def hypertune(hp):
@@ -136,7 +136,7 @@ def discard_model(input_shape):
     x = Normalization()(k_input)
 
     for _ in range(3):
-        x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
+        x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
     for _ in range(5):
         x = residual_block(x, 256, _project_shortcut=True)
         x = residual_block(x, 256, _project_shortcut=True)
@@ -164,12 +164,12 @@ def rcpk_model(input_shape):
     k_input = keras.Input(input_shape)
     x = Normalization()(k_input)
     for _ in range(3):
-        x = Conv2D(256, (3, 1), padding="same", data_format="channels_last")(x)
+        x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
     for _ in range(5):
         x = residual_block(x, 256, _project_shortcut=True)
         x = residual_block(x, 256, _project_shortcut=True)
     for _ in range(3):
-        x = Conv2D(32, (3, 1), padding="same", data_format="channels_last")(x)
+        x = Conv2D(32, (3, 3), padding="same", data_format="channels_last")(x)
     x = Flatten()(x)
     x = Dense(1024)(x)
     x = Dense(256)(x)

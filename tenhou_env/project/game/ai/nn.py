@@ -427,11 +427,11 @@ class Discard:
         self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        if 'discarded' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discarded'))
+        if 'discard' not in player.config.weights:
+            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
         else:
             self.model = discard_model(self.input_shape)
-            self.model.set_weights(player.config.weights['discarded'])
+            self.model.set_weights(player.config.weights['discard'])
         # print('###### Discarded model initialized #######')
         self.collector = ExperienceCollector('discard', player.config.buffer)
 

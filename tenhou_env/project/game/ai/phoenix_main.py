@@ -105,7 +105,7 @@ class Phoenix:
         # if not self.player.in_tempai:
             # game_logger.info(' '.join([str(i) for i in self.player.closed_hand]))
             # return self.discard.discard_tile(), False
-            
+
         with_riichi, p = self.riichi.should_call_riichi()
         if with_riichi:
             # fix here: might need review

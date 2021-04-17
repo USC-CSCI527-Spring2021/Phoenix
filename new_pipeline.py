@@ -48,18 +48,18 @@ class Pipeline():
     def __init__(self, job_type):
         self.job_type = job_type
         self.counter = 0
-        self.write_count = [0] * 34 if self.job_type == "discarded" else [0, 0]
-        self.classes_distribution = [0] * 34 if self.job_type == "discarded" else [0, 0]
+        self.write_count = [0] * 34 if self.job_type == "discard" else [0, 0]
+        self.classes_distribution = [0] * 34 if self.job_type == "discard" else [0, 0]
         # self.train = []
         # self.eval = []
-        if self.job_type == "discarded":
+        if self.job_type == "discard":
             self.dataset = {i: [] for i in range(34)}
         else:
             self.dataset = {0: [], 1: []}
         self.log_count = 0
         self.params = {
-            "discarded": {
-                "table_bq_table": 'mahjong.discarded',
+            "discard": {
+                "table_bq_table": 'mahjong.discard',
                 "feature_spec": {
                     "features": tf.io.FixedLenFeature((62, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((34,), tf.float32),
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--job-type',
         required=True,
-        type=str, choices=['discarded', 'riichi', 'chi', 'pon', 'kan'],
+        type=str, choices=['discard', 'riichi', 'chi', 'pon', 'kan'],
         help='Type of pipeline needs to run')
 
     args = parser.parse_args()

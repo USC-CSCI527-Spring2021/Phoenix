@@ -298,7 +298,7 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
             else:
                 self.is_FCH_list.append(0)
 
-            # get discarded tiles
+            # get discardv tiles
             if i == 0:
                 last_player_tile_136 = None
                 self.last_player_discarded_tile_list.append(last_player_tile_136)

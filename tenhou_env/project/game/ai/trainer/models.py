@@ -80,7 +80,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+    model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
 
     if checkpoints:
         latest_checkpoint = max(checkpoints,
@@ -90,7 +90,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
             model.load_weights(latest_checkpoint)
         else:
             with strategy.scope():
-                model = discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+                model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
                 model.load_weights(latest_checkpoint)
             print("Start {} model in distribute mode".format(model_type))
         return model

@@ -1,15 +1,17 @@
-from logs_parser.parser import parse_mjlog
-
-import xml.etree.ElementTree as ET
 import copy
+import xml.etree.ElementTree as ET
+
 import apache_beam as beam
 
+from logs_parser.parser import parse_mjlog
+
+
 def get_player_hands(player_id, four_closed_hands, four_open_hands, four_discarded_hands):
-    return {
-        'closed_hand:' : four_closed_hands[player_id],
-        'open_hand' : four_open_hands[player_id], 
-        'discarded_tiles' : four_discarded_hands[player_id]   
-    }
+	return {
+		'closed_hand:': four_closed_hands[player_id],
+		'open_hand': four_open_hands[player_id],
+		'discarded_tiles': four_discarded_hands[player_id]
+	}
 
 
 def get_enemy(enemy_id, four_open_hands, four_discarded_hands):
@@ -262,28 +264,29 @@ class DiscardedFeatureExtractor(beam.DoFn):
 
 	        call_actions_record = self.call_actions_record_list[i]
 	        open_hands_details = self.four_player_open_hands_detail_list[i]
-	 
-	        # separate_player_enemies_hands
-	        self.player_tiles_list.append(get_player_hands(player_id, four_closed_hands, four_open_hands, four_discarded_hands))
-	        self.enemies_tiles_list.append(get_three_enemies_hands(player_id, four_open_hands, four_discarded_hands))
-	        
-	        self.open_hands_detail_list.append(open_hands_details[player_id])
 
-	        # get player call_actions_record firstly, if reached, continue
-	        player_call_actions_record = get_player_call_actions_record(player_id, call_actions_record)
-	        self.player_call_actions_record_list.append(player_call_actions_record)
+			# separate_player_enemies_hands
+			self.player_tiles_list.append(
+				get_player_hands(player_id, four_closed_hands, four_open_hands, four_discarded_hands))
+			self.enemies_tiles_list.append(get_three_enemies_hands(player_id, four_open_hands, four_discarded_hands))
 
-	        # get discarded tiles 
-	        if i == 0:
-	            last_player_tile_136 = None
-	            self.last_player_discarded_tile_list.append(last_player_tile_136)
+			self.open_hands_detail_list.append(open_hands_details[player_id])
 
-	            if (i + 1) < len(self.player_id_list) and player_id == self.player_id_list[i + 1]:
-	                last_player = last_player
-	            else:
-	                last_player = player_id
-	        else:
-	            last_player_tile_136 = get_last_discarded_tile(last_player, four_discarded_hands)
+			# get player call_actions_record firstly, if reached, continue
+			player_call_actions_record = get_player_call_actions_record(player_id, call_actions_record)
+			self.player_call_actions_record_list.append(player_call_actions_record)
+
+			# get discard tiles
+			if i == 0:
+				last_player_tile_136 = None
+				self.last_player_discarded_tile_list.append(last_player_tile_136)
+
+				if (i + 1) < len(self.player_id_list) and player_id == self.player_id_list[i + 1]:
+					last_player = last_player
+				else:
+					last_player = player_id
+			else:
+				last_player_tile_136 = get_last_discarded_tile(last_player, four_discarded_hands)
 	            self.last_player_discarded_tile_list.append(last_player_tile_136)
 
 	            if (i + 1) < len(self.player_id_list) and player_id == self.player_id_list[i+1]:

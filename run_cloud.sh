@@ -77,10 +77,10 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --config config.yaml \
   --stream-logs \
   -- \
-  --model-type="discarded" \
+  --model-type="discard" \
   --cloud-train=1
 
-# discarded model runner
+# discard model runner
   gcloud ai-platform jobs submit training discard_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
@@ -91,11 +91,11 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
-  --model-type="discarded" \
+  --model-type="discard" \
   --cloud-train=1 \
 
 
-# discarded model tuner
+# discard model tuner
   gcloud ai-platform jobs submit training discard_model_tuner`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
@@ -106,7 +106,7 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
-  --model-type="discarded" \
+  --model-type="discard" \
   --cloud-train=1 \
   --hypertune=1
 
@@ -168,5 +168,5 @@ gcloud ai-platform jobs submit training pon_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/  \
   --module-name trainer.task \
   -- \
-  --model-type="discarded" \
+  --model-type="discard" \
   --cloud-train=1

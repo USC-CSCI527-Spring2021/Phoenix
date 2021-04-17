@@ -262,10 +262,10 @@ class FeatureGenerator:
         ))
 
     def getLookAheadFeature(self, tiles_state_and_action):
-        # 0 for whether can be discarded
+        # 0 for whether can be discard
         # 1 2 3 for shanten
         # 4 5 6 7 for whether can get 2k 4k 6k 8k points with replacing 3 tiles ---- need review: takes too long!
-        # 8 9 10 for in Shimocha Toimen Kamicha discarded
+        # 8 9 10 for in Shimocha Toimen Kamicha discard
         # lookAheadFeature = np.zeros((11, 34))
         player_tiles = tiles_state_and_action["player_tiles"]
         closed_hand_136 = player_tiles.get('closed_hand:', [])

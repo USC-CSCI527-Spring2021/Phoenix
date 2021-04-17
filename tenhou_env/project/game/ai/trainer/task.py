@@ -12,7 +12,7 @@ from trainer.models import make_or_restore_model, scheduler, hypertune
 
 def argument_parse():
     parser = argparse.ArgumentParser(description="Choose which model to train")
-    parser.add_argument('--model-type', type=str, choices=['discarded', 'riichi', 'chi', 'pon', 'kan'])
+    parser.add_argument('--model-type', type=str, choices=['discard', 'riichi', 'chi', 'pon', 'kan'])
     parser.add_argument('--cloud-train', type=int, default=0,
                         help='0 for local training, 1 for cloud training, default=20')
     parser.add_argument(
@@ -165,7 +165,7 @@ if __name__ == "__main__":
                      workers=-1,
                      callbacks=[keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1)])
     else:
-        if args.model_type == 'discarded':
+        if args.model_type == 'discard':
             input_shape = keras.Input((16, 34, 1))
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [

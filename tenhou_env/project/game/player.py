@@ -270,8 +270,6 @@ class Player(PlayerInterface):
         hand_string = "{}".format(
             TilesConverter.to_one_line_string(self.closed_hand, print_aka_dora=self.table.has_aka_dora)
         )
-        if type(tile_136) == list:
-            print(tile_136)
         if tile_136 is not None:
             hand_string += " + {}".format(
                 TilesConverter.to_one_line_string([tile_136], print_aka_dora=self.table.has_aka_dora)

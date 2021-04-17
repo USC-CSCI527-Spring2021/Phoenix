@@ -12,7 +12,7 @@ And this documentation created to help debug filed unit tests.
 
 Action: `discard`, allowed discard: `3s, 5s`, with riichi: `False`.
 
-Bot discarded 2s by suji because of 2 additional ukeire in ryanshanten, instead of discarding the safe tile.
+Bot discard 2s by suji because of 2 additional ukeire in ryanshanten, instead of discarding the safe tile.
 
 Reproduce:
 

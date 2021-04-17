@@ -95,8 +95,8 @@ def run(job_dir, job_type, beam_options):
                                   beam_options, type(beam_options)))
 
     params = {
-        "discarded": {
-            "table_bq_table": 'mahjong.discarded',
+        "discard": {
+            "table_bq_table": 'mahjong.discard',
             "feature_spec": {
                 "features": tf.io.FixedLenFeature((16, 34, 1), tf.float32),
                 "labels": tf.io.FixedLenFeature((34,), tf.float32),
@@ -173,7 +173,7 @@ def run(job_dir, job_type, beam_options):
                     lambda x, _: int(random.uniform(0, 100) < 100 - (TRAIN_SPLIT * 10)), 2)
                                 )
 
-        # if job_type == "discarded":
+        # if job_type == "discard":
         #     # pass in the dataset variable to continue
         #     # go though process function, in this case,  discarded_model_dataset.DiscardedFeatureExtractor
         #     # this process function is a generator, i used the Pardo operation, a lower level operation compare to flatmap
@@ -186,7 +186,7 @@ def run(job_dir, job_type, beam_options):
         #             | "Transform {} data".format(job_type) >> beam.Map(params[job_type]["transform_fn"])
         #     )
         # else:
-        #     # similar to discarded, but different in transform_fn,
+        #     # similar to discard, but different in transform_fn,
         #     # ChiFeatureGenerator, PonFeatureGenerator, KanFeatureGenerator
         #     # i faced some none data when above function is regular function, and generator function seem to solve it
         #     # I used flatmap because it's not 1 on 1, it might be 1 to 0
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--job-type',
         required=True,
-        type=str, choices=['discarded', 'riichi', 'chi', 'pon', 'kan'],
+        type=str, choices=['discard', 'riichi', 'chi', 'pon', 'kan'],
         help='Type of pipeline needs to run')
     # parser.add_argument(
     #     '--project-id',

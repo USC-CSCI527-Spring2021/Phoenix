@@ -239,8 +239,9 @@ class GameManager:
             drawn_tile_34 = drawn_tile // 4
             current_client.table.count_of_remaining_tiles -= 1
             self.replay.draw(current_client.seat, drawn_tile)
-
             current_client.player.draw_tile(drawn_tile)
+            if len(current_client.player.closed_hand) != 14:
+                print(current_client.player.closed_hand)
             tiles = current_client.player.tiles
 
             if (

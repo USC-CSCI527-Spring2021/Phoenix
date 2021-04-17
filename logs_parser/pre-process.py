@@ -83,20 +83,16 @@
 # In[ ]:
 
 
-
-
-
 # In[2]:
 
 
-import sys
+import copy
+import xml.etree.ElementTree as ET
 # from io import load_mjlog
 from parser import parse_mjlog
-from viewer import print_node
-import pandas as pd
-import xml.etree.ElementTree as ET
+
 import numpy as np
-import copy
+import pandas as pd
 
 
 # In[3]:
@@ -141,9 +137,8 @@ def update_open_private_hands_after_call(encoded_open_hands, encoded_private_han
     return copy.copy(encoded_open_hands), copy.copy(encoded_private_hands)
 
 
-
 '''
-    after each call(pon/chi/gan), update all matrix(private, open, total, discarded)
+    after each call(pon/chi/gan), update all matrix(private, open, total, discard)
     call（碰、吃、杠）完之后：
         更新caller手中的encoded_hands（碰、吃、明杠后都会多出一张手牌）
         更新caller手中的明置牌、暗置牌
@@ -272,9 +267,8 @@ def get_round_info(round_data):
             caller = action["data"]["caller"]
             callee = action["data"]["callee"]
             tiles = action["data"]["mentsu"]
-            
-            
-            # 碰、明杠、吃之后，更新所有matrix (private, open, total, discarded）
+
+            # 碰、明杠、吃之后，更新所有matrix (private, open, total, discard）
             if (action["data"]["call_type"] == 'Pon' or action["data"]["call_type"] == 'MinKan' or action["data"]["call_type"] == 'Chi'):   
                 updated_calls(tiles, private_hands, open_hands, cur_discarded_tiles, caller, callee, encoded_hands, players_hands_after_draw_call, encoded_open_hands, encoded_private_hands)
             

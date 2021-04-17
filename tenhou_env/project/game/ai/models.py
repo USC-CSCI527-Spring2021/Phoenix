@@ -99,7 +99,7 @@ def make_or_restore_model(input_shape, model_type, strategy='local'):
             print("Start {} model in distribute mode".format(model_type))
         return model
     print("Creating a new {} model".format(model_type))
-    return discard_model(input_shape) if model_type == 'discarded' else rcpk_model(input_shape)
+    return discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
 
 
 def hypertune(hp):
