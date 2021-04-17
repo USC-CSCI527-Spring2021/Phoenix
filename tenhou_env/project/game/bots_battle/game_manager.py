@@ -14,6 +14,8 @@ from mahjong.tile import TilesConverter
 from mahjong.utils import is_honor, is_terminal
 from utils.decisions_logger import MeldPrint
 from utils.settings_handler import settings
+from mahjong.shanten import Shanten
+from mahjong.tile import TilesConverter
 
 # we need to have it
 # to be able repeat our tests with needed random
@@ -338,8 +340,8 @@ class GameManager:
             # if not in riichi, let's decide what tile to discard
             if not current_client.player.in_riichi:
                 tile, with_riichi = current_client.player.discard_tile()
-                in_tempai = current_client.player.in_tempai
-                if with_riichi:
+                in_tempai = current_client.player.ai.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array(current_client.player.closed_hand)) == 0
+                if with_riichi:       #Be careful
                     assert in_tempai
             else:
                 tile, with_riichi = current_client.player.discard_tile(drawn_tile, force_tsumogiri=True)

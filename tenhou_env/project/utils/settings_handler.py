@@ -31,3 +31,6 @@ class Settings:
 
 
 settings = SettingsSingleton()
+settings.FIVE_REDS = True
+settings.OPEN_TANYAO = True
+settings.PRINT_LOGS = False

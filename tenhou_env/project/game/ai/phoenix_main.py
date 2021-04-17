@@ -14,6 +14,9 @@ from mahjong.tile import TilesConverter
 from mahjong.utils import is_chi, is_man, is_pin, is_pon, is_sou
 from utils.cache import build_estimate_hand_value_cache_key, build_shanten_cache_key
 from game.ai.utils import RANKS, pred_emb_dim, round_num
+import logging
+
+game_logger = logging.getLogger("game")
 
 class Phoenix:
     def __init__(self, player):
@@ -98,6 +101,11 @@ class Phoenix:
         shanten = self.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array(self.player.closed_hand))      
         if shanten != 0:                #can not riichi
             return self.discard.discard_tile(), False
+
+        # if not self.player.in_tempai:
+            # game_logger.info(' '.join([str(i) for i in self.player.closed_hand]))
+            # return self.discard.discard_tile(), False
+            
         with_riichi, p = self.riichi.should_call_riichi()
         if with_riichi:
             # fix here: might need review

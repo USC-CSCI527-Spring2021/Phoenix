@@ -401,7 +401,7 @@ class Riichi:
                 log.MELD_CALL,
                 "Riichi Model choose not to riichi",
                 context=[
-                    f"Hand: {self.player.format_hand_for_print(self.player.closed_hand)}",
+                    f"Hand: {self.player.format_hand_for_print()}",
                 ],
             )
             return False, predictions[choice]
@@ -410,7 +410,7 @@ class Riichi:
                 log.MELD_CALL,
                 "Riichi Model choose to riichi",
                 context=[
-                    f"Hand: {self.player.format_hand_for_print(self.player.closed_hand)}",
+                    f"Hand: {self.player.format_hand_for_print()}",
                 ],
             )
             return True, predictions[choice]

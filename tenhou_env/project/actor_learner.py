@@ -97,7 +97,8 @@ class Actor:
                     client.end_game(False)
             client.table.player.ai.write_buffer()
         else:
-            _set_up_bots_battle_game_logger()
+            _set_up_bots_battle_game_logger()        
+
             print_logs = True
             clients = []
             for i in range(self.opt.num_games):
