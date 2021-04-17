@@ -203,6 +203,10 @@ class GameManager:
             client.player.tiles = sorted(client.player.tiles)
             client.player.init_hand(client.player.tiles)
 
+        for client in self.clients:
+            # each client player will contain all other clients player class
+            # for later to extract hidden information in other player
+            client.player.players = [client.player for client in self.clients]
         logger.info("Seed: {}".format(shuffle_seed()))
         logger.info("Dealer: {}, {}".format(self.dealer, self.clients[self.dealer].player.name))
         logger.info(
@@ -490,7 +494,7 @@ class GameManager:
         
         result = self.process_the_end_of_the_round([], 0, None, None, False)
         #update gains
-        gains = [c.player.scores - c.player.init_scores for c in self.clients]
+        gains = [c.player.scores - c.table.init_scores[i] * 100 for i, c in enumerate(self.clients)]
         for client in self.clients:
             client.table.gains = gains
         ###

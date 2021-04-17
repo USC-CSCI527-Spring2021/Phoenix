@@ -43,7 +43,7 @@ class PreprocessData(object):
 
         self.input_feature_spec = input_feature_spec
 
-
+# a = open("tester.json", 'a')
 class Pipeline():
     def __init__(self, job_type):
         self.job_type = job_type
@@ -61,7 +61,7 @@ class Pipeline():
             "discarded": {
                 "table_bq_table": 'mahjong.discarded',
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((73, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((62, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((34,), tf.float32),
                 },
                 "process_fn": discarded_model_dataset.DiscardedFeatureExtractor(),
@@ -70,7 +70,7 @@ class Pipeline():
             "chi": {
                 "table_bq_table": "mahjong.chi",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((74, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((63, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -79,7 +79,7 @@ class Pipeline():
             "pon": {
                 "table_bq_table": "mahjong.pon",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((74, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((63, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -88,7 +88,7 @@ class Pipeline():
             "kan": {
                 "table_bq_table": "mahjong.kan",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((77, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((66, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -97,7 +97,7 @@ class Pipeline():
             "riichi": {
                 "table_bq_table": "mahjong.riichi",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((73, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((62, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -152,7 +152,7 @@ class Pipeline():
 
     def process(self, job_dir):
         dataset_prefix = os.path.join(job_dir, 'processed_data', self.job_type)
-        csv_path = glob.glob(os.path.join(job_dir, "dataset/2022.csv"))
+        csv_path = glob.glob(os.path.join(job_dir, "dataset/*.csv"))
         # delete existing processed data
         if tf.io.gfile.exists(dataset_prefix):
             tf.io.gfile.rmtree(dataset_prefix)
@@ -167,6 +167,8 @@ class Pipeline():
                 #     continue
                 extractors = self.params[self.job_type]["process_fn"].process(
                     log_str)
+                # import json
+                # a.write(json.dumps(list(extractors)))
                 for data in extractors:
                     self.feature_writer(
                         dataset_prefix, self.params[self.job_type]["transform_fn"](data))
@@ -233,7 +235,6 @@ class Pipeline():
             .sample_from_datasets(train_dataset,
                                   weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(BATCH_SIZE)
         self.write_tfrecords(oversampling_prefix, "train", resampled_ds)
-
 
 # with tf.io.gfile.GFile(os.path.join(dataset_prefix, "pon_meta"), 'wb') as f:
 #     pickle.dump(

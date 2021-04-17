@@ -43,10 +43,13 @@ class Phoenix:
 
     def collect_experience(self):
 
-        #collect round info
-        init_scores = np.array(self.table.init_scores)/1e5
-        gains = np.array(self.table.gains)/1e5
-        dans = np.array([RANKS.index(p.rank) for p in self.player.table.players])
+        # collect round info
+        init_scores = np.array(self.table.init_scores) / 1e5
+        gains = np.array(self.table.gains) / 1e5
+        if self.player.config.isOnline:
+            dans = np.array([RANKS.index(p.rank) for p in self.player.table.players])
+        else:
+            dans = np.array([0, 0, 0, 0])
         dealer = int(self.player.dealer_seat)
         repeat_dealer = self.player.table.count_of_honba_sticks
         riichi_bets = self.player.table.count_of_riichi_sticks
@@ -57,7 +60,7 @@ class Phoenix:
         #prepare input
         grp_input = [np.zeros(pred_emb_dim)] * max(round_num-len(self.grp_features), 0) + self.grp_features[:]
 
-        reward = self.grp.get_global_reward(np.expand_dims(np.asarray(grp_input), axis=0))[0][self.player.seat]
+        reward = self.grp.get_global_reward(np.expand_dims(np.asarray(grp_input), axis=0))[self.player.seat]
 
         for model in [self.chi, self.pon, self.kan, self.riichi, self.discard]:
             model.collector.complete_episode(reward)
@@ -116,13 +119,15 @@ class Phoenix:
         # print(tile_136)
         # print(self.player.closed_hand)
         melds_chi, melds_pon = self.get_possible_meld(tile_136, is_kamicha_discard)
-        if melds_chi and meld_type & 4:
+        if meld_type & 4:
             should_chi, chi_score, tiles_chi = self.chi.should_call_chi(tile_136, melds_chi)
             # fix here: tiles_chi is now the first possible meld ---fixed! 
+            assert melds_chi
             # tiles_chi = melds_chi[0]
             meld_chi = Meld(meld_type="chi", tiles=tiles_chi) if meld_chi else None
-        if melds_pon and meld_type & 1:
+        elif meld_type & 1:
             should_pon, pon_score = self.pon.should_call_pon(tile_136, is_kamicha_discard)
+            assert melds_pon
             tiles_pon = melds_pon[0]
             meld_pon = Meld(meld_type="pon", tiles=tiles_pon) if meld_pon else None
 

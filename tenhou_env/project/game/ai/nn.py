@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import time
 
 import numpy as np
 import utils.decisions_constants as log
@@ -78,11 +79,19 @@ def getGeneralFeature(player, additional_data=None):
         return _getPlayerTiles(player)
 
     def _getEnemiesTiles(player):
-        return np.concatenate((
-            _getPlayerTiles(player.table.get_player(1)),
-            _getPlayerTiles(player.table.get_player(2)),
-            _getPlayerTiles(player.table.get_player(3))
-        ))
+        """
+        If online, all the enemies tiles will be zeros(12,34), otherwise get their hands infos
+        :param player:
+        :return:
+        """
+        if player.config.isOnline:
+            return np.zeros((12, 34))
+        else:
+            return np.concatenate((
+                _getPlayerTiles(player.players[1]),
+                _getPlayerTiles(player.players[2]),
+                _getPlayerTiles(player.players[3])
+            ))
 
     def _getDoraList(player):
         dora_indicators = player.table.dora_indicators
@@ -138,7 +147,7 @@ def getGeneralFeature(player, additional_data=None):
 class Chi:
     def __init__(self, player):
         self.player = player
-        self.input_shape = (74, 34, 1)
+        self.input_shape = (63, 34, 1)
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
@@ -153,8 +162,11 @@ class Chi:
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
+        start_time = time.time()
         predictions = self.model.predict(features)
-        pidx = np.argmax(predictions[:,1])
+        print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
+
+        pidx = np.argmax(predictions[:, 1])
         choice = np.argmax(predictions[pidx])
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
@@ -192,7 +204,7 @@ class Pon:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        self.input_shape = (74, 34, 1)
+        self.input_shape = (63, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
         if 'pon' not in player.config.weights:
@@ -206,9 +218,12 @@ class Pon:
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
+        start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        print("---Pon inference time:  %s seconds ---" % (time.time() - start_time))
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
+
         self.collector.record_decision(features, actions, predictions)
         if choice == 0:
             self.player.logger.debug(
@@ -239,7 +254,7 @@ class Pon:
 class Kan:
     def __init__(self, player):
         self.player = player
-        self.input_shape = (77, 34, 1)
+        self.input_shape = (66, 34, 1)
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
@@ -278,7 +293,10 @@ class Kan:
         kan_type_feature = np.zeros((3, 34))
         closed_hand = self.player.closed_hand
         features = self.getFeature(tile_136, kan_type_feature)
+        start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
+
         model_predict = np.argmax(predictions)
         if not open_kan:
             if _can_kakan(tile_136, self.player.melds):  # KaKan
@@ -358,7 +376,7 @@ class Riichi:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        self.input_shape = (73, 34, 1)
+        self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
         if 'riichi' not in player.config.weights:
@@ -372,7 +390,9 @@ class Riichi:
 
     def should_call_riichi(self):
         features = self.getFeature()
+        start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        print("---Riichi inference time:  %s seconds ---" % (time.time() - start_time))
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
@@ -404,7 +424,7 @@ class Discard:
     def __init__(self, player):
         self.player = player
         # self.strategy = 'local'
-        self.input_shape = (73, 34, 1)
+        self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
         if 'discarded' not in player.config.weights:
@@ -429,9 +449,12 @@ class Discard:
             closed_hands_136 = self.player.closed_hand
 
         features = self.getFeature(all_hands_136, closed_hands_136)
+        start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
+
         max_score = 0
-        choice = discard_options[0] # type: tile_136
+        choice = discard_options[0]  # type: tile_136
         for option in discard_options:
             score = predictions[option // 4]
             if score > max_score or (score == max_score and is_aka_dora(choice, True)):
@@ -466,10 +489,13 @@ class GlobalRewardPredictor:
         '''
         input shape: (None, constants.round_num, constants.pred_dim)/(None, 15, 15)
         '''
-        
+
         # init_score = np.asarray(init_score)/1e5
         # gains = np.asarray(gains)/1e5
         # embed = np.expand_dims(np.concatenate((init_score, gains, dan, dealer, repeat_dealer, riichi_bets), axis=-1), axis=0)
         # # print('input_shape', embed.shape)
         # assert embed.shape[-2:] == (15, 15)
-        return self.model.predict(features)[0]
+        start_time = time.time()
+        reward = self.model.predict(features)[0]
+        print("---Global Reward Predictor inference time:  %s seconds ---" % (time.time() - start_time))
+        return reward

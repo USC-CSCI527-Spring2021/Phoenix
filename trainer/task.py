@@ -223,9 +223,8 @@ if __name__ == "__main__":
                      validation_steps=1000,
                      callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
     else:
-
+        input_shape = list(train_dataset.take(1))[0][0].shape[1:]
         if args.model_type == 'discarded':
-            input_shape = (73, 34, 1)
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
                 keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
@@ -238,22 +237,18 @@ if __name__ == "__main__":
                                                 )
             ]
         else:
-            input_shape = (63, 34, 1)
-            # steps_per_epoch = [20000, 5000, 5000, 5000]
-            # validation_steps = [2500, 2500, 2500, 2500]
-            # types = 0
-            if args.model_type == 'chi':
-                input_shape = (74, 34, 1)
-            elif args.model_type == 'pon':
-                input_shape = (74, 34, 1)
-                # types = 1
-                # generator = FG.PonFeatureGenerator()
-            elif args.model_type == 'kan':
-                input_shape = (77, 34, 1)
-                # types = 2
-            elif args.model_type == 'riichi':
-                input_shape = (73, 34, 1)
-                # types = 3
+            # if args.model_type == 'chi':
+            #     input_shape = (74, 34, 1)
+            # elif args.model_type == 'pon':
+            #     input_shape = (74, 34, 1)
+            #     # types = 1
+            #     # generator = FG.PonFeatureGenerator()
+            # elif args.model_type == 'kan':
+            #     input_shape = (77, 34, 1)
+            #     # types = 2
+            # elif args.model_type == 'riichi':
+            #     input_shape = (73, 34, 1)
+            # types = 3
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
                 keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
@@ -267,7 +262,7 @@ if __name__ == "__main__":
             ]
         try:
             model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                      steps_per_epoch=10,
+                      steps_per_epoch=3,
                       class_weight=class_weight,
                       validation_steps=1000,
                       use_multiprocessing=True,

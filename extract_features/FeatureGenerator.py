@@ -44,17 +44,17 @@ class FeatureGenerator:
         self.hand_cache_shanten[key] = result
         return result
 
-    def calculate_ponits_or_get_from_cache(self, closed_left_tiles_34,win_tile,melds,dora_indicators):
+    def calculate_ponits_or_get_from_cache(self, closed_left_tiles_34, win_tile, melds, dora_indicators):
         tiles_34 = closed_left_tiles_34[:]
         for meld in melds:
             for x in meld.tiles_34:
                 tiles_34[x] += 1
-        key = self.build_cache_key(tiles_34+[win_tile]+dora_indicators)
+        key = self.build_cache_key(tiles_34 + [win_tile] + dora_indicators)
         if key in self.hand_cache_points:
             return self.hand_cache_points[key]
         # print(closed_left_tiles_34)
         # print(melds)
-        hc_result = self.hc.estimate_hand_value(TilesConverter.to_136_array(tiles_34),win_tile,melds,dora_indicators)
+        hc_result = self.hc.estimate_hand_value(TilesConverter.to_136_array(tiles_34), win_tile, melds, dora_indicators)
         sc_result = self.sc.calculate_scores(hc_result.han, hc_result.fu, HandConfig(HandConstants()))
         result = sc_result["main"]
         self.hand_cache_points[key] = result
@@ -65,34 +65,35 @@ class FeatureGenerator:
             if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) > replacelimit:
                 return 0
             result = 0
-            if replacelimit == 0: 
+            if replacelimit == 0:
                 for idx in range(34):
                     if tiles_could_draw[idx] > 0:
                         closed_left_tiles_34[idx] += 1
                         if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) == -1:
-                            ponits = self.calculate_ponits_or_get_from_cache(closed_left_tiles_34,idx*4,melds,dora_indicators)
-                            result = max(result,ponits)
+                            ponits = self.calculate_ponits_or_get_from_cache(closed_left_tiles_34, idx * 4, melds,
+                                                                             dora_indicators)
+                            result = max(result, ponits)
                         closed_left_tiles_34[idx] -= 1
-                
+
             else:
-                for idx,count in enumerate(tiles_could_draw):
+                for idx, count in enumerate(tiles_could_draw):
                     if count > 0:
                         tiles_could_draw[idx] -= 1
                         closed_left_tiles_34[idx] += 1
                         ponits = _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-                        result = max(result,ponits)
+                        result = max(result, ponits)
                         closed_left_tiles_34[idx] -= 1
                         tiles_could_draw[idx] += 1
             return result
-        
+
         def _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
             result = 0
-            for idx,count in enumerate(closed_left_tiles_34):
+            for idx, count in enumerate(closed_left_tiles_34):
                 if count > 0:
                     closed_left_tiles_34[idx] -= 1
                     replacelimit -= 1
                     ponits = _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-                    result = max(result,ponits)
+                    result = max(result, ponits)
                     replacelimit += 1
                     closed_left_tiles_34[idx] += 1
             return result
@@ -111,46 +112,46 @@ class FeatureGenerator:
                 opened = True
             elif ohd["meld_type"] == "AnKan":
                 meld_type = "kan"
-                opened = False 
+                opened = False
             else:
                 meld_type = "kan"
                 opened = True
-            meld = Meld(meld_type,tiles,opened)
+            meld = Meld(meld_type, tiles, opened)
             melds.append(meld)
         return melds
 
     def getPlayerTiles(self, player_tiles):
-        closed_hand_136 = player_tiles.get('closed_hand:',[])
-        open_hand_136 = player_tiles.get('open_hand',[])
-        discarded_tiles_136 = player_tiles.get('discarded_tiles',[])
+        closed_hand_136 = player_tiles.get('closed_hand:', [])
+        open_hand_136 = player_tiles.get('open_hand', [])
+        discarded_tiles_136 = player_tiles.get('discarded_tiles', [])
 
         closed_hand_feature = np.zeros((4, 34))
         open_hand_feature = np.zeros((4, 34))
         discarded_tiles_feature = np.zeros((4, 34))
-        
+
         for val in closed_hand_136:
-            idx=0
-            while(closed_hand_feature[idx][val//4] == 1):
-                idx+=1
-            closed_hand_feature[idx][val//4] = 1
+            idx = 0
+            while (closed_hand_feature[idx][val // 4] == 1):
+                idx += 1
+            closed_hand_feature[idx][val // 4] = 1
         for val in open_hand_136:
-            idx=0
-            while(open_hand_feature[idx][val//4] == 1):
-                idx+=1
-            open_hand_feature[idx][val//4] = 1
+            idx = 0
+            while (open_hand_feature[idx][val // 4] == 1):
+                idx += 1
+            open_hand_feature[idx][val // 4] = 1
         for val in discarded_tiles_136:
-            idx=0
-            while(discarded_tiles_feature[idx][val//4] == 1):
-                idx+=1
-            discarded_tiles_feature[idx][val//4] = 1
-        
-        return np.concatenate((closed_hand_feature,open_hand_feature,discarded_tiles_feature))
-    
+            idx = 0
+            while (discarded_tiles_feature[idx][val // 4] == 1):
+                idx += 1
+            discarded_tiles_feature[idx][val // 4] = 1
+
+        return np.concatenate((closed_hand_feature, open_hand_feature, discarded_tiles_feature))
+
     def getSelfTiles(self, tiles_state_and_action):
         player_tiles = tiles_state_and_action["player_tiles"]
-        return self.getPlayerTiles(player_tiles)       
+        return self.getPlayerTiles(player_tiles)
 
-    def getEnemiesTiles(self,tiles_state_and_action):
+    def getEnemiesTiles(self, tiles_state_and_action):
         player_seat = tiles_state_and_action["player_id"]
         enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
         if (len(enemies_tiles_list) == 3):
@@ -187,19 +188,20 @@ class FeatureGenerator:
                     dora = 3
                 dora += 9 * 3
             dora += 1
-            return dora           
+            return dora
+
         dora_indicator_list = tiles_state_and_action["dora"]
         dora_feature = np.zeros((5, 34))
         for idx, dora_indicator in enumerate(dora_indicator_list):
             dora_feature[idx][indicator2dora(dora_indicator)] = 1
         return dora_feature
 
-    def getScoreList1(self,tiles_state_and_action):
+    def getScoreList1(self, tiles_state_and_action):
         def trans_score(score):
             feature = np.zeros((34))
             if score > 50000:
-                score = 50000 
-            a = score//(50000.0/33)
+                score = 50000
+            a = score // (50000.0 / 33)
             # alpha = a + 1 - (score*33.0/50000)
             # alpha = round(alpha, 2)
             # feature[int(a)] = alpha
@@ -207,7 +209,7 @@ class FeatureGenerator:
             #     feature[int(a+1)] = 1-alpha
             feature[int(a)] = 1
             return feature
-            
+
         player_seat = tiles_state_and_action["player_id"]
         scores_list = tiles_state_and_action["scores"]
         scores_feature = np.zeros((4, 34))
@@ -216,40 +218,41 @@ class FeatureGenerator:
             scores_feature[i] = trans_score(score)
             player_seat += 1
             player_seat %= 4
-        return scores_feature        
-        
+        return scores_feature
+
     def getBoard1(self, tiles_state_and_action):
         def wind(c):
-            if c=='E' : 
+            if c == 'E':
                 return 27
-            if c=='S' : 
+            if c == 'S':
                 return 28
-            if c=='W' : 
+            if c == 'W':
                 return 29
-            if c=='N' : 
+            if c == 'N':
                 return 30
+
         player_seat = tiles_state_and_action["player_id"]
         dealer_seat = tiles_state_and_action["dealer"]
         repeat_dealer = tiles_state_and_action["repeat_dealer"]
         riichi_bets = tiles_state_and_action["riichi_bets"]
         player_wind = tiles_state_and_action["player_wind"]
         prevailing_wind = tiles_state_and_action["prevailing_wind"]
-        
+
         dealer_feature = np.zeros((1, 34))
-        dealer_feature[0][(dealer_seat+4-player_seat)%4] = 1
-        
+        dealer_feature[0][(dealer_seat + 4 - player_seat) % 4] = 1
+
         repeat_dealer_feature = np.zeros((1, 34))
         repeat_dealer_feature[0][repeat_dealer] = 1
-        
+
         riichi_bets_feature = np.zeros((1, 34))
         riichi_bets_feature[0][riichi_bets] = 1
-        
+
         player_wind_feature = np.zeros((1, 34))
         player_wind_feature[0][wind(player_wind)] = 1
-        
+
         prevailing_wind_feature = np.zeros((1, 34))
         prevailing_wind_feature[0][wind(prevailing_wind)] = 1
-        
+
         return np.concatenate((
             dealer_feature,
             repeat_dealer_feature,
@@ -265,10 +268,10 @@ class FeatureGenerator:
         # 8 9 10 for in Shimocha Toimen Kamicha discarded
         # lookAheadFeature = np.zeros((11, 34))
         player_tiles = tiles_state_and_action["player_tiles"]
-        closed_hand_136 = player_tiles.get('closed_hand:',[])
+        closed_hand_136 = player_tiles.get('closed_hand:', [])
         open_hands_detail = tiles_state_and_action["open_hands_detail"]
         melds = self.open_hands_detail_to_melds(open_hands_detail)
-        discarded_tiles_136 = player_tiles.get('discarded_tiles',[])
+        discarded_tiles_136 = player_tiles.get('discarded_tiles', [])
         player_seat = tiles_state_and_action["player_id"]
         enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
         dora_indicators = tiles_state_and_action["dora"]
@@ -276,23 +279,25 @@ class FeatureGenerator:
             enemies_tiles_list.insert(player_seat, player_tiles)
         tiles_could_draw = np.ones(34) * 4
         for player in enemies_tiles_list:
-            for tile_set in [player.get('closed_hand:',[]), player.get('open_hand',[]), player.get('discarded_tiles',[])]:
+            for tile_set in [player.get('closed_hand:', []), player.get('open_hand', []),
+                             player.get('discarded_tiles', [])]:
                 for tile in tile_set:
-                    tiles_could_draw[tile//4] -= 1
+                    tiles_could_draw[tile // 4] -= 1
         for dora_tile in dora_indicators:
-            tiles_could_draw[tile//4] -= 1
+            tiles_could_draw[tile // 4] -= 1
 
-        def feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list):
+        def feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
+                            enemies_tiles_list):
             feature = np.zeros((11, 1))
-            discard_tiles = [x for x in [i*4,i*4+1,i*4+2,i*4+3] if x in closed_hand_136]
-            if len(discard_tiles) != 0 :
+            discard_tiles = [x for x in [i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 3] if x in closed_hand_136]
+            if len(discard_tiles) != 0:
                 discard_tile = discard_tiles[0]
                 feature[0] = 1
                 closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
                 shanten = self.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
                 for i in range(3):
                     if shanten <= i:
-                        feature[i+1] = 1
+                        feature[i + 1] = 1
                 maxscore = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
                                                 tiles_could_draw, replacelimit=2)
                 scores = [2000, 4000, 6000, 8000]
@@ -306,8 +311,7 @@ class FeatureGenerator:
                         feature[i + 8] = 1
             return feature
 
-        # results = [feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat, enemies_tiles_list) for i in range(34)]
-        results = Parallel(n_jobs=-1)(
+        results = Parallel(n_jobs=8)(
             delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
                                      enemies_tiles_list)
             for i in range(34))
@@ -315,7 +319,7 @@ class FeatureGenerator:
 
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
-            self.getLookAheadFeature(tiles_state_and_action), #(11,34)
+            self.getLookAheadFeature(tiles_state_and_action),  # (11,34)
             self.getSelfTiles(tiles_state_and_action),  # (12,34)
             self.getDoraList(tiles_state_and_action),  # (5,34)
             self.getBoard1(tiles_state_and_action),  # (5,34)
@@ -328,16 +332,19 @@ class FeatureGenerator:
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
+
         def _chilist(last_player_discarded_tile, closed_hand_136):
             res = []
             pairs = [(a, b) for idx, a in enumerate(closed_hand_136) for b in closed_hand_136[idx + 1:]]
             for p in pairs:
-                meld = [last_player_discarded_tile,p[0],p[1]]
-                if all(tile < 36 for tile in meld) or all(36 <= tile < 72 for tile in meld) or all(36 <= tile < 72 for tile in meld):
-                    meld34 = [tile//4 for tile in meld]
-                    if any(tile+1 in meld34 and tile-1 in meld34 for tile in meld34):
+                meld = [last_player_discarded_tile, p[0], p[1]]
+                if all(tile < 36 for tile in meld) or all(36 <= tile < 72 for tile in meld) or all(
+                        36 <= tile < 72 for tile in meld):
+                    meld34 = [tile // 4 for tile in meld]
+                    if any(tile + 1 in meld34 and tile - 1 in meld34 for tile in meld34):
                         res.append(meld)
             return res
+
         could_chi = tiles_state_and_action["could_chi"]
         last_player_discarded_tile = tiles_state_and_action["last_player_discarded_tile"]
         closed_hand_136 = tiles_state_and_action["player_tiles"]['closed_hand:']
@@ -383,11 +390,12 @@ class FeatureGenerator:
         changed the input from filename to tiles_state_and_action data
         By Jun Lin
         """
+
         def could_ankan(closed_hand_136):
             count = np.zeros(34)
             for tile in closed_hand_136:
-                count[tile//4]+=1
-                if count[tile//4]==4:
+                count[tile // 4] += 1
+                if count[tile // 4] == 4:
                     return True
             return False
 
@@ -453,7 +461,7 @@ class FeatureGenerator:
                     #        "labels": to_categorical(y, num_classes=2)}
                     yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
 
-    def RiichiFeatureGenerator(self,tiles_state_and_action):
+    def RiichiFeatureGenerator(self, tiles_state_and_action):
         action = tiles_state_and_action["action"]
         if tiles_state_and_action["is_FCH"] == 1:
             tiles_34 = TilesConverter.to_34_array(tiles_state_and_action["player_tiles"]["closed_hand:"])
@@ -469,9 +477,9 @@ class FeatureGenerator:
                 #        "labels": to_categorical(y, num_classes=2)}
                 yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=2)
 
-    def DiscardFeatureGenerator(self,tiles_state_and_action):
+    def DiscardFeatureGenerator(self, tiles_state_and_action):
         x = self.getGeneralFeature(tiles_state_and_action)
-        y = tiles_state_and_action["discarded_tile"]//4
+        y = tiles_state_and_action["discarded_tile"] // 4
         yield x.reshape((x.shape[0], x.shape[1], 1)), to_categorical(y, num_classes=34)
 
 
@@ -481,8 +489,8 @@ if __name__ == "__main__":
     with open(filename) as infile:
         for line in infile:
             tiles_state_and_action = json.loads(line)
-            fg.ChiFeatureGenerator(tiles_state_and_action) #(74,34)
-            fg.PonFeatureGenerator(tiles_state_and_action) #(74,34)
-            fg.KanFeatureGenerator(tiles_state_and_action) #(77,34)
-            fg.RiichiFeatureGenerator(tiles_state_and_action) #(73,34)
-            fg.DiscardFeatureGenerator(tiles_state_and_action) #(73,34)
+            fg.ChiFeatureGenerator(tiles_state_and_action)  # (74,34)
+            fg.PonFeatureGenerator(tiles_state_and_action)  # (74,34)
+            fg.KanFeatureGenerator(tiles_state_and_action)  # (77,34)
+            fg.RiichiFeatureGenerator(tiles_state_and_action)  # (73,34)
+            fg.DiscardFeatureGenerator(tiles_state_and_action)  # (73,34)

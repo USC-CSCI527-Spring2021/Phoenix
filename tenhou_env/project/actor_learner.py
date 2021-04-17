@@ -66,6 +66,8 @@ class Actor:
     def run(self):
         assert self.bot_config.weights, "should set weights before run the actor"
         assert len(self.bot_config.weights) == 6, "Require 6 model weights"
+        # for later use in nn.py
+        self.bot_config.isOnline = self.opt.isOnline
         if self.opt.isOnline:
             module = importlib.import_module(f"settings.bot_{self.player_idx}_settings")
             for key, value in vars(module).items():
@@ -96,7 +98,7 @@ class Actor:
             client.table.player.ai.write_buffer()
         else:
             _set_up_bots_battle_game_logger()
-            print_logs = False
+            print_logs = True
             clients = []
             for i in range(self.opt.num_games):
                 one_game_clients = []

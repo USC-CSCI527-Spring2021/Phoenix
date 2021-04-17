@@ -156,8 +156,8 @@ class ParameterServer:
             print("****** ps start loading weights ******")
             try:
                 for f in weights_files:
-                    weights = keras.models.load_model(f).get_weights()
                     model_type = f.split("/")[-1]
+                    weights = keras.models.load_model(f).get_weights()
                     self.weights[model_type] = weights
                     # with open(f, "rb") as pickle_in:
                     #     self.weights[f.split("/")[-1]] = pickle.load(pickle_in)
