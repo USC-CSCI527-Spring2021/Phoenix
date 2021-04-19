@@ -51,7 +51,7 @@ def main(number_of_games, print_logs, clients, replay_name):
         except Exception as e:
             manager.replay.save_failed_log()
             logger.error(f"Hanchan seed={seed_value} crashed", exc_info=e)
-
+        print("one local game end")        
         # chosen_configuration += 1
         # if chosen_configuration == len(possible_configurations):
         #     chosen_configuration = 0

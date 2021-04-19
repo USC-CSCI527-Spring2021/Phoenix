@@ -100,20 +100,21 @@ class Actor:
             _set_up_bots_battle_game_logger()        
 
             print_logs = True
+
             clients = []
-            for i in range(self.opt.num_games):
-                one_game_clients = []
-                replay_name = GameManager.generate_replay_name()
-                for i in range(4):
-                    self.bot_config.name = f"bot{i}"
-                    one_game_clients.append(LocalClient(self.bot_config, print_logs, replay_name, i))
-                # start a local game
-                print("One local game played!")
-                bot_battle_main(1, print_logs, one_game_clients, replay_name)
+            replay_name = GameManager.generate_replay_name()
+            for i in range(4):
+                self.bot_config.name = f"bot{i}"
+                clients.append(LocalClient(self.bot_config, print_logs, replay_name, i))
+            for i in range():
+                # one_game_clients = []
+                
+
+                bot_battle_main(self.opt.num_games, print_logs, clients, replay_name)
                 print("One local game end!")
                 # end of a local game
-                clients.append(one_game_clients)
+                # clients.append(one_game_clients)
             # Write to buffer
-            for one_game_clients in clients:
-                for client in one_game_clients:
-                    client.table.player.ai.write_buffer()
+            # for one_game_clients in clients:
+            for client in one_game_clients:
+                client.table.player.ai.write_buffer()
