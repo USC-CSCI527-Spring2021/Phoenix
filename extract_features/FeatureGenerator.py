@@ -323,25 +323,44 @@ class FeatureGenerator:
         """
         def _chilist(last_player_discarded_tile, closed_hand_136):
             res = []
-            pairs = [(a, b) for idx, a in enumerate(closed_hand_136) for b in closed_hand_136[idx + 1:]]
-            for p in pairs:
-                meld = [last_player_discarded_tile,p[0],p[1]]
-                if all(tile < 36 for tile in meld) or all(36 <= tile < 72 for tile in meld) or all(36 <= tile < 72 for tile in meld):
-                    meld34 = [tile//4 for tile in meld]
-                    if any(tile+1 in meld34 and tile-1 in meld34 for tile in meld34):
-                        res.append(meld)
+            last_player_discarded_tile_34 = last_player_discarded_tile // 4
+            tile_set = last_player_discarded_tile_34 // 9
+            if tile_set == 3:
+                return res
+            closed_hand_34_detail = [[] for i in range(34)]
+            for tile in closed_hand_136:
+                closed_hand_34_detail[tile//4].append(tile)
+            if last_player_discarded_tile_34 > tile_set*9+1:
+                if len(closed_hand_34_detail[last_player_discarded_tile_34-1])!=0 and len(closed_hand_34_detail[last_player_discarded_tile_34-2])!=0:
+                    res.append([closed_hand_34_detail[last_player_discarded_tile_34-1][0], closed_hand_34_detail[last_player_discarded_tile_34-2][0], last_player_discarded_tile])
+            if last_player_discarded_tile_34 > tile_set*9 and last_player_discarded_tile_34 < tile_set*9+8:
+                if len(closed_hand_34_detail[last_player_discarded_tile_34-1])!=0 and len(closed_hand_34_detail[last_player_discarded_tile_34+1])!=0:
+                    res.append([closed_hand_34_detail[last_player_discarded_tile_34-1][0], closed_hand_34_detail[last_player_discarded_tile_34+1][0], last_player_discarded_tile])
+            if last_player_discarded_tile_34 < tile_set*9+7:
+                if len(closed_hand_34_detail[last_player_discarded_tile_34+1])!=0 and len(closed_hand_34_detail[last_player_discarded_tile_34+2])!=0:
+                    res.append([closed_hand_34_detail[last_player_discarded_tile_34+1][0], closed_hand_34_detail[last_player_discarded_tile_34+2][0], last_player_discarded_tile])
             return res
+            # res = []
+            # pairs = [(a, b) for idx, a in enumerate(closed_hand_136) for b in closed_hand_136[idx + 1:]]
+            # for p in pairs:
+            #     meld = [last_player_discarded_tile,p[0],p[1]]
+            #     if all(tile < 36 for tile in meld) or all(36 <= tile < 72 for tile in meld) or all(36 <= tile < 72 for tile in meld):
+            #         meld34 = [tile//4 for tile in meld]
+            #         if any(tile+1 in meld34 and tile-1 in meld34 for tile in meld34):
+            #             res.append(meld)
+            # return res
         could_chi = tiles_state_and_action["could_chi"]
         last_player_discarded_tile = tiles_state_and_action["last_player_discarded_tile"]
         closed_hand_136 = tiles_state_and_action["player_tiles"]['closed_hand:']
         action = tiles_state_and_action["action"]
         if could_chi == 1:
+            generalFeature = self.getGeneralFeature(tiles_state_and_action)
             for chimeld in _chilist(last_player_discarded_tile, closed_hand_136):
                 last_player_discarded_tile_feature = np.zeros((1, 34))
                 for chitile in chimeld:
                     last_player_discarded_tile_feature[0][chitile // 4] = 1
                 x = np.concatenate(
-                    (last_player_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
+                    (last_player_discarded_tile_feature, generalFeature))
                 if action[0] == 'Chi' and all(chitile in action[1] for chitile in chimeld):
                     y = 1
                 else:
