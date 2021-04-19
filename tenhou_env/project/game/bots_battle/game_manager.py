@@ -86,7 +86,7 @@ class GameManager:
         # to have compatibility with tenhou format
         self.set_dealer(0)
 
-        for client in self.clies:
+        for client in self.clients:
             client.player.scores = 25000
 
         self._unique_dealers = 0
@@ -103,7 +103,9 @@ class GameManager:
             self.init_round()
 
             results = self.play_round()
+            # update gains
             for client in self.clients:
+                client.table.gains = [p.scores - p.init_score for p in client.table.players]
                 client.table.player.ai.collect_experience()
 
             dealer_won = False
@@ -139,6 +141,7 @@ class GameManager:
 
             # important increment, we are building wall seed based on the round number
             self.round_number += 1
+            # collect experiences
 
         winner = self.recalculate_players_position()
         # winner takes riichi sticks
@@ -335,8 +338,9 @@ class GameManager:
             # if not in riichi, let's decide what tile to discard
             if not current_client.player.in_riichi:
                 tile, with_riichi = current_client.player.discard_tile()
-                in_tempai = current_client.player.in_tempai
-                if with_riichi:
+                in_tempai = current_client.player.ai.calculate_shanten_or_get_from_cache(
+                    TilesConverter.to_34_array(current_client.player.closed_hand)) == 0
+                if with_riichi:  # Be careful
                     assert in_tempai
             else:
                 tile, with_riichi = current_client.player.discard_tile(drawn_tile, force_tsumogiri=True)
@@ -493,7 +497,7 @@ class GameManager:
 
         result = self.process_the_end_of_the_round([], 0, None, None, False)
         # update gains
-        gains = [c.player.scores - c.player.init_scores for c in self.clients]
+        gains = [c.player.scores - c.player.init_score for c in self.clients]
         for client in self.clients:
             client.table.gains = gains
         ###
