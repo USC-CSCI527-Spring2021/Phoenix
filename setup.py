@@ -14,6 +14,6 @@ setup(
         'mahjong==1.2.0.dev5',
         'apache-beam==2.28.0',
     ],
-    scripts=['pipeline.py']
+    scripts=['new_pipeline.py']
 
 )

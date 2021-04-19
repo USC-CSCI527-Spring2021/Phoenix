@@ -3,23 +3,20 @@
 # usage:
 #   at the bottom of this file
 
-import hashlib
 import json
-import marshal
-
 import numpy as np
-# from joblib import Parallel, delayed
-# from joblib.externals.loky import set_loky_pickler
-from mahjong.hand_calculating.hand import HandCalculator
-from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
-from mahjong.hand_calculating.scores import ScoresCalculator
-from mahjong.meld import Meld
 from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
+from mahjong.meld import Meld
+from mahjong.hand_calculating.hand import HandCalculator
+from mahjong.hand_calculating.scores import ScoresCalculator
+from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
+import hashlib
+import marshal
+from joblib import Parallel, delayed
 from tensorflow.keras.utils import to_categorical
-
-
-# set_loky_pickler('dill')
+from joblib.externals.loky import set_loky_pickler
+set_loky_pickler('dill')
 
 
 class FeatureGenerator:
@@ -55,7 +52,8 @@ class FeatureGenerator:
             return self.hand_cache_points[key]
         # print(closed_left_tiles_34)
         # print(melds)
-        hc_result = self.hc.estimate_hand_value(TilesConverter.to_136_array(tiles_34), win_tile, melds, dora_indicators)
+        hc_result = self.hc.estimate_hand_value(TilesConverter.to_136_array(tiles_34), win_tile, melds,
+                                                dora_indicators)
         sc_result = self.sc.calculate_scores(hc_result.han, hc_result.fu, HandConfig(HandConstants()))
         result = sc_result["main"]
         self.hand_cache_points[key] = result
@@ -263,10 +261,10 @@ class FeatureGenerator:
         ))
 
     def getLookAheadFeature(self, tiles_state_and_action):
-        # 0 for whether can be discard
+        # 0 for whether can be discarded
         # 1 2 3 for shanten
         # 4 5 6 7 for whether can get 2k 4k 6k 8k points with replacing 3 tiles ---- need review: takes too long!
-        # 8 9 10 for in Shimocha Toimen Kamicha discard
+        # 8 9 10 for in Shimocha Toimen Kamicha discarded
         # lookAheadFeature = np.zeros((11, 34))
         player_tiles = tiles_state_and_action["player_tiles"]
         closed_hand_136 = player_tiles.get('closed_hand:', [])
@@ -312,12 +310,10 @@ class FeatureGenerator:
                         feature[i + 8] = 1
             return feature
 
-        # results = Parallel(n_jobs=8)(
-        #     delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
-        #                              enemies_tiles_list)
-        #     for i in range(34))
-        results = [feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
-                                   enemies_tiles_list) for i in range(34)]
+        results = Parallel(n_jobs=-1)(
+            delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
+                                     enemies_tiles_list)
+            for i in range(34))
         return np.concatenate(results, axis=1)
 
     def getGeneralFeature(self, tiles_state_and_action):
@@ -487,13 +483,22 @@ class FeatureGenerator:
 
 
 if __name__ == "__main__":
-    filename = "assist/chi_pon_kan_reach_2021.json"
+    filename = "../discard_error.json"
+    from logs_parser.discarded_model_dataset import DiscardedFeatureExtractor
     fg = FeatureGenerator()
-    with open(filename) as infile:
-        for line in infile:
-            tiles_state_and_action = json.loads(line)
-            fg.ChiFeatureGenerator(tiles_state_and_action)  # (74,34)
-            fg.PonFeatureGenerator(tiles_state_and_action)  # (74,34)
-            fg.KanFeatureGenerator(tiles_state_and_action)  # (77,34)
-            fg.RiichiFeatureGenerator(tiles_state_and_action)  # (73,34)
-            fg.DiscardFeatureGenerator(tiles_state_and_action)  # (73,34)
+    d = DiscardedFeatureExtractor()
+    data = d.process(open("../discard_error.log", 'r').readline())
+    res = [d for d in data]
+    # with open(filename) as infile:
+    #     for line in infile:
+    #         tiles_state_and_actions = json.loads(line)
+    #         for tiles_state_and_action in tiles_state_and_actions:
+    #             try:
+    #                 # chi = next(fg.ChiFeatureGenerator(tiles_state_and_action))
+    #                 # pon = next(fg.PonFeatureGenerator(tiles_state_and_action))
+    #                 # kan = next(fg.KanFeatureGenerator(tiles_state_and_action))
+    #                 # riichi = next(fg.RiichiFeatureGenerator(tiles_state_and_action))
+    #                 discard = next(fg.DiscardFeatureGenerator(tiles_state_and_action))
+    #                 assert len(discard) == 2
+    #             except StopIteration:
+    #                 pass

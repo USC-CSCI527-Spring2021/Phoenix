@@ -97,7 +97,7 @@ class History(keras.callbacks.Callback):
             self.history.setdefault(k, []).append(v)
 
 
-if __name__ == "__main__":
+def main():
     # https://drive.google.com/uc\?id\=1iZpWSXRF9NlrLLwtxujLkAXk4k9KUgUN
     # f = h5py.File('logs_parser/discarded_model_dataset_sum_2021.hdf5', 'r')
     # states = f.get('hands')
@@ -146,7 +146,6 @@ if __name__ == "__main__":
         print("Start Training in Local")
         strategy = "local"
 
-
     # tfc.run(import kerastuner as kt
     #     entry_point=None,
     #     requirements_txt="requirements.txt",
@@ -172,19 +171,16 @@ if __name__ == "__main__":
                 counts[0] += 1
         return counts
 
-
     checkpoint_path = create_or_join(os.path.join(CHECKPOINT_DIR, args.model_type))
     log_path = create_or_join("logs/" + args.model_type + timestamp)
     meta = tf.io.gfile.GFile(create_or_join('processed_data/{}/{}_meta'.format(args.model_type, args.model_type)), 'rb')
     preprocess_data = pickle.load(meta)
-
 
     def read_tfrecord(serialized_example):
         example = tf.io.parse_example(serialized_example, preprocess_data.input_feature_spec)
         features = example['features']
         labels = example['labels']
         return features, labels
-
 
     class_weight = None
     num_classes = len(preprocess_data.classes_distribution)
@@ -268,7 +264,7 @@ if __name__ == "__main__":
                       use_multiprocessing=True,
                       workers=-1,
                       callbacks=callbacks)
-        except KeyboardInterrupt:
+        except KeyboardInterrupt or InterruptedError:
             model.save(os.path.join(create_or_join("models"), args.model_type))
             model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
             print('Keyboard Interrupted, Model and weights saved')
@@ -297,3 +293,6 @@ if __name__ == "__main__":
     #     if not _is_chief(task_type, task_id):
     #         tf.io.gfile.rmtree(os.path.dirname(write_model_path))
     # sys.stdout.close()
+
+if __name__ == "__main__":
+    main()

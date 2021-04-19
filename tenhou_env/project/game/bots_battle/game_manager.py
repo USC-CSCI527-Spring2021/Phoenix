@@ -14,8 +14,6 @@ from mahjong.tile import TilesConverter
 from mahjong.utils import is_honor, is_terminal
 from utils.decisions_logger import MeldPrint
 from utils.settings_handler import settings
-from mahjong.shanten import Shanten
-from mahjong.tile import TilesConverter
 
 # we need to have it
 # to be able repeat our tests with needed random
@@ -88,7 +86,7 @@ class GameManager:
         # to have compatibility with tenhou format
         self.set_dealer(0)
 
-        for client in self.clients:
+        for client in self.clies:
             client.player.scores = 25000
 
         self._unique_dealers = 0
@@ -105,9 +103,7 @@ class GameManager:
             self.init_round()
 
             results = self.play_round()
-            #update gains
             for client in self.clients:
-                client.table.gains = [p.scores-p.init_score for p in client.table.players]            
                 client.table.player.ai.collect_experience()
 
             dealer_won = False
@@ -143,7 +139,6 @@ class GameManager:
 
             # important increment, we are building wall seed based on the round number
             self.round_number += 1
-            # collect experiences
 
         winner = self.recalculate_players_position()
         # winner takes riichi sticks
@@ -239,9 +234,8 @@ class GameManager:
             drawn_tile_34 = drawn_tile // 4
             current_client.table.count_of_remaining_tiles -= 1
             self.replay.draw(current_client.seat, drawn_tile)
+
             current_client.player.draw_tile(drawn_tile)
-            if len(current_client.player.closed_hand) != 14:
-                print(current_client.player.closed_hand)
             tiles = current_client.player.tiles
 
             if (
@@ -341,8 +335,8 @@ class GameManager:
             # if not in riichi, let's decide what tile to discard
             if not current_client.player.in_riichi:
                 tile, with_riichi = current_client.player.discard_tile()
-                in_tempai = current_client.player.ai.calculate_shanten_or_get_from_cache(TilesConverter.to_34_array(current_client.player.closed_hand)) == 0
-                if with_riichi:       #Be careful
+                in_tempai = current_client.player.in_tempai
+                if with_riichi:
                     assert in_tempai
             else:
                 tile, with_riichi = current_client.player.discard_tile(drawn_tile, force_tsumogiri=True)
@@ -496,8 +490,12 @@ class GameManager:
             # retake
             if not len(self.tiles):
                 continue_to_play = False
-        
+
         result = self.process_the_end_of_the_round([], 0, None, None, False)
+        # update gains
+        gains = [c.player.scores - c.player.init_scores for c in self.clients]
+        for client in self.clients:
+            client.table.gains = gains
         ###
         return [result]
 

@@ -255,13 +255,26 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         open_hands = copy.copy(open_hands)
 
         reacted_tile = None
-        for tile in tiles:
-            if tile not in closed_hands[caller]:
-                reacted_tile = tile
-
+        if call_type == 'KaKan':
+            for tile in tiles:
+                if tile not in open_hands[caller]:
+                    reacted_tile = tile
+        else:
+            for tile in tiles:
+                if tile not in closed_hands[caller]:
+                    reacted_tile = tile
         closed_hands, open_hands = trans_to_open(tiles, closed_hands, open_hands, caller)
-
         open_hands_details[caller] = copy.copy(open_hands_details[caller])
+        # new
+        if call_type == 'KaKan':
+            # tiles :
+            pon_tiles = copy.copy(tiles)
+            pon_tiles.remove(reacted_tile)
+
+            for detail in open_hands_details[caller]:
+                if set(detail["tiles"]) == set(pon_tiles):
+                    open_hands_details[caller].remove(detail)
+                    break
         open_hands_details[caller].append({"tiles": tiles, "meld_type": call_type, "reacted_tile" : reacted_tile})
 
         return closed_hands, open_hands, open_hands_details
@@ -361,7 +374,6 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         for k in range(len(dataset)):
             action = dataset[k]
             act = action["tag"]
-
             if act == 'REACH':
                 player_id = action["data"]["player"]
 
@@ -440,8 +452,8 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
             data = parse_mjlog(node)
 
             # remove three-players games
-            # if len(data["meta"]['UN'][3]["name"]) == 0:
-            #     continue
+            if len(data["meta"]['UN'][3]["name"]) == 0:
+                yield None
 
             for j in range(len(data["rounds"])):
 
@@ -512,4 +524,9 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
 
         except:
             pass
-# In[ ]:
+if __name__ == '__main__':
+    e = ChiPonKanFeatureExtractor()
+    l = open('../discard_error.log', 'r')
+    RES = e.process(l.readline())
+    ans = [data for data in RES]
+

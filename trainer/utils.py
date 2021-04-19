@@ -1,5 +1,6 @@
 import os
-
+import signal
+import time
 import tensorflow as tf
 
 # GCP_BUCKET = 'mahjong-dataset'
@@ -44,3 +45,14 @@ def read_tfrecord(serialized_example, input_spec):
     features = example['features']
     labels = example['labels']
     return features, labels
+
+
+
+class GracefulKiller:
+  kill_now = False
+  def __init__(self):
+    signal.signal(signal.SIGINT, self.exit_gracefully)
+    signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  def exit_gracefully(self,signum, frame):
+    self.kill_now = True

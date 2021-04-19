@@ -13,6 +13,7 @@ from trainer.utils import TRAIN_SPLIT, BATCH_SIZE, RANDOM_SEED
 
 tf.random.set_seed(RANDOM_SEED)
 
+
 def _float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
@@ -43,9 +44,14 @@ class PreprocessData(object):
 
         self.input_feature_spec = input_feature_spec
 
+
 # a = open("tester.json", 'a')
-class Pipeline():
+fg = FeatureGenerator()
+
+
+class Pipeline:
     def __init__(self, job_type):
+        self.num_counter = 0
         self.job_type = job_type
         self.counter = 0
         self.write_count = [0] * 34 if self.job_type == "discard" else [0, 0]
@@ -65,7 +71,7 @@ class Pipeline():
                     "labels": tf.io.FixedLenFeature((34,), tf.float32),
                 },
                 "process_fn": discarded_model_dataset.DiscardedFeatureExtractor(),
-                "transform_fn": FeatureGenerator().DiscardFeatureGenerator,
+                "transform_fn": fg.DiscardFeatureGenerator,
             },
             "chi": {
                 "table_bq_table": "mahjong.chi",
@@ -74,7 +80,7 @@ class Pipeline():
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
-                "transform_fn": FeatureGenerator().ChiFeatureGenerator,
+                "transform_fn": fg.ChiFeatureGenerator,
             },
             "pon": {
                 "table_bq_table": "mahjong.pon",
@@ -83,7 +89,7 @@ class Pipeline():
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
-                "transform_fn": FeatureGenerator().PonFeatureGenerator,
+                "transform_fn": fg.PonFeatureGenerator,
             },
             "kan": {
                 "table_bq_table": "mahjong.kan",
@@ -92,7 +98,7 @@ class Pipeline():
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
-                "transform_fn": FeatureGenerator().KanFeatureGenerator,
+                "transform_fn": fg.KanFeatureGenerator,
             },
             "riichi": {
                 "table_bq_table": "mahjong.riichi",
@@ -101,12 +107,12 @@ class Pipeline():
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
-                "transform_fn": FeatureGenerator().RiichiFeatureGenerator,
+                "transform_fn": fg.RiichiFeatureGenerator,
             }
         }
 
     def write_tfrecords(self, path_prefix, types=None, tfdata=None):
-        # case 1: write multiple labels sepratetly
+        # case 1: write multiple labels separately
         if types is not None and not tfdata:
             out_path = "{}/{}-dataset-{}".format(path_prefix, types, self.write_count[types])
             writer = tf.data.experimental.TFRecordWriter(out_path)
@@ -115,21 +121,25 @@ class Pipeline():
         # case 2: write train, test or val dataset directly with sharding
         if tfdata and types:
             c = 0
+            self.num_counter = 0
             while True:
-                try:
-                    tmp = tfdata.take(40000)
-                    if len(tmp) != 40000:
-                        raise
-                    out_path = "{}/{}-dataset-{}".format(path_prefix, types, c)
-                    writer = tf.data.experimental.TFRecordWriter(out_path)
-                    writer.write(tmp)
-                    tfdata = tfdata.skip(40000)
-                    c += 1
-                except:
+                tmp = tfdata.take(40000)
+                length = len(list(tmp))
+                if length < 40000:
+                    self.num_counter += length
                     out_path = "{}/{}-dataset-{}".format(path_prefix, types, c + 1)
                     writer = tf.data.experimental.TFRecordWriter(out_path)
-                    writer.write(tfdata)
+                    writer.write(tmp)
+                    if types != 'train':
+                        print(f"Total {types} instance:", self.num_counter)
                     break
+                out_path = "{}/{}-dataset-{}".format(path_prefix, types, c)
+                writer = tf.data.experimental.TFRecordWriter(out_path)
+                writer.write(tmp)
+                tfdata = tfdata.skip(40000)
+                self.num_counter += 40000
+                c += 1
+
 
     def feature_writer(self, dataset_prefix, data):
         try:
@@ -158,35 +168,44 @@ class Pipeline():
             tf.io.gfile.rmtree(dataset_prefix)
         tf.io.gfile.makedirs(dataset_prefix)
 
+        a = open(f"{self.job_type}_error.json", "a")
+        b = open(f"{self.job_type}_error.log", "a")
         for path in csv_path:
+            print(path, "Start")
             df = pd.read_csv(path)
             logs_col = df["log_content"]
             for log_str in logs_col:
                 self.log_count += 1
-                # if self.log_count <67:
+                # if self.log_count < 4:
                 #     continue
                 extractors = self.params[self.job_type]["process_fn"].process(log_str)
                 # import json
-                # a.write(json.dumps(list(extractors)))
-                for data in extractors:
-                    self.feature_writer(
-                        dataset_prefix, self.params[self.job_type]["transform_fn"](data))
+                # a.write(json.dumps(list(extractors))+'\n')
+                # a.close()
+                # raise
+                if next(extractors):
+                    try:
+                        for data in extractors:
+                            self.feature_writer(
+                                dataset_prefix, self.params[self.job_type]["transform_fn"](data))
+                    except:
+                        import json
+                        a.write(json.dumps(list(extractors)) + '\n')
+                        b.write(log_str)
+
                 print("log #:", self.log_count)
             print(path, "Finished")
+        a.close()
+        b.close()
         for cls in range(len(self.classes_distribution)):
             if not self.dataset[cls]:
                 continue
             self.write_tfrecords(dataset_prefix, cls)
-            # writer = tf.data.experimental.TFRecordWriter(
-            #     "{}/{}-dataset-{}-f{}".format(dataset_prefix, cls, self.classes_distribution[cls],
-            #                                   self.write_count[cls]))
-            # writer.write(
-            #     tf.data.Dataset.from_tensor_slices(self.dataset[cls]))
         meta_data = PreprocessData(self.counter, self.classes_distribution,
                                    self.params[self.job_type]["feature_spec"])
         with tf.io.gfile.GFile(os.path.join(dataset_prefix, self.job_type + "_meta"), 'wb') as f:
             pickle.dump(meta_data, f)
-
+        print("Total number of instance:", self.counter)
         print("Classes distribution:", self.classes_distribution)
 
         oversampling_prefix = os.path.join(job_dir, 'with_oversampling_data', self.job_type)
@@ -197,15 +216,15 @@ class Pipeline():
         train_dataset = []
         test_dataset = []
         val_dataset = []
-        tot = 0
+        train_total = 0
         for i, class_dist in enumerate(self.classes_distribution):
             tfrecords = glob.glob(os.path.join("./processed_data", self.job_type, f"{i}-*"))
             dataset = tf.data.TFRecordDataset(tfrecords)
             t_size = int(class_dist * TRAIN_SPLIT)
             v_size = int(class_dist * ((1 - TRAIN_SPLIT) / 2))
-            tot += t_size
             train_dataset.append(dataset.take(t_size))
-            dataset.skip(t_size)
+            train_total += t_size
+            dataset = dataset.skip(t_size)
             test_dataset.append(dataset.take(v_size))
             val_dataset.append(dataset.skip(v_size))
         tmp_test = test_dataset[0]
@@ -216,29 +235,16 @@ class Pipeline():
         for d in val_dataset[1:]:
             tmp_val.concatenate(d)
         val_dataset = tmp_val.shuffle(BATCH_SIZE)
-
+        print("Total train instance before resampling:", train_total)
         self.write_tfrecords(oversampling_prefix, "val", val_dataset)
         self.write_tfrecords(oversampling_prefix, "test", test_dataset)
-
-        # final_dataset = [[] for _ in range(len(self.classes_distribution))]
-        # tot = 0
-        # for raw in train_dataset:
-        #     raw_dict = tf.io.parse_example(raw, meta_data.input_feature_spec)
-        #     label = raw_dict['labels']
-        #     l = int(np.argmax(label))
-        #     tot += 1
-        #     final_dataset[l].append(raw)
-        # final_dataset = [tf.data.Dataset.from_tensor_slices(data) for data in final_dataset]
-        # [409, 392]
         resampled_ds = tf.data.experimental \
             .sample_from_datasets(train_dataset,
                                   weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(BATCH_SIZE)
         self.write_tfrecords(oversampling_prefix, "train", resampled_ds)
+        print("Total train instance after resampling:", self.num_counter)
 
-# with tf.io.gfile.GFile(os.path.join(dataset_prefix, "pon_meta"), 'wb') as f:
-#     pickle.dump(
-#         PreprocessData(3148529, 273726, params["pon"]["feature_spec"],
-#                        train_dataset_dir + "*", eval_dataset_dir + "*"), f)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -256,21 +262,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     p = Pipeline(args.job_type)
     p.process(args.job_dir)
-
-    # oversampling using ADASYN
-    # preprocess_data=pickle.load(open(os.path.join(
-    #     "./processed_data", args.job_type, args.job_type + "_meta"), "rb"))
-    # train_tfrecords=glob.glob(os.path.join(
-    #     "./processed_data", args.job_type, "train-dataset*"))
-    # val_tfrecords=glob.glob(os.path.join(
-    #     "./processed_data", args.job_type, "eval-dataset*"))
-    #
-    # train_dataset=tf.data.TFRecordDataset(train_tfrecords).map(
-    #     lambda x: read_tfrecord(x, preprocess_data.input_feature_spec))
-    # val_dataset=tf.data.TFRecordDataset(val_tfrecords).map(
-    #     lambda x: read_tfrecord(x, preprocess_data.input_feature_spec))
-    # whole_dataset=np.vstack(
-    #     (list(train_dataset.take(10)), list(val_dataset.take(10))))
-    # x, y=np.array(list(map(lambda i: i.numpy(), whole_dataset[:, 0]))), np.array(
-    #     list(map(lambda i: i.numpy(), whole_dataset[:, 1])))
-    # ADASYN().fit_resample(x, y)
