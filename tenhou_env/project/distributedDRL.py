@@ -291,8 +291,8 @@ def get_al_status(node_buffer):
 
 if __name__ == '__main__':
 
-    ray.init(local_mode=True)  # Local Mode
-    # ray.init()  #specify cluster address here
+    # ray.init(local_mode=True)  # Local Mode
+    ray.init()  #specify cluster address here
 
     node_ps = []
     node_buffer = []
