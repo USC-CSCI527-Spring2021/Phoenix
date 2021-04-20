@@ -9,6 +9,7 @@ import keras
 import numpy as np
 import ray
 import tensorflow as tf
+import sys
 
 
 from actor_learner import Learner, Actor
@@ -193,8 +194,8 @@ class ParameterServer:
 
 @ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt, model_type):
-    from actor_learner import Learner
-    from options import Options
+    import sys
+    print(sys.path)
     agent = Learner(opt, model_type)
     weights = ray.get(ps.pull.remote(model_type))
     agent.set_weights(weights)
@@ -214,8 +215,8 @@ def worker_train(ps, node_buffer, opt, model_type):
 
 @ray.remote
 def worker_rollout(ps, replay_buffer, opt):
-    from actor_learner import Actor
-    from options import Options
+    import sys
+    print(sys.path)    
     agent = Actor(opt, job='worker', buffer=replay_buffer)
     while True:
         weights = ray.get(ps.pull.remote())
@@ -225,16 +226,14 @@ def worker_rollout(ps, replay_buffer, opt):
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):
-    from actor_learner import Actor
-    from options import Options
     agent = Actor(opt, job="test", buffer=ReplayBuffer)
     init_time = time.time()
     save_times = 0
     checkpoint_times = 0
 
     while True:
-        # weights = ray.get(ps.get_weights.remote())
-        # agent.set_weights(weights)
+        weights = ray.get(ps.get_weights.remote())
+        agent.set_weights(weights)
         start_actor_step, start_learner_step, _ = get_al_status(node_buffer)
         start_time = time.time()
 
@@ -302,21 +301,19 @@ if __name__ == '__main__':
 
     # ray.init(local_mode=True)  # Local Mode
     ray.init()  #specify cluster address here
-    ray.register_class(Learner)
-    ray.register_class(Actor)
-    ray.register_class(Options)
-    
+    ROOT = os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(ROOT)
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
     opt.isOnline = 0
-
+    # optref = ray.put(opt)
     for node_index in range(FLAGS.num_nodes):
         node_ps.append(
             ParameterServer.remote(opt, node_index,
-                                                                                    [f'{os.getcwd()}/{f}' for f in
-                                                                                     glob.glob('models/*') if
-                                                                                     "." not in f], ""))
+                                        [f'{os.getcwd()}/{f}' for f in
+                                            glob.glob('models/*') if
+                                            "." not in f], ""))
         print(f"Node{node_index} Parameter Server all set.")
 
         node_buffer.append(
@@ -325,8 +322,7 @@ if __name__ == '__main__':
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
-            worker_rollout.remote(node_ps[node_index],
-                                                                                    node_buffer[node_index], opt)
+            worker_rollout.remote(node_ps[node_index], node_buffer[node_index], opt)
                                                                                     
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")
