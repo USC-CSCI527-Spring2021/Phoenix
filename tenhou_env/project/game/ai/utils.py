@@ -44,3 +44,4 @@ RANKS = [
 
 pred_emb_dim = 15
 round_num = 15
+model_types = ['chi', 'pon', 'kan', 'riichi', 'discard']

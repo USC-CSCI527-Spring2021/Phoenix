@@ -164,7 +164,7 @@ class Chi:
         features = self.getFeature(melds_chi)
         start_time = time.time()
         predictions = self.model.predict(features)
-        print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
+        # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
 
         pidx = np.argmax(predictions[:, 1])
         choice = np.argmax(predictions[pidx])
@@ -220,7 +220,7 @@ class Pon:
         features = self.getFeature(tile_136)
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
-        print("---Pon inference time:  %s seconds ---" % (time.time() - start_time))
+        # print("---Pon inference time:  %s seconds ---" % (time.time() - start_time))
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
 
@@ -295,7 +295,7 @@ class Kan:
         features = self.getFeature(tile_136, kan_type_feature)
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
-        print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
+        # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
 
         model_predict = np.argmax(predictions)
         if not open_kan:
@@ -392,7 +392,7 @@ class Riichi:
         features = self.getFeature()
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
-        print("---Riichi inference time:  %s seconds ---" % (time.time() - start_time))
+        # print("---Riichi inference time:  %s seconds ---" % (time.time() - start_time))
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
@@ -451,7 +451,7 @@ class Discard:
         features = self.getFeature(all_hands_136, closed_hands_136)
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
-        print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
+        # print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
 
         max_score = 0
         choice = discard_options[0]  # type: tile_136
@@ -497,5 +497,5 @@ class GlobalRewardPredictor:
         # assert embed.shape[-2:] == (15, 15)
         start_time = time.time()
         reward = self.model.predict(features)[0]
-        print("---Global Reward Predictor inference time:  %s seconds ---" % (time.time() - start_time))
+        # print("---Global Reward Predictor inference time:  %s seconds ---" % (time.time() - start_time))
         return reward

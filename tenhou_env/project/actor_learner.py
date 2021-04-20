@@ -55,7 +55,6 @@ class Actor:
         self.job = job
         self.bot_config = BotDefaultConfig()
         self.bot_config.buffer = buffer
-        self.player_idx = 0
 
     def set_weights(self, weights):
         self.bot_config.weights = weights  # a dict for all models
@@ -69,7 +68,7 @@ class Actor:
         # for later use in nn.py
         self.bot_config.isOnline = self.opt.isOnline
         if self.opt.isOnline:
-            module = importlib.import_module(f"settings.bot_{self.player_idx}_settings")
+            module = importlib.import_module(f"settings.base")
             for key, value in vars(module).items():
                 # let's use only upper case settings
                 if key.isupper():
@@ -106,15 +105,12 @@ class Actor:
             for i in range(4):
                 self.bot_config.name = f"bot{i}"
                 clients.append(LocalClient(self.bot_config, print_logs, replay_name, i))
-            for i in range():
-                # one_game_clients = []
                 
 
-                bot_battle_main(self.opt.num_games, print_logs, clients, replay_name)
-                print("One local game end!")
-                # end of a local game
-                # clients.append(one_game_clients)
+            bot_battle_main(self.opt.num_games, print_logs, clients, replay_name)
+                
             # Write to buffer
             # for one_game_clients in clients:
-            for client in one_game_clients:
+            print('start write buffer')
+            for client in clients:
                 client.table.player.ai.write_buffer()
