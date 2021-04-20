@@ -107,7 +107,7 @@ def main():
     os.system("/sbin/ldconfig -N -v $(sed 's/:/ /g' <<< $LD_LIBRARY_PATH) | grep libcupti")
 
     args = argument_parse()
-    from trainer.utils import CHECKPOINT_DIR, BATCH_SIZE, create_or_join, RANDOM_SEED
+    from trainer.utils import CHECKPOINT_DIR, BATCH_SIZE, create_or_join, RANDOM_SEED, TRAIN_SPLIT
 
     tf.random.set_seed(RANDOM_SEED)
 
@@ -177,7 +177,7 @@ def main():
     preprocess_data = pickle.load(meta)
 
     def read_tfrecord(serialized_example):
-        example = tf.io.parse_example(serialized_example, preprocess_data.input_feature_spec)
+        example = tf.io.parse_single_example(serialized_example, preprocess_data.input_feature_spec)
         features = example['features']
         labels = example['labels']
         return features, labels
@@ -189,20 +189,26 @@ def main():
         for i in range(num_classes):
             class_weight[i] = preprocess_data.total / (num_classes * preprocess_data.classes_distribution[i])
         print('Weight for classes:', class_weight)
-        train_tfrecords = tf.io.gfile.glob(
-            create_or_join("processed_data/{}/".format(args.model_type)) + "train-dataset*")
-        val_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "eval-dataset*")
+        tfrecords = tf.io.gfile.glob(
+            create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
+        dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BATCH_SIZE)
+        ts = int(preprocess_data.total * TRAIN_SPLIT)
+        train_dataset = dataset.take(ts).shuffle(BATCH_SIZE).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+        test_dataset = dataset.skip(ts).take((1 - ts) // 2).shuffle(BATCH_SIZE).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+        val_dataset = dataset.skip(ts + ((1 - ts) // 2)).shuffle(BATCH_SIZE).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
     else:
         # oversampling
         train_tfrecords = tf.io.gfile.glob(
             create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "train-dataset*")
         val_tfrecords = tf.io.gfile.glob(
             create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "eval-dataset*")
-
-    train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
-        .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
-        .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
+        train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+        val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
     if args.hypertune:
         tuner = kt.Hyperband(
@@ -223,28 +229,11 @@ def main():
         if args.model_type == 'discard':
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
-                keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
-                keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
-                keras.callbacks.LearningRateScheduler(scheduler),
-                keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                monitor='val_categorical_accuracy',
-                                                save_freq=5000,
-                                                )
+                keras.callbacks.TensorBoard(log_dir=create_or_join("logs/eval" + args.model_type + timestamp),
+                                            update_freq='batch', histogram_freq=1),
+                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("eval_model_backup")),
             ]
         else:
-            # if args.model_type == 'chi':
-            #     input_shape = (74, 34, 1)
-            # elif args.model_type == 'pon':
-            #     input_shape = (74, 34, 1)
-            #     # types = 1
-            #     # generator = FG.PonFeatureGenerator()
-            # elif args.model_type == 'kan':
-            #     input_shape = (77, 34, 1)
-            #     # types = 2
-            # elif args.model_type == 'riichi':
-            #     input_shape = (73, 34, 1)
-            # types = 3
             model = make_or_restore_model(input_shape, args.model_type, strategy)
             callbacks = [
                 keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
@@ -260,19 +249,25 @@ def main():
             model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
                       steps_per_epoch=3,
                       class_weight=class_weight,
-                      validation_steps=1000,
+                      validation_steps=1,
                       use_multiprocessing=True,
                       workers=-1,
                       callbacks=callbacks)
+
+            model.save(os.path.join(create_or_join("models"), args.model_type))
+            model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+
+            print("Evaluate on test data")
+            res = model.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
+            print("test loss, test acc:", res)
+
         except KeyboardInterrupt or InterruptedError:
             model.save(os.path.join(create_or_join("models"), args.model_type))
             model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
             print('Keyboard Interrupted, Model and weights saved')
             import sys
-
             sys.exit(0)
-        model.save(os.path.join(create_or_join("models"), args.model_type))
-        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+
         # save_model(os.path.join(create_or_join("models"), args.model_type), model)
 
         # if not args.cloud_train:

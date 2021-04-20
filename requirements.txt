@@ -105,3 +105,4 @@ urllib3==1.26.3
 websocket-client==0.57.0
 wrapt==1.12.1
 ray
+cryptography

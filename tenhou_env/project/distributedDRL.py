@@ -143,8 +143,8 @@ class ParameterServer:
         # json.dump(all_parameters, fp, indent=4, sort_keys=True)
         # --- end ---
 
-        if not checkpoint_path:
-            checkpoint_path = opt.save_dir + "/checkpoint"
+        # if not checkpoint_path:
+        #     checkpoint_path = opt.save_dir + "/checkpoint"
 
         # if opt.recover:
         #     with open(checkpoint_path + "/checkpoint_weights.pickle", "rb") as pickle_in:
@@ -291,9 +291,8 @@ def get_al_status(node_buffer):
 #         self.num_workers = num_workers
 
 if __name__ == '__main__':
-
-    ray.init(local_mode=True)  # Local Mode
-    # ray.init()  #specify cluster address here
+    # ray.init(local_mode=True)  # Local Mode
+    ray.init(address="auto", )  # specify cluster address here
 
     node_ps = []
     node_buffer = []

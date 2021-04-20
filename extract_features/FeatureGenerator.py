@@ -4,19 +4,11 @@
 #   at the bottom of this file
 
 import json
+
 import numpy as np
 from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
-from mahjong.meld import Meld
-from mahjong.hand_calculating.hand import HandCalculator
-from mahjong.hand_calculating.scores import ScoresCalculator
-from mahjong.hand_calculating.hand_config import HandConfig, HandConstants
-import hashlib
-import marshal
-from joblib import Parallel, delayed
 from tensorflow.keras.utils import to_categorical
-from joblib.externals.loky import set_loky_pickler
-set_loky_pickler('dill')
 
 
 class FeatureGenerator:
@@ -26,103 +18,11 @@ class FeatureGenerator:
         By Jun Lin
         """
         self.shanten_calculator = Shanten()
-        self.hc = HandCalculator()
-        self.sc = ScoresCalculator()
-        self.hand_cache_shanten = {}
-        self.hand_cache_points = {}
-
-    def build_cache_key(self, tiles_34):
-        return hashlib.md5(marshal.dumps(tiles_34)).hexdigest()
-
-    def calculate_shanten_or_get_from_cache(self, closed_hand_34):
-        key = self.build_cache_key(closed_hand_34)
-        if key in self.hand_cache_shanten:
-            return self.hand_cache_shanten[key]
-        result = self.shanten_calculator.calculate_shanten(closed_hand_34)
-        self.hand_cache_shanten[key] = result
-        return result
-
-    def calculate_ponits_or_get_from_cache(self, closed_left_tiles_34, win_tile, melds, dora_indicators):
-        tiles_34 = closed_left_tiles_34[:]
-        for meld in melds:
-            for x in meld.tiles_34:
-                tiles_34[x] += 1
-        key = self.build_cache_key(tiles_34 + [win_tile] + dora_indicators)
-        if key in self.hand_cache_points:
-            return self.hand_cache_points[key]
-        # print(closed_left_tiles_34)
-        # print(melds)
-        hc_result = self.hc.estimate_hand_value(TilesConverter.to_136_array(tiles_34), win_tile, melds,
-                                                dora_indicators)
-        sc_result = self.sc.calculate_scores(hc_result.han, hc_result.fu, HandConfig(HandConstants()))
-        result = sc_result["main"]
-        self.hand_cache_points[key] = result
-        return result
-
-    def canwinbyreplace(self, closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
-        def _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
-            if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) > replacelimit:
-                return 0
-            result = 0
-            if replacelimit == 0:
-                for idx in range(34):
-                    if tiles_could_draw[idx] > 0:
-                        closed_left_tiles_34[idx] += 1
-                        if self.calculate_shanten_or_get_from_cache(closed_left_tiles_34) == -1:
-                            ponits = self.calculate_ponits_or_get_from_cache(closed_left_tiles_34, idx * 4, melds,
-                                                                             dora_indicators)
-                            result = max(result, ponits)
-                        closed_left_tiles_34[idx] -= 1
-
-            else:
-                for idx, count in enumerate(tiles_could_draw):
-                    if count > 0:
-                        tiles_could_draw[idx] -= 1
-                        closed_left_tiles_34[idx] += 1
-                        ponits = _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-                        result = max(result, ponits)
-                        closed_left_tiles_34[idx] -= 1
-                        tiles_could_draw[idx] += 1
-            return result
-
-        def _discard(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit):
-            result = 0
-            for idx, count in enumerate(closed_left_tiles_34):
-                if count > 0:
-                    closed_left_tiles_34[idx] -= 1
-                    replacelimit -= 1
-                    ponits = _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-                    result = max(result, ponits)
-                    replacelimit += 1
-                    closed_left_tiles_34[idx] += 1
-            return result
-
-        return _draw(closed_left_tiles_34, melds, dora_indicators, tiles_could_draw, replacelimit)
-
-    def open_hands_detail_to_melds(self, open_hands_detail):
-        melds = []
-        for ohd in open_hands_detail:
-            tiles = ohd["tiles"]
-            if ohd["meld_type"] == "Pon":
-                meld_type = "pon"
-                opened = True
-            elif ohd["meld_type"] == "Chi":
-                meld_type = "chi"
-                opened = True
-            elif ohd["meld_type"] == "AnKan":
-                meld_type = "kan"
-                opened = False
-            else:
-                meld_type = "kan"
-                opened = True
-            meld = Meld(meld_type, tiles, opened)
-            melds.append(meld)
-        return melds
 
     def getPlayerTiles(self, player_tiles):
         closed_hand_136 = player_tiles.get('closed_hand:', [])
-        open_hand_136 = player_tiles.get('open_hand', [])
-        discarded_tiles_136 = player_tiles.get('discarded_tiles', [])
+        open_hand_136 = player_tiles.get('open_hand:', [])
+        discarded_tiles_136 = player_tiles.get('discarded_tiles:', [])
 
         closed_hand_feature = np.zeros((4, 34))
         open_hand_feature = np.zeros((4, 34))
@@ -154,7 +54,7 @@ class FeatureGenerator:
         player_seat = tiles_state_and_action["player_id"]
         enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
         if (len(enemies_tiles_list) == 3):
-            enemies_tiles_list.insert(player_seat, tiles_state_and_action["player_tiles"])
+            enemies_tiles_list.insert(player_seat, {})
         enemies_tiles_feature = np.empty((0, 34))
         for i in range(3):
             player_seat = (player_seat + 1) % 4
@@ -260,65 +160,8 @@ class FeatureGenerator:
             prevailing_wind_feature
         ))
 
-    def getLookAheadFeature(self, tiles_state_and_action):
-        # 0 for whether can be discarded
-        # 1 2 3 for shanten
-        # 4 5 6 7 for whether can get 2k 4k 6k 8k points with replacing 3 tiles ---- need review: takes too long!
-        # 8 9 10 for in Shimocha Toimen Kamicha discarded
-        # lookAheadFeature = np.zeros((11, 34))
-        player_tiles = tiles_state_and_action["player_tiles"]
-        closed_hand_136 = player_tiles.get('closed_hand:', [])
-        open_hands_detail = tiles_state_and_action["open_hands_detail"]
-        melds = self.open_hands_detail_to_melds(open_hands_detail)
-        discarded_tiles_136 = player_tiles.get('discarded_tiles', [])
-        player_seat = tiles_state_and_action["player_id"]
-        enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
-        dora_indicators = tiles_state_and_action["dora"]
-        if (len(enemies_tiles_list) == 3):
-            enemies_tiles_list.insert(player_seat, player_tiles)
-        tiles_could_draw = np.ones(34) * 4
-        for player in enemies_tiles_list:
-            for tile_set in [player.get('closed_hand:', []), player.get('open_hand', []),
-                             player.get('discarded_tiles', [])]:
-                for tile in tile_set:
-                    tiles_could_draw[tile // 4] -= 1
-        for dora_tile in dora_indicators:
-            tiles_could_draw[tile // 4] -= 1
-
-        def feature_process(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
-                            enemies_tiles_list):
-            feature = np.zeros((11, 1))
-            discard_tiles = [x for x in [i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 3] if x in closed_hand_136]
-            if len(discard_tiles) != 0:
-                discard_tile = discard_tiles[0]
-                feature[0] = 1
-                closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
-                shanten = self.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
-                for i in range(3):
-                    if shanten <= i:
-                        feature[i + 1] = 1
-                maxscore = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
-                                                tiles_could_draw, replacelimit=2)
-                scores = [2000, 4000, 6000, 8000]
-                for i in range(4):
-                    if maxscore >= scores[i]:
-                        feature[i + 4] = 1
-                seat = player_seat
-                for i in range(3):
-                    seat = (seat + 1) % 4
-                    if discard_tile // 4 in [t // 4 for t in enemies_tiles_list[seat].get('discarded_tiles', [])]:
-                        feature[i + 8] = 1
-            return feature
-
-        results = Parallel(n_jobs=-1)(
-            delayed(feature_process)(i, closed_hand_136, melds, dora_indicators, tiles_could_draw, player_seat,
-                                     enemies_tiles_list)
-            for i in range(34))
-        return np.concatenate(results, axis=1)
-
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
-            self.getLookAheadFeature(tiles_state_and_action),  # (11,34)
             self.getSelfTiles(tiles_state_and_action),  # (12,34)
             self.getDoraList(tiles_state_and_action),  # (5,34)
             self.getBoard1(tiles_state_and_action),  # (5,34)
@@ -464,8 +307,7 @@ class FeatureGenerator:
         action = tiles_state_and_action["action"]
         if tiles_state_and_action["is_FCH"] == 1:
             tiles_34 = TilesConverter.to_34_array(tiles_state_and_action["player_tiles"]["closed_hand:"])
-            # min_shanten = self.shanten_calculator.calculate_shanten(tiles_34)
-            min_shanten = self.calculate_shanten_or_get_from_cache(tiles_34)
+            min_shanten = self.shanten_calculator.calculate_shanten(tiles_34)
             if min_shanten == 0:
                 x = self.getGeneralFeature(tiles_state_and_action)
                 if action[0] == 'REACH':
@@ -483,22 +325,12 @@ class FeatureGenerator:
 
 
 if __name__ == "__main__":
-    filename = "../discard_error.json"
-    from logs_parser.discarded_model_dataset import DiscardedFeatureExtractor
+    filename = "assist/chi_pon_kan_reach_2021.json"
     fg = FeatureGenerator()
-    d = DiscardedFeatureExtractor()
-    data = d.process(open("../discard_error.log", 'r').readline())
-    res = [d for d in data]
-    # with open(filename) as infile:
-    #     for line in infile:
-    #         tiles_state_and_actions = json.loads(line)
-    #         for tiles_state_and_action in tiles_state_and_actions:
-    #             try:
-    #                 # chi = next(fg.ChiFeatureGenerator(tiles_state_and_action))
-    #                 # pon = next(fg.PonFeatureGenerator(tiles_state_and_action))
-    #                 # kan = next(fg.KanFeatureGenerator(tiles_state_and_action))
-    #                 # riichi = next(fg.RiichiFeatureGenerator(tiles_state_and_action))
-    #                 discard = next(fg.DiscardFeatureGenerator(tiles_state_and_action))
-    #                 assert len(discard) == 2
-    #             except StopIteration:
-    #                 pass
+    with open(filename) as infile:
+        for line in infile:
+            tiles_state_and_action = json.loads(line)
+            fg.ChiFeatureGenerator(tiles_state_and_action)
+            fg.PonFeatureGenerator(tiles_state_and_action)
+            fg.KanFeatureGenerator(tiles_state_and_action)
+            fg.RiichiFeatureGenerator(tiles_state_and_action)

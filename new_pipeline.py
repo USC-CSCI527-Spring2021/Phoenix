@@ -67,7 +67,7 @@ class Pipeline:
             "discard": {
                 "table_bq_table": 'mahjong.discard',
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((73, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((62, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((34,), tf.float32),
                 },
                 "process_fn": discarded_model_dataset.DiscardedFeatureExtractor(),
@@ -76,7 +76,7 @@ class Pipeline:
             "chi": {
                 "table_bq_table": "mahjong.chi",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((74, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((63, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -85,7 +85,7 @@ class Pipeline:
             "pon": {
                 "table_bq_table": "mahjong.pon",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((74, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((63, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -94,7 +94,7 @@ class Pipeline:
             "kan": {
                 "table_bq_table": "mahjong.kan",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((77, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((66, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -103,7 +103,7 @@ class Pipeline:
             "riichi": {
                 "table_bq_table": "mahjong.riichi",
                 "feature_spec": {
-                    "features": tf.io.FixedLenFeature((73, 34, 1), tf.float32),
+                    "features": tf.io.FixedLenFeature((62, 34, 1), tf.float32),
                     "labels": tf.io.FixedLenFeature((2,), tf.float32),
                 },
                 "process_fn": chi_pon_kan_model.ChiPonKanFeatureExtractor(),
@@ -179,20 +179,22 @@ class Pipeline:
                 # if self.log_count < 4:
                 #     continue
                 extractors = self.params[self.job_type]["process_fn"].process(log_str)
-                # import json
-                # a.write(json.dumps(list(extractors))+'\n')
-                # a.close()
-                # raise
-                if next(extractors):
-                    try:
-                        for data in extractors:
-                            self.feature_writer(
-                                dataset_prefix, self.params[self.job_type]["transform_fn"](data))
-                    except:
-                        import json
-                        a.write(json.dumps(list(extractors)) + '\n')
-                        b.write(log_str)
-
+                try:
+                    # import json
+                    # a.write(json.dumps(list(extractors))+'\n')
+                    # a.close()
+                    # raise
+                    if next(extractors):
+                        try:
+                            for data in extractors:
+                                self.feature_writer(
+                                    dataset_prefix, self.params[self.job_type]["transform_fn"](data))
+                        except:
+                            import json
+                            a.write(json.dumps(list(extractors)) + '\n')
+                            b.write(log_str)
+                except StopIteration:
+                    pass
                 print("log #:", self.log_count)
             print(path, "Finished")
         a.close()

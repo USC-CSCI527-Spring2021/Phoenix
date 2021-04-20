@@ -106,15 +106,11 @@ class Actor:
             for i in range(4):
                 self.bot_config.name = f"bot{i}"
                 clients.append(LocalClient(self.bot_config, print_logs, replay_name, i))
-            for i in range():
-                # one_game_clients = []
-                
-
+                print("One local game start!")
                 bot_battle_main(self.opt.num_games, print_logs, clients, replay_name)
                 print("One local game end!")
                 # end of a local game
                 # clients.append(one_game_clients)
             # Write to buffer
-            # for one_game_clients in clients:
-            for client in one_game_clients:
+            for client in clients:
                 client.table.player.ai.write_buffer()
