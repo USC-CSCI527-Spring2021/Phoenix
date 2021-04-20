@@ -208,9 +208,8 @@ def worker_train(ps, node_buffer, opt, model_type):
 
 
 @ray.remote
-def worker_rollout(ps, replay_buffer, opt, player_idx):
+def worker_rollout(ps, replay_buffer, opt):
     agent = Actor(opt, job='worker', buffer=replay_buffer)
-    agent.player_idx = player_idx
     while True:
         weights = ray.get(ps.pull.remote())
         agent.set_weights(weights)
@@ -313,10 +312,9 @@ if __name__ == '__main__':
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
-            for player_idx in range(4):
-                worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
-                                                                                       node_buffer[node_index], opt,
-                                                                                       player_idx)
+            worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
+                                                                                   node_buffer[node_index], opt)
+
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")
 

@@ -4,7 +4,7 @@ trainingInput:
   scaleTier: CUSTOM
   #  network: projects/538372709834/global/networks/default
   # Configure a master worker with 4 T4 GPUs
-  masterType: n1-highmem-8
+  masterType: n1-standard-8
   masterConfig:
     acceleratorConfig:
       count: 1
