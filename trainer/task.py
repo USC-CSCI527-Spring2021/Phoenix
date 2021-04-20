@@ -187,7 +187,7 @@ def main():
     if args.class_weight:
         class_weight = {}
         for i in range(num_classes):
-            class_weight[i] = preprocess_data.total / (num_classes * preprocess_data.classes_distribution[i])
+            class_weight[i] = preprocess_data.classes_distribution[i] / preprocess_data.total
         print('Weight for classes:', class_weight)
         tfrecords = tf.io.gfile.glob(
             create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
@@ -247,9 +247,8 @@ def main():
             ]
         try:
             model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                      steps_per_epoch=3,
                       class_weight=class_weight,
-                      validation_steps=1,
+                      validation_steps=1000,
                       use_multiprocessing=True,
                       workers=-1,
                       callbacks=callbacks)
