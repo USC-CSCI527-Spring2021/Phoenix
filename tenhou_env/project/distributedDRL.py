@@ -10,6 +10,7 @@ import numpy as np
 import ray
 import tensorflow as tf
 
+
 from actor_learner import Learner, Actor
 from options import Options
 from game.ai.utils import model_types
@@ -86,8 +87,8 @@ class Cache():
         # cache for training data and model weights
         print('os.pid:', os.getpid())
         self.node_buffer = node_buffer
-        self.q1 = {k: multiprocessing.Queue(12) for k in model_types}
-        self.q2 = multiprocessing.Queue(5)
+        self.q1 = {k: multiprocessing.Queue(12) for k in model_types}       #store sample batch
+        self.q2 = multiprocessing.Queue(3)                                  #store weights
         self.p1 = multiprocessing.Process(target=self.ps_update, args=(self.q1, self.q2, self.node_buffer))
         self.p1.daemon = True
 
@@ -100,7 +101,6 @@ class Cache():
 
         while True:
             for model_type in model_types:
-
                 if q1[model_type].qsize() < 10:
                     node_idx = np.random.choice(opt.num_nodes, 1)[0]
                     q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
@@ -176,8 +176,11 @@ class ParameterServer:
         self.weights[model_type] = weights
         self.learner_step += self.opt.push_freq
 
-    def pull(self):
-        return self.weights
+    def pull(self, model_type=None):
+        if model_type:
+            return self.weights[model_type]
+        else:
+            return self.weights
 
     def get_weights(self):
         return copy.deepcopy(self.weights)
@@ -190,6 +193,8 @@ class ParameterServer:
 
 @ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt, model_type):
+    from actor_learner import Learner
+    from options import Options
     agent = Learner(opt, model_type)
     weights = ray.get(ps.pull.remote(model_type))
     agent.set_weights(weights)
@@ -199,16 +204,18 @@ def worker_train(ps, node_buffer, opt, model_type):
 
     cnt = 1
     while True:
-        batch = cache.q1[model_type].start()
+        batch = cache.q1[model_type].get()
         agent.train(batch, cnt)
         print('one batch trained')
         if cnt % opt.push_freq == 0:
-            cache.q2.put(agent.get_weights)
+            cache.q2.put(agent.get_weights())
         cnt += 1
 
 
 @ray.remote
 def worker_rollout(ps, replay_buffer, opt):
+    from actor_learner import Actor
+    from options import Options
     agent = Actor(opt, job='worker', buffer=replay_buffer)
     while True:
         weights = ray.get(ps.pull.remote())
@@ -218,14 +225,16 @@ def worker_rollout(ps, replay_buffer, opt):
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):
+    from actor_learner import Actor
+    from options import Options
     agent = Actor(opt, job="test", buffer=ReplayBuffer)
     init_time = time.time()
     save_times = 0
     checkpoint_times = 0
 
     while True:
-        weights = ray.get(ps.get_weights.remote())
-        agent.set_weights(weights)
+        # weights = ray.get(ps.get_weights.remote())
+        # agent.set_weights(weights)
         start_actor_step, start_learner_step, _ = get_al_status(node_buffer)
         start_time = time.time()
 
@@ -293,7 +302,10 @@ if __name__ == '__main__':
 
     # ray.init(local_mode=True)  # Local Mode
     ray.init()  #specify cluster address here
-
+    ray.register_class(Learner)
+    ray.register_class(Actor)
+    ray.register_class(Options)
+    
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
@@ -301,19 +313,19 @@ if __name__ == '__main__':
 
     for node_index in range(FLAGS.num_nodes):
         node_ps.append(
-            ParameterServer.options(resources={"node" + str(node_index): 1}).remote(opt, node_index,
+            ParameterServer.remote(opt, node_index,
                                                                                     [f'{os.getcwd()}/{f}' for f in
                                                                                      glob.glob('models/*') if
                                                                                      "." not in f], ""))
         print(f"Node{node_index} Parameter Server all set.")
 
         node_buffer.append(
-            {model_type: ReplayBuffer.options(resources={"node" + str(node_index): 1}).remote(opt, node_index, model_type) for
+            {model_type: ReplayBuffer.remote(opt, node_index, model_type) for
              model_type in model_types})
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
-            worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
+            worker_rollout.remote(node_ps[node_index],
                                                                                     node_buffer[node_index], opt)
                                                                                     
             time.sleep(0.19)
@@ -331,7 +343,7 @@ if __name__ == '__main__':
         pickle.dump(nodes_info, pickle_out)
         print("****** save nodes_info ******")
 
-    task_train = [worker_train.options(resources={"node0": 1}).remote(node_ps[0], node_buffer, opt, model_type) for
+    task_train = [worker_train.remote(node_ps[0], node_buffer, opt, model_type) for
                   model_type in model_types]
 
     task_test = worker_test.remote(node_ps[0], node_buffer, opt)
