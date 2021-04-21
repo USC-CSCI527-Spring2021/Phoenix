@@ -291,7 +291,8 @@ def get_al_status(node_buffer):
 
 if __name__ == '__main__':
     # ray.init(local_mode=True)  # Local Mode
-    ray.init(address="auto", )  # specify cluster address here
+    ray.init()
+    # ray.init(address="auto")  # specify cluster address here
 
     node_ps = []
     node_buffer = []
@@ -300,20 +301,15 @@ if __name__ == '__main__':
 
     for node_index in range(FLAGS.num_nodes):
         node_ps.append(
-            ParameterServer.options(resources={"node" + str(node_index): 1}).remote(opt, node_index,
-                                                                                    [f'{os.getcwd()}/{f}' for f in
-                                                                                     glob.glob('models/*') if
-                                                                                     "." not in f], ""))
+            ParameterServer.remote(opt, node_index,
+                                   [f'{os.getcwd()}/{f}' for f in glob.glob('models/*') if "." not in f], ""))
         print(f"Node{node_index} Parameter Server all set.")
 
-        node_buffer.append(
-            [ReplayBuffer.options(resources={"node" + str(node_index): 1}).remote(opt, node_index, model_type) for
-             model_type in model_types])
+        node_buffer.append([ReplayBuffer.remote(opt, node_index, model_type) for model_type in model_types])
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
-            worker_rollout.options(resources={"node" + str(node_index): 1}).remote(node_ps[node_index],
-                                                                                   node_buffer[node_index], opt)
+            worker_rollout.remote(node_ps[node_index], node_buffer[node_index], opt)
 
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")

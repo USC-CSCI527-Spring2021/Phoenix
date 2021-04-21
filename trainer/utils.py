@@ -1,12 +1,12 @@
 import os
 import signal
-import time
+
 import tensorflow as tf
 
 # GCP_BUCKET = 'mahjong-dataset'
 # GCP_BUCKET = 'mahjong-bucket'
 GCP_BUCKET = 'mahjong1'
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 TRAIN_SPLIT = 0.7
 CHECKPOINT_DIR = "checkpoints"
 RANDOM_SEED = 1

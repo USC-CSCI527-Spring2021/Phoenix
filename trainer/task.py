@@ -5,7 +5,6 @@ from time import sleep
 
 import dill as pickle
 import kerastuner as kt
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
@@ -20,7 +19,7 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=1,
+        default=10,
         help='number of times to go through the data, default=5000')
     # parser.add_argument(
     #     '--batch-size',
@@ -137,6 +136,7 @@ def main():
 
         BATCH_SIZE_PER_REPLICA = BATCH_SIZE
         BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
+        print("Total Batch Size:", BATCH_SIZE)
         # task_type, task_id = (strategy.cluster_resolver.task_type,
         #                       strategy.cluster_resolver.task_id)
         # write_model_path = write_filepath(os.path.join(create_or_join("models")), task_type, task_id)
@@ -160,16 +160,16 @@ def main():
     #     job_labels={"job": "discard_model"},
     #     stream_logs=True,
     # )
-    def count_class(counts, batch):
-        _, labels = list(batch)
-        for l in labels:
-            print(list(l))
-
-            if np.argmax(l) == 1:
-                counts[1] += 1
-            else:
-                counts[0] += 1
-        return counts
+    # def count_class(counts, batch):
+    #     _, labels = list(batch)
+    #     for l in labels:
+    #         print(list(l))
+    #
+    #         if np.argmax(l) == 1:
+    #             counts[1] += 1
+    #         else:
+    #             counts[0] += 1
+    #     return counts
 
     checkpoint_path = create_or_join(os.path.join(CHECKPOINT_DIR, args.model_type))
     log_path = create_or_join("logs/" + args.model_type + timestamp)
@@ -191,13 +191,13 @@ def main():
         print('Weight for classes:', class_weight)
         tfrecords = tf.io.gfile.glob(
             create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
-        dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BATCH_SIZE)
+        dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BUFFER_SIZE)
         ts = int(preprocess_data.total * TRAIN_SPLIT)
-        train_dataset = dataset.take(ts).shuffle(BATCH_SIZE).map(read_tfrecord) \
-            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-        test_dataset = dataset.skip(ts).take((1 - ts) // 2).shuffle(BATCH_SIZE).map(read_tfrecord) \
-            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-        val_dataset = dataset.skip(ts + ((1 - ts) // 2)).shuffle(BATCH_SIZE).map(read_tfrecord) \
+        train_dataset = dataset.take(ts).shuffle(BUFFER_SIZE).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
+        test_dataset = dataset.skip(ts).take((1 - ts) // 2).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
+        val_dataset = dataset.skip(ts + ((1 - ts) // 2)).map(read_tfrecord) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
     else:
         # oversampling

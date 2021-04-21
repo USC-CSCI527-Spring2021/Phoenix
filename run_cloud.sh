@@ -127,7 +127,7 @@ gcloud ai-platform jobs submit training riichi_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
   --region us-central1 \
-  --job-dir "gs://mahjong-bucket/" \
+  --job-dir "gs://mahjong-final/" \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
@@ -139,7 +139,7 @@ gcloud ai-platform jobs submit training kan_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
   --region us-central1 \
-  --job-dir "gs://mahjong3/" \
+  --job-dir "gs://mahjong-final" \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
