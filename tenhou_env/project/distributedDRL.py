@@ -11,7 +11,6 @@ import ray
 import tensorflow as tf
 import sys
 
-
 from actor_learner import Learner, Actor
 from options import Options
 from game.ai.utils import model_types
@@ -26,21 +25,12 @@ flags.DEFINE_integer("num_workers", 1, "number of workers")
 class ReplayBuffer:
     def __init__(self, opt, buffer_index, buffer_type):
         self.opt = opt
-        # self.buffer_index = buffer_index
         self.buffer_type = buffer_type
-        # self.obs1_buf = np.zeros([opt.buffer_size, opt.obs_dim], dtype=np.float32)
-        # self.obs2_buf = np.zeros([opt.buffer_size, opt.obs_dim], dtype=np.float32)
-        # self.acts_buf = np.zeros(opt.buffer_size, dtype=np.float32)
-        # self.rews_buf = np.zeros(opt.buffer_size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
 
     def store(self, obs, rew, pred, act):
-        # self.obs1_buf[self.ptr] = obs
-        # self.obs2_buf[self.ptr] = next_obs
-        # self.acts_buf[self.ptr] = act
-        # self.rews_buf[self.ptr] = rew
         self.buf[self.ptr][:] = [obs, rew, pred, act]
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
@@ -49,10 +39,6 @@ class ReplayBuffer:
     def sample_batch(self):
         idxs = np.random.randint(0, self.size, size=self.opt.batch_size)
         self.learner_steps += 1
-        # return dict(obs1=self.obs1_buf[idxs],
-        #             obs2=self.obs2_buf[idxs],
-        #             acts=self.acts_buf[idxs],
-        #             rews=self.rews_buf[idxs])
         return self.buf[idxs]
 
     def get_counts(self):
@@ -194,8 +180,8 @@ class ParameterServer:
 
 @ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt, model_type):
-    import sys
-    print(sys.path)
+    from actor_learner import Learner, Actor
+    from options import Options
     agent = Learner(opt, model_type)
     weights = ray.get(ps.pull.remote(model_type))
     agent.set_weights(weights)
@@ -215,8 +201,9 @@ def worker_train(ps, node_buffer, opt, model_type):
 
 @ray.remote
 def worker_rollout(ps, replay_buffer, opt):
-    import sys
-    print(sys.path)    
+
+    from actor_learner import Learner, Actor
+    from options import Options
     agent = Actor(opt, job='worker', buffer=replay_buffer)
     while True:
         weights = ray.get(ps.pull.remote())
@@ -226,6 +213,8 @@ def worker_rollout(ps, replay_buffer, opt):
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):
+    from actor_learner import Learner, Actor
+    from options import Options    
     agent = Actor(opt, job="test", buffer=ReplayBuffer)
     init_time = time.time()
     save_times = 0
@@ -277,6 +266,7 @@ def worker_test(ps, node_buffer, opt):
             checkpoint_times = total_time // opt.checkpoint_freq
 
 
+
 def get_al_status(node_buffer):
     buffer_learner_step = []
     buffer_actor_step = []
@@ -301,8 +291,6 @@ if __name__ == '__main__':
 
     # ray.init(local_mode=True)  # Local Mode
     ray.init()  #specify cluster address here
-    ROOT = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(ROOT)
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
