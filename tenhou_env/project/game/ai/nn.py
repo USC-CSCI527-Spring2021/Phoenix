@@ -1,15 +1,18 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import time
 
 import numpy as np
 import utils.decisions_constants as log
 from game.ai.exp_buffer import ExperienceCollector
-from game.ai.models import rcpk_model, discard_model
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
+
+sys.path.append(os.getcwd())
+from trainer.models import rcpk_model, discard_model
 
 
 def getGeneralFeature(player, additional_data=None):

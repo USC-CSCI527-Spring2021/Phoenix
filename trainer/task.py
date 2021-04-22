@@ -4,11 +4,10 @@ import os
 from time import sleep
 
 import dill as pickle
-import kerastuner as kt
 import tensorflow as tf
 from tensorflow import keras
 
-from trainer.models import make_or_restore_model, scheduler, hypertune
+from trainer.models import make_or_restore_model, scheduler
 
 
 def argument_parse():
@@ -20,7 +19,7 @@ def argument_parse():
         '--num-epochs',
         type=int,
         default=10,
-        help='number of times to go through the data, default=5000')
+        help='number of times to go through the data, default=10')
     # parser.add_argument(
     #     '--batch-size',
     #     default=128,
@@ -187,13 +186,13 @@ def main():
     if args.class_weight:
         class_weight = {}
         for i in range(num_classes):
-            class_weight[i] = preprocess_data.classes_distribution[i] / preprocess_data.total
+            class_weight[i] = (1 / preprocess_data.classes_distribution[i]) * preprocess_data.total / 2.0
         print('Weight for classes:', class_weight)
         tfrecords = tf.io.gfile.glob(
             create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
         dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BUFFER_SIZE)
         ts = int(preprocess_data.total * TRAIN_SPLIT)
-        train_dataset = dataset.take(ts).shuffle(BUFFER_SIZE).map(read_tfrecord) \
+        train_dataset = dataset.take(ts).shuffle(BUFFER_SIZE).map(read_tfrecord).shuffle(BUFFER_SIZE) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
         test_dataset = dataset.skip(ts).take((1 - ts) // 2).map(read_tfrecord) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
@@ -210,62 +209,68 @@ def main():
         val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
-    if args.hypertune:
-        tuner = kt.Hyperband(
-            hypermodel=hypertune,
-            objective='val_categorical_accuracy',
-            max_epochs=500,
-            factor=2,
-            hyperband_iterations=5,
-            distribution_strategy=tf.distribute.MirroredStrategy(),
-            directory=create_or_join("hyper_results_dir"),
-            project_name='mahjong')
-        print("hypertune: {}".format(args.model_type))
-        tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                     validation_steps=1000,
-                     callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
+    # if args.hypertune:
+    #     tuner = kt.Hyperband(
+    #         hypermodel=hypertune,
+    #         objective='val_categorical_accuracy',
+    #         max_epochs=500,
+    #         factor=2,
+    #         hyperband_iterations=5,
+    #         distribution_strategy=tf.distribute.MirroredStrategy(),
+    #         directory=create_or_join("hyper_results_dir"),
+    #         project_name='mahjong')
+    #     print("hypertune: {}".format(args.model_type))
+    #     tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+    #                  validation_steps=1000,
+    #                  callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
+    # else:
+    input_shape = list(train_dataset.take(1))[0][0].shape[1:]
+    if args.model_type == 'discard':
+        model = make_or_restore_model(input_shape, args.model_type, strategy)
+        callbacks = [
+            keras.callbacks.TensorBoard(log_dir=create_or_join("logs/" + args.model_type + timestamp),
+                                        update_freq='batch', histogram_freq=1),
+            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
+            keras.callbacks.LearningRateScheduler(scheduler),
+            keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                            monitor='val_categorical_accuracy',
+                                            save_freq=1000,
+                                            ),
+        ]
     else:
-        input_shape = list(train_dataset.take(1))[0][0].shape[1:]
-        if args.model_type == 'discard':
-            model = make_or_restore_model(input_shape, args.model_type, strategy)
-            callbacks = [
-                keras.callbacks.TensorBoard(log_dir=create_or_join("logs/eval" + args.model_type + timestamp),
-                                            update_freq='batch', histogram_freq=1),
-                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("eval_model_backup")),
-            ]
-        else:
-            model = make_or_restore_model(input_shape, args.model_type, strategy)
-            callbacks = [
-                keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
-                keras.callbacks.EarlyStopping(monitor='accuracy'),
-                keras.callbacks.LearningRateScheduler(scheduler),
-                keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                monitor='val_accuracy',
-                                                save_freq=1000,
-                                                ),
-            ]
-        try:
-            model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                      class_weight=class_weight,
-                      validation_steps=1000,
-                      use_multiprocessing=True,
-                      workers=-1,
-                      callbacks=callbacks)
+        model = make_or_restore_model(input_shape, args.model_type, strategy)
+        callbacks = [
+            keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
+            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            keras.callbacks.EarlyStopping(monitor='accuracy'),
+            keras.callbacks.LearningRateScheduler(scheduler),
+            keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                            monitor='val_accuracy',
+                                            save_freq=1000,
+                                            ),
+        ]
+    try:
+        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+                  class_weight=class_weight,
+                  validation_steps=1000,
+                  use_multiprocessing=True,
+                  workers=-1,
+                  callbacks=callbacks)
 
-            model.save(os.path.join(create_or_join("models"), args.model_type))
-            model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        model.save(os.path.join(create_or_join("models"), args.model_type))
+        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
 
-            print("Evaluate on test data")
-            res = model.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
-            print("test loss, test acc:", res)
+        print("Evaluate on test data")
+        res = model.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
+        print("test loss, test acc:", res)
 
-        except KeyboardInterrupt or InterruptedError:
-            model.save(os.path.join(create_or_join("models"), args.model_type))
-            model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
-            print('Keyboard Interrupted, Model and weights saved')
-            import sys
-            sys.exit(0)
+    except KeyboardInterrupt or InterruptedError:
+        model.save(os.path.join(create_or_join("models"), args.model_type))
+        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        print('Keyboard Interrupted, Model and weights saved')
+        import sys
+        sys.exit(0)
 
         # save_model(os.path.join(create_or_join("models"), args.model_type), model)
 

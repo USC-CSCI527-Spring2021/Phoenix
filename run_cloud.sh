@@ -87,12 +87,12 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --region us-central1 \
   --python-version 3.7 \
   --runtime-version 2.4 \
-  --job-dir "gs://mahjong-dataset/" \
+  --job-dir "gs://mahjong-final/" \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
   --model-type="discard" \
-  --cloud-train=1 \
+  --cloud-train=1
 
 
 # discard model tuner
