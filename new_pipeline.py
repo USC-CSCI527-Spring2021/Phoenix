@@ -232,17 +232,17 @@ class Pipeline:
         tmp_test = test_dataset[0]
         for d in test_dataset[1:]:
             tmp_test.concatenate(d)
-        test_dataset = tmp_test.shuffle(BATCH_SIZE)
+        test_dataset = tmp_test.shuffle(self.counter // 3)
         tmp_val = val_dataset[0]
         for d in val_dataset[1:]:
             tmp_val.concatenate(d)
-        val_dataset = tmp_val.shuffle(BATCH_SIZE)
+        val_dataset = tmp_val.shuffle(self.counter // 3)
         print("Total train instance before resampling:", train_total)
         self.write_tfrecords(oversampling_prefix, "val", val_dataset)
         self.write_tfrecords(oversampling_prefix, "test", test_dataset)
         resampled_ds = tf.data.experimental \
             .sample_from_datasets(train_dataset,
-                                  weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(BATCH_SIZE)
+                                  weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(self.counter // 3)
         self.write_tfrecords(oversampling_prefix, "train", resampled_ds)
         print("Total train instance after resampling:", self.num_counter)
 
