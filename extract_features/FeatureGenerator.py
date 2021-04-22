@@ -288,8 +288,8 @@ class FeatureGenerator:
                 for i in range(3):
                     if shanten <= i:
                         feature[i+1] = 1
-                maxscore = self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
-                    tiles_could_draw, replacelimit = 2)
+                maxscore = 0#self.canwinbyreplace(closed_left_tiles_34, melds, dora_indicators,
+                    #tiles_could_draw, replacelimit = 2)
                 scores = [2000, 4000, 6000, 8000]
                 for i in range(4):
                     if maxscore >= scores[i]:
@@ -308,7 +308,7 @@ class FeatureGenerator:
 
     def getGeneralFeature(self, tiles_state_and_action):
         return np.concatenate((
-            self.getLookAheadFeature(tiles_state_and_action), #(11,34)
+            #self.getLookAheadFeature(tiles_state_and_action), #(11,34)
             self.getSelfTiles(tiles_state_and_action),  # (12,34)
             self.getDoraList(tiles_state_and_action),  # (5,34)
             self.getBoard1(tiles_state_and_action),  # (5,34)
@@ -355,6 +355,9 @@ class FeatureGenerator:
         action = tiles_state_and_action["action"]
         if could_chi == 1:
             generalFeature = self.getGeneralFeature(tiles_state_and_action)
+            if action[0] == 'Chi':
+                print(_chilist(last_player_discarded_tile, closed_hand_136))
+                print(action)
             for chimeld in _chilist(last_player_discarded_tile, closed_hand_136):
                 last_player_discarded_tile_feature = np.zeros((1, 34))
                 for chitile in chimeld:
