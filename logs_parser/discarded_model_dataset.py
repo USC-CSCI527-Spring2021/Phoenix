@@ -307,12 +307,12 @@ class DiscardedFeatureExtractor(beam.DoFn):
                     last_player = player_id
             else:
                 last_player_tile_136 = get_last_discarded_tile(last_player, four_discarded_hands)
-        self.last_player_discarded_tile_list.append(last_player_tile_136)
+                self.last_player_discarded_tile_list.append(last_player_tile_136)
 
-        if (i + 1) < len(self.player_id_list) and player_id == self.player_id_list[i + 1]:
-            last_player = last_player
-        else:
-            last_player = player_id
+                if (i + 1) < len(self.player_id_list) and player_id == self.player_id_list[i + 1]:
+                    last_player = last_player
+                else:
+                    last_player = player_id
 
     def process(self, log_data, **kwargs):
         xml_str = log_data

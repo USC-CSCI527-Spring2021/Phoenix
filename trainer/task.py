@@ -189,17 +189,18 @@ def main():
             class_weight[i] = (1 / preprocess_data.classes_distribution[i]) * preprocess_data.total / 2.0
         print('Weight for classes:', class_weight)
         tfrecords = tf.io.gfile.glob(
-            create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
-        dataset = tf.data.TFRecordDataset(tfrecords).shuffle(
-            preprocess_data.total // (5 if args.model_type == "discard" else 3), seed=RANDOM_SEED)
+            create_or_join("processed_data/{}/".format(args.model_type)) + "train*")
+        # tfrecords = tf.io.gfile.glob(
+        #     create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
+        dataset = tf.data.TFRecordDataset(tfrecords)
         ts = int(preprocess_data.total * TRAIN_SPLIT)
-        train_dataset = dataset.take(ts).shuffle(preprocess_data.total // (5 if args.model_type == "discard" else 3),
+        train_dataset = dataset.take(ts).shuffle(BUFFER_SIZE,
                                                  seed=RANDOM_SEED,
                                                  reshuffle_each_iteration=True).map(read_tfrecord) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
-        test_dataset = dataset.skip(ts).take((1 - ts) // 2).map(read_tfrecord) \
+        test_dataset = dataset.skip(ts).take((preprocess_data.total - ts) // 2).map(read_tfrecord) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
-        val_dataset = dataset.skip(ts + ((1 - ts) // 2)).map(read_tfrecord) \
+        val_dataset = dataset.skip(ts + ((preprocess_data.total - ts) // 2)).map(read_tfrecord) \
             .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
     else:
         # oversampling
@@ -208,7 +209,7 @@ def main():
         val_tfrecords = tf.io.gfile.glob(
             create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "eval-dataset*")
         train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
-            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(preprocess_data.total // 2,
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE,
                                                                          seed=RANDOM_SEED).batch(
             BATCH_SIZE)
         val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
@@ -265,7 +266,6 @@ def main():
 
         model.save(os.path.join(create_or_join("models"), args.model_type))
         model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
-
         print("Evaluate on test data")
         res = model.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
         print("test loss, test acc:", res)
@@ -297,6 +297,7 @@ def main():
     #     if not _is_chief(task_type, task_id):
     #         tf.io.gfile.rmtree(os.path.dirname(write_model_path))
     # sys.stdout.close()
+
 
 if __name__ == "__main__":
     main()

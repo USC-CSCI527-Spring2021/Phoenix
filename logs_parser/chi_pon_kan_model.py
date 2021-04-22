@@ -285,6 +285,7 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
         for i in range(len(self.player_id_list)):
 
             self.last_player_id_list.append(last_player)
+
             player_id = self.player_id_list[i]
             four_closed_hands = self.four_closed_hands_list[i]
             four_open_hands = self.four_open_hands_list[i]
@@ -398,6 +399,7 @@ class ChiPonKanFeatureExtractor(beam.DoFn):
 
             elif act == "CALL":
                 action_data = action["data"]
+                player_id = action["data"]["caller"]
                 self.record_cur_state(player_id, closed_hands, open_hands, discarded_hands, doras,
                                       riichi_bets, scores, taken_call_actions, open_hands_details)
                 closed_hands, open_hands, open_hands_details = self.call_operations(action_data, closed_hands, open_hands, taken_call_actions, open_hands_details)

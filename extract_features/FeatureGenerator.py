@@ -170,11 +170,6 @@ class FeatureGenerator:
         ))
 
     def ChiFeatureGenerator(self, tiles_state_and_action):
-        """
-        changed the input from filename to tiles_state_and_action data
-        By Jun Lin
-        """
-
         def _chilist(last_player_discarded_tile, closed_hand_136):
             res = []
             pairs = [(a, b) for idx, a in enumerate(closed_hand_136) for b in closed_hand_136[idx + 1:]]
@@ -198,7 +193,9 @@ class FeatureGenerator:
                     last_player_discarded_tile_feature[0][chitile // 4] = 1
                 x = np.concatenate(
                     (last_player_discarded_tile_feature, self.getGeneralFeature(tiles_state_and_action)))
-                if action[0] == 'Chi' and all(chitile in action[1] for chitile in chimeld):
+                if [20, 27, 29] == action[1]:
+                    print()
+                if action[0] == 'Chi' and all(chitile // 4 in [a // 4 for a in action[1]] for chitile in chimeld):
                     y = 1
                 else:
                     y = 0
@@ -325,12 +322,12 @@ class FeatureGenerator:
 
 
 if __name__ == "__main__":
-    filename = "assist/chi_pon_kan_reach_2021.json"
+    filename = "../chi_error.json"
     fg = FeatureGenerator()
     with open(filename) as infile:
         for line in infile:
             tiles_state_and_action = json.loads(line)
-            fg.ChiFeatureGenerator(tiles_state_and_action)
-            fg.PonFeatureGenerator(tiles_state_and_action)
-            fg.KanFeatureGenerator(tiles_state_and_action)
-            fg.RiichiFeatureGenerator(tiles_state_and_action)
+            next(fg.ChiFeatureGenerator(tiles_state_and_action[20]))
+            # fg.PonFeatureGenerator(tiles_state_and_action)
+            # fg.KanFeatureGenerator(tiles_state_and_action)
+            # fg.RiichiFeatureGenerator(tiles_state_and_action)

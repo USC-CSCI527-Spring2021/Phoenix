@@ -9,7 +9,7 @@ import tensorflow as tf
 
 from extract_features.FeatureGenerator import FeatureGenerator
 from logs_parser import chi_pon_kan_model, discarded_model_dataset
-from trainer.utils import TRAIN_SPLIT, BATCH_SIZE, RANDOM_SEED
+from trainer.utils import RANDOM_SEED
 
 tf.random.set_seed(RANDOM_SEED)
 
@@ -51,17 +51,18 @@ fg = FeatureGenerator()
 
 class Pipeline:
     def __init__(self, job_type):
-        self.num_counter = 0
+
         self.job_type = job_type
         self.counter = 0
-        self.write_count = [0] * 34 if self.job_type == "discard" else [0, 0]
+        self.write_count = 0
         self.classes_distribution = [0] * 34 if self.job_type == "discard" else [0, 0]
         # self.train = []
         # self.eval = []
-        if self.job_type == "discard":
-            self.dataset = {i: [] for i in range(34)}
-        else:
-            self.dataset = {0: [], 1: []}
+        # if self.job_type == "discard":
+        #     self.dataset = {i: [] for i in range(34)}
+        # else:
+        #     self.dataset = {0: [], 1: []}
+        self.dataset = []
         self.log_count = 0
         self.params = {
             "discard": {
@@ -113,50 +114,53 @@ class Pipeline:
 
     def write_tfrecords(self, path_prefix, types=None, tfdata=None):
         # case 1: write multiple labels separately
-        if types is not None and not tfdata:
-            out_path = "{}/{}-dataset-{}".format(path_prefix, types, self.write_count[types])
+        if not tfdata:
+            out_path = "{}/train-dataset-{}".format(path_prefix, self.write_count)
             writer = tf.data.experimental.TFRecordWriter(out_path)
             writer.write(
-                tf.data.Dataset.from_tensor_slices(self.dataset[types]))
+                tf.data.Dataset.from_tensor_slices(self.dataset))
         # case 2: write train, test or val dataset directly with sharding
         if tfdata and types:
             c = 0
-            self.num_counter = 0
+            num_counter = 0
             while True:
                 tmp = tfdata.take(40000)
                 length = len(list(tmp))
                 if length < 40000:
-                    self.num_counter += length
                     out_path = "{}/{}-dataset-{}".format(path_prefix, types, c + 1)
                     writer = tf.data.experimental.TFRecordWriter(out_path)
                     writer.write(tmp)
                     if types != 'train':
-                        print(f"Total {types} instance:", self.num_counter)
+                        print(f"Total {types} instance:", num_counter)
                     break
                 out_path = "{}/{}-dataset-{}".format(path_prefix, types, c)
                 writer = tf.data.experimental.TFRecordWriter(out_path)
                 writer.write(tmp)
                 tfdata = tfdata.skip(40000)
-                self.num_counter += 40000
+                num_counter += 40000
                 c += 1
 
 
     def feature_writer(self, dataset_prefix, data):
         try:
-            data_tuple = next(data)
-            if data_tuple:
-                _, label = data_tuple
-                l = np.argmax(label)
-                self.classes_distribution[int(l)] += 1
+            for data_tuple in data:
+                if data_tuple:
+                    _, label = data_tuple
+                    l = np.argmax(label)
+                    self.classes_distribution[int(l)] += 1
 
-                encode_str = encoding(data_tuple).SerializeToString()
-                self.counter += 1
-                self.dataset[int(l)].append(encode_str)
+                    encode_str = encoding(data_tuple).SerializeToString()
+                    self.counter += 1
+                    self.dataset.append(encode_str)
 
-                if len(self.dataset[int(l)]) % 40000 == 0:
-                    self.write_tfrecords(dataset_prefix, int(l))
-                    self.dataset[int(l)] = []
-                    self.write_count[int(l)] += 1
+                    if self.counter % 40000 == 0:
+                        self.write_tfrecords(dataset_prefix)
+                        self.dataset = []
+                        self.write_count += 1
+                    # if len(self.dataset[int(l)]) % 40000 == 0:
+                    #     self.write_tfrecords(dataset_prefix, int(l))
+                    #     self.dataset[int(l)] = []
+                    #     self.write_count[int(l)] += 1
         except StopIteration:
             pass
 
@@ -180,29 +184,22 @@ class Pipeline:
                 #     continue
                 extractors = self.params[self.job_type]["process_fn"].process(log_str)
                 try:
-                    # import json
-                    # a.write(json.dumps(list(extractors))+'\n')
-                    # if self.log_count == 50:
-                    #     raise
-                    if next(extractors):
-                        try:
-                            for data in extractors:
-                                self.feature_writer(
-                                    dataset_prefix, self.params[self.job_type]["transform_fn"](data))
-                        except:
-                            import json
-                            a.write(json.dumps(list(extractors)) + '\n')
-                            b.write(log_str)
-                except StopIteration:
-                    pass
+                    for data in extractors:
+                        self.feature_writer(dataset_prefix, self.params[self.job_type]["transform_fn"](data))
+                except:
+                    import json
+                    a.write(json.dumps(list(extractors)) + '\n')
+                    b.write(log_str)
                 print("log #:", self.log_count)
             print(path, "Finished")
         a.close()
         b.close()
-        for cls in range(len(self.classes_distribution)):
-            if not self.dataset[cls]:
-                continue
-            self.write_tfrecords(dataset_prefix, cls)
+        if self.dataset:
+            self.write_tfrecords(dataset_prefix)
+        # for cls in range(len(self.classes_distribution)):
+        #     if not self.dataset[cls]:
+        #         continue
+        #     self.write_tfrecords(dataset_prefix, cls)
         meta_data = PreprocessData(self.counter, self.classes_distribution,
                                    self.params[self.job_type]["feature_spec"])
         with tf.io.gfile.GFile(os.path.join(dataset_prefix, self.job_type + "_meta"), 'wb') as f:
@@ -210,41 +207,41 @@ class Pipeline:
         print("Total number of instance:", self.counter)
         print("Classes distribution:", self.classes_distribution)
 
-        oversampling_prefix = os.path.join(job_dir, 'with_oversampling_data', self.job_type)
-        if tf.io.gfile.exists(oversampling_prefix):
-            tf.io.gfile.rmtree(oversampling_prefix)
-        tf.io.gfile.makedirs(oversampling_prefix)
-
-        train_dataset = []
-        test_dataset = []
-        val_dataset = []
-        train_total = 0
-        for i, class_dist in enumerate(self.classes_distribution):
-            tfrecords = glob.glob(os.path.join("./processed_data", self.job_type, f"{i}-*"))
-            dataset = tf.data.TFRecordDataset(tfrecords)
-            t_size = int(class_dist * TRAIN_SPLIT)
-            v_size = int(class_dist * ((1 - TRAIN_SPLIT) / 2))
-            train_dataset.append(dataset.take(t_size))
-            train_total += t_size
-            dataset = dataset.skip(t_size)
-            test_dataset.append(dataset.take(v_size))
-            val_dataset.append(dataset.skip(v_size))
-        tmp_test = test_dataset[0]
-        for d in test_dataset[1:]:
-            tmp_test.concatenate(d)
-        test_dataset = tmp_test.shuffle(self.counter // 3)
-        tmp_val = val_dataset[0]
-        for d in val_dataset[1:]:
-            tmp_val.concatenate(d)
-        val_dataset = tmp_val.shuffle(self.counter // 3)
-        print("Total train instance before resampling:", train_total)
-        self.write_tfrecords(oversampling_prefix, "val", val_dataset)
-        self.write_tfrecords(oversampling_prefix, "test", test_dataset)
-        resampled_ds = tf.data.experimental \
-            .sample_from_datasets(train_dataset,
-                                  weights=[1 / len(train_dataset)] * len(train_dataset)).shuffle(self.counter // 3)
-        self.write_tfrecords(oversampling_prefix, "train", resampled_ds)
-        print("Total train instance after resampling:", self.num_counter)
+        # oversampling_prefix = os.path.join(job_dir, 'with_oversampling_data', self.job_type)
+        # if tf.io.gfile.exists(oversampling_prefix):
+        #     tf.io.gfile.rmtree(oversampling_prefix)
+        # tf.io.gfile.makedirs(oversampling_prefix)
+        #
+        # train_dataset = []
+        # test_dataset = []
+        # val_dataset = []
+        # train_total = 0
+        # for i, class_dist in enumerate(self.classes_distribution):
+        #     tfrecords = glob.glob(os.path.join("./processed_data", self.job_type, f"{i}-*"))
+        #     dataset = tf.data.TFRecordDataset(tfrecords)
+        #     t_size = int(class_dist * TRAIN_SPLIT)
+        #     v_size = int(class_dist * ((1 - TRAIN_SPLIT) / 2))
+        #     train_dataset.append(dataset.take(t_size).shuffle(t_size // 10, seed=RANDOM_SEED))
+        #     train_total += t_size
+        #     dataset = dataset.skip(t_size)
+        #     test_dataset.append(dataset.take(v_size))
+        #     val_dataset.append(dataset.skip(v_size))
+        # tmp_test = test_dataset[0]
+        # for d in test_dataset[1:]:
+        #     tmp_test.concatenate(d)
+        # test_dataset = tmp_test
+        # tmp_val = val_dataset[0]
+        # for d in val_dataset[1:]:
+        #     tmp_val.concatenate(d)
+        # val_dataset = tmp_val
+        # print("Total train instance before resampling:", train_total)
+        # self.write_tfrecords(oversampling_prefix, "val", val_dataset)
+        # self.write_tfrecords(oversampling_prefix, "test", test_dataset)
+        # resampled_ds = tf.data.experimental \
+        #     .sample_from_datasets(train_dataset,
+        #                           weights=[1 / len(self.classes_distribution)] * len(self.classes_distribution), seed=RANDOM_SEED)
+        # self.write_tfrecords(oversampling_prefix, "train", resampled_ds)
+        # print("Total train instance after resampling:", self.num_counter)
 
 
 if __name__ == '__main__':

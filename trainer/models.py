@@ -150,7 +150,10 @@ def discard_model(input_shape):
     model.compile(
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.CategoricalCrossentropy(),
-        metrics=keras.metrics.CategoricalAccuracy())
+        metrics=[
+            keras.metrics.CategoricalAccuracy(),
+        ]
+    )
     return model
 
 
@@ -165,11 +168,9 @@ def rcpk_model(input_shape):
     x = Normalization()(k_input)
     for _ in range(3):
         x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
-    for _ in range(5):
-        x = residual_block(x, 256, _project_shortcut=True)
-        x = residual_block(x, 256, _project_shortcut=True)
-    for _ in range(3):
-        x = Conv2D(32, (3, 3), padding="same", data_format="channels_last")(x)
+    x = residual_block(x, 256, _project_shortcut=True)
+    x = residual_block(x, 256, _project_shortcut=True)
+    x = Conv2D(32, (3, 3), padding="same", data_format="channels_last")(x)
     x = Flatten()(x)
     x = Dense(1024)(x)
     x = Dense(256)(x)
