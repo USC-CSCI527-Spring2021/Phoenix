@@ -12,6 +12,7 @@ from tensorflow import keras
 from utils.decisions_logger import MeldPrint
 
 
+
 def getGeneralFeature(player, additional_data=None):
     def _indicator2dora(dora_indicator):
         dora = dora_indicator // 4

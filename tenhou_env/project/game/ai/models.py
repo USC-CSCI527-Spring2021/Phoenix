@@ -12,7 +12,7 @@ from tensorflow.keras.models import Model
 
 sys.path.append(os.getcwd())
 
-from trainer.utils import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
+from game.ai.trainer.utils import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
 
 np.random.seed(RANDOM_SEED)
 
