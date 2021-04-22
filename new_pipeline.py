@@ -162,7 +162,7 @@ class Pipeline:
 
     def process(self, job_dir):
         dataset_prefix = os.path.join(job_dir, 'processed_data', self.job_type)
-        csv_path = glob.glob(os.path.join(job_dir, "dataset/*.csv"))
+        csv_path = glob.glob(os.path.join(job_dir, "dataset/2021.csv"))
         # delete existing processed data
         if tf.io.gfile.exists(dataset_prefix):
             tf.io.gfile.rmtree(dataset_prefix)
@@ -182,8 +182,8 @@ class Pipeline:
                 try:
                     # import json
                     # a.write(json.dumps(list(extractors))+'\n')
-                    # a.close()
-                    # raise
+                    # if self.log_count == 50:
+                    #     raise
                     if next(extractors):
                         try:
                             for data in extractors:

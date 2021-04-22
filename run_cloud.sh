@@ -115,7 +115,7 @@ gcloud ai-platform jobs submit training chi_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
   --region us-central1 \
-  --job-dir "gs://mahjong1/" \
+  --job-dir "gs://phoenix-csci527/" \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
@@ -151,7 +151,7 @@ gcloud ai-platform jobs submit training pon_model_`date +"%Y%m%d_%H%M"` \
   --package-path trainer/ \
   --module-name trainer.task \
   --region us-central1 \
-  --job-dir "gs://mahjong-bucket/" \
+  --job-dir "gs://mahjong-final/" \
   --config trainer/config.yaml \
   --stream-logs \
   -- \

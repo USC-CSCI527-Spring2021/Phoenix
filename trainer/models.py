@@ -80,7 +80,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    init_model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
+    # init_model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
 
     if checkpoints:
         latest_checkpoint = checkpoint
