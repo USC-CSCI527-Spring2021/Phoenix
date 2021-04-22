@@ -361,7 +361,7 @@ class FeatureGenerator:
                     last_player_discarded_tile_feature[0][chitile // 4] = 1
                 x = np.concatenate(
                     (last_player_discarded_tile_feature, generalFeature))
-                if action[0] == 'Chi' and all(chitile in action[1] for chitile in chimeld):
+                if action[0] == 'Chi' and all(chitile//4 in [a//4 for a in action[1]] for chitile in chimeld):
                     y = 1
                 else:
                     y = 0
