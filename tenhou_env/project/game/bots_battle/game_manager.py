@@ -107,7 +107,6 @@ class GameManager:
             results = self.play_round()
             #update gains
             for client in self.clients:
-                print("collecting experience")
                 client.table.gains = [p.scores-p.init_score for p in client.table.players]            
                 client.table.player.ai.collect_experience()
 

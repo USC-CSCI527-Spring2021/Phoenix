@@ -23,7 +23,6 @@ class ExperienceCollector:
         self.current_episode_importances = []
 
     def complete_episode(self, reward):
-        print(f"complete episode of size {len(self.current_episode_states)}")
         num_states = len(self.current_episode_states)
         self.states += self.current_episode_states
         self.actions += self.current_episode_actions
@@ -37,5 +36,5 @@ class ExperienceCollector:
     def to_buffer(self):
         print(f"****** {self.model_type} write to buffer of size{len(self.states)} *****")
         for sample in list(zip(self.states, self.rewards, self.importances, self.actions)):
-            self.buffer[self.model_type].store.remote(*sample)
+            self.buffer.store.remote(*sample)
         self.states, self.rewards, self.actions, self.importances = [], [], [], []

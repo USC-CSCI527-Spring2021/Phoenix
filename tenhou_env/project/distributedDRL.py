@@ -31,7 +31,6 @@ class ReplayBuffer:
         self.actor_steps, self.learner_steps = 0, 0
 
     def store(self, obs, rew, pred, act):
-        print("****** store successfully ******")
         self.buf[self.ptr][:] = [obs, rew, pred, act]
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
