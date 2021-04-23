@@ -230,9 +230,9 @@ def main():
     #                  validation_steps=1000,
     #                  callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
     # else:
-    input_shape = list(train_dataset.take(1))[0][0].shape[1:]
+    input_shape = tuple(list(train_dataset.take(1))[0][0].shape[1:])
+    mahjongModel = make_or_restore_model(input_shape, args.model_type, strategy)
     if args.model_type == 'discard':
-        model = make_or_restore_model(input_shape, args.model_type, strategy)
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=create_or_join("logs/" + args.model_type + timestamp),
                                         update_freq='batch', histogram_freq=1),
@@ -245,7 +245,6 @@ def main():
                                             ),
         ]
     else:
-        model = make_or_restore_model(input_shape, args.model_type, strategy)
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
             tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
@@ -257,22 +256,22 @@ def main():
                                             ),
         ]
     try:
-        model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                  class_weight=class_weight,
-                  validation_steps=1000,
-                  use_multiprocessing=True,
-                  workers=-1,
-                  callbacks=callbacks)
+        mahjongModel.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+                         class_weight=class_weight,
+                         validation_steps=1000,
+                         use_multiprocessing=True,
+                         workers=-1,
+                         callbacks=callbacks)
 
-        model.save(os.path.join(create_or_join("models"), args.model_type))
-        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        mahjongModel.save(os.path.join(create_or_join("models"), args.model_type))
+        mahjongModel.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
         print("Evaluate on test data")
-        res = model.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
+        res = mahjongModel.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
         print("test loss, test acc:", res)
 
     except KeyboardInterrupt or InterruptedError:
-        model.save(os.path.join(create_or_join("models"), args.model_type))
-        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        mahjongModel.save(os.path.join(create_or_join("models"), args.model_type))
+        mahjongModel.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
         print('Keyboard Interrupted, Model and weights saved')
         import sys
         sys.exit(0)

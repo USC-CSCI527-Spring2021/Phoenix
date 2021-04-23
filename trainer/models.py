@@ -168,9 +168,11 @@ def rcpk_model(input_shape):
     x = Normalization()(k_input)
     for _ in range(3):
         x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
-    x = residual_block(x, 256, _project_shortcut=True)
-    x = residual_block(x, 256, _project_shortcut=True)
+    for _ in range(5):
+        x = residual_block(x, 256, _project_shortcut=True)
+        x = residual_block(x, 256, _project_shortcut=True)
     x = Conv2D(32, (3, 3), padding="same", data_format="channels_last")(x)
+
     x = Flatten()(x)
     x = Dense(1024)(x)
     x = Dense(256)(x)
@@ -182,11 +184,11 @@ def rcpk_model(input_shape):
         keras.optimizers.Adam(learning_rate=0.008),
         keras.losses.BinaryCrossentropy(),
         metrics=[
+            keras.metrics.BinaryAccuracy(name='accuracy'),
             keras.metrics.TruePositives(name='tp'),
             keras.metrics.FalsePositives(name='fp'),
             keras.metrics.TrueNegatives(name='tn'),
             keras.metrics.FalseNegatives(name='fn'),
-            keras.metrics.BinaryAccuracy(name='accuracy'),
             keras.metrics.Precision(name='precision'),
             keras.metrics.Recall(name='recall'),
             keras.metrics.AUC(name='auc'),
