@@ -33,7 +33,8 @@ class ExperienceCollector:
         self.current_episode_importances = []
     
     def to_buffer(self):
-        
+        print(f"****** {self.model_type} write to buffer *****")
         for sample in list(zip(self.states, self.rewards, self.importances, self.actions)):
             self.buffer[self.model_type].store.remote(*sample)
+        print(self.buffer[self.model_type].actor_steps)
         self.states, self.rewards, self.actions, self.importances = [], [], [], []

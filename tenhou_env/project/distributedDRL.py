@@ -176,6 +176,7 @@ class ParameterServer:
     def save_weights(self):
         with open(self.opt.save_dir + "/checkpoint/" + "checkpoint_weights.pickle", "wb") as pickle_out:
             pickle.dump(self.weights, pickle_out)
+            print("******* PS saved successfully ********")
 
 
 @ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
@@ -192,6 +193,7 @@ def worker_train(ps, node_buffer, opt, model_type):
     cnt = 1
     while True:
         batch = cache.q1[model_type].get()
+        print(" ******* get batch *********")
         agent.train(batch, cnt)
         print('one batch trained')
         if cnt % opt.push_freq == 0:
@@ -209,6 +211,7 @@ def worker_rollout(ps, replay_buffer, opt):
         weights = ray.get(ps.pull.remote())
         agent.set_weights(weights)
         agent.run()
+        print("******* rollout agent finished a game ******")
 
 
 @ray.remote
@@ -227,7 +230,7 @@ def worker_test(ps, node_buffer, opt):
         start_time = time.time()
 
         agent.run()
-
+        print("****** Test agent finished a game *******")
         last_actor_step, last_learner_step, _ = get_al_status(node_buffer)
         actor_step = np.sum(last_actor_step) - np.sum(start_actor_step)
         learner_step = np.sum(last_learner_step) - np.sum(start_learner_step)
