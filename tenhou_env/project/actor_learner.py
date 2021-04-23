@@ -54,7 +54,7 @@ class Actor:
         self.opt = opt
         self.job = job
         self.bot_config = BotDefaultConfig()
-        self.bot_config.buffer = buffer
+        self.bot_config.buffer[:] = buffer
 
     def set_weights(self, weights):
         self.bot_config.weights = weights  # a dict for all models
