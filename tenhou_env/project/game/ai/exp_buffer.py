@@ -1,3 +1,4 @@
+import ray
 class ExperienceCollector:
     def __init__(self, model_type, buffer):
         self.model_type = model_type
@@ -12,6 +13,7 @@ class ExperienceCollector:
         self.current_episode_importances = []
     
     def record_decision(self, state, action, importance):
+        ray.util.pdb.set_trace()
         self.current_episode_states.append(state)
         self.current_episode_actions.append(action)
         self.current_episode_importances.append(importance)
