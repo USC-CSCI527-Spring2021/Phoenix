@@ -13,7 +13,6 @@ class ExperienceCollector:
         self.current_episode_importances = []
     
     def record_decision(self, state, action, importance):
-        ray.util.pdb.set_trace()
         self.current_episode_states.append(state)
         self.current_episode_actions.append(action)
         self.current_episode_importances.append(importance)
@@ -24,6 +23,7 @@ class ExperienceCollector:
         self.current_episode_importances = []
 
     def complete_episode(self, reward):
+        print(f"complete episode of size {len(self.current_episode_states)}")
         num_states = len(self.current_episode_states)
         self.states += self.current_episode_states
         self.actions += self.current_episode_actions
@@ -35,8 +35,7 @@ class ExperienceCollector:
         self.current_episode_importances = []
     
     def to_buffer(self):
-        print(f"****** {self.model_type} write to buffer *****")
+        print(f"****** {self.model_type} write to buffer of size{len(self.states)} *****")
         for sample in list(zip(self.states, self.rewards, self.importances, self.actions)):
             self.buffer[self.model_type].store.remote(*sample)
-        print(self.buffer[self.model_type].actor_steps)
         self.states, self.rewards, self.actions, self.importances = [], [], [], []

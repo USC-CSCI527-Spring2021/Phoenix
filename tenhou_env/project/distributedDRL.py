@@ -31,6 +31,7 @@ class ReplayBuffer:
         self.actor_steps, self.learner_steps = 0, 0
 
     def store(self, obs, rew, pred, act):
+        print("****** store successfully ******")
         self.buf[self.ptr][:] = [obs, rew, pred, act]
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
@@ -281,7 +282,7 @@ def get_al_status(node_buffer):
             buffer_learner_step.append(learner_step)
             buffer_actor_step.append(actor_step)
             buffer_cur_size.append(cur_size)
-
+    print(max(np.array(buffer_actor_step)))
     return np.array(buffer_actor_step), np.array(buffer_learner_step), np.array(buffer_cur_size)
 
 
