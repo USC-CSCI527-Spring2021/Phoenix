@@ -193,12 +193,13 @@ def worker_train(ps, node_buffer, opt):
         agents[model_type] = agent
 
     cache = Cache(node_buffer)
-    time.sleep(100)
     cache.start()
 
     cnt = 1
     while True:
         for model_type in model_types:
+            if cache.q1[model_type].empty():
+                continue
             batch = cache.q1[model_type].get()
             print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
             agents[model_type].train(batch, cnt)
@@ -255,6 +256,11 @@ def worker_test(ps, node_buffer, opt):
         print("Ray total resources:", ray.cluster_resources())
         print("available resources:", ray.available_resources())
         print("---------------------------------------------------")
+
+        buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+                            node_index in range(opt.num_nodes)]
+        ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
+        print("saved successfully!!!!!")
 
         total_time = time.time() - init_time
 
