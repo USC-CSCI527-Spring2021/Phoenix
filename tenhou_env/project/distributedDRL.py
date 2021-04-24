@@ -56,12 +56,9 @@ class ReplayBuffer:
 
         buffer_save_folder = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/'
         if not os.path.exists(buffer_save_folder):
-            os.mkdir(buffer_save_folder)              
-        buffer_save_folder += self.buffer_type
-        if not os.path.exists(buffer_save_folder):
-            os.mkdir(buffer_save_folder)       
+            os.makedirs(buffer_save_folder)       
 
-        with open(buffer_save_folder+f"{self.buffer_type}.pkl", 'w') as f:
+        with open(buffer_save_folder+f"{self.buffer_type}.pkl", 'wb') as f:
             pickle.dump(info, f)
         print(f"**** buffer{self.buffer_index}" + self.buffer_type + " saved! *******")
 
@@ -69,7 +66,7 @@ class ReplayBuffer:
 
         if not buffer_path:
             buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.pkl'
-        info = pickle.load(open(buffer_path))
+        info = pickle.load(open(buffer_path, 'rb'))
         self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
@@ -234,7 +231,7 @@ def worker_rollout(ps, replay_buffer, opt):
 def worker_test(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options    
-    agent = Actor(opt, job="test", buffer=node_buffer[0])
+    agent = Actor(opt, job="test", buffer=node_buffer[0])      
     init_time = time.time()
     save_times = 0
     checkpoint_times = 0
