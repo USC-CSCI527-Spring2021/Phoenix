@@ -53,10 +53,16 @@ class ReplayBuffer:
                 'max_size': self.max_size,
                 'learner_steps': self.learner_steps,
                 'actor_steps': self.actor_steps}
+
+        baffer_save_folder = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type
+        if not os.path.exists(baffer_save_folder):
+            os.mkdir(baffer_save_folder)              
+        
         np.save(self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type, info)
-        print("**** buffer " + self.buffer_type + " saved! *******")
+        print(f"**** buffer{self.buffer_index}" + self.buffer_type + " saved! *******")
 
     def load(self, buffer_path=None):
+
         if not buffer_path:
             buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.npy'
         info = np.load(buffer_path, allow_pickle=True)
