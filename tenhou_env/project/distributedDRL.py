@@ -193,7 +193,7 @@ def worker_train(ps, node_buffer, opt, model_type):
     cnt = 1
     while True:
         batch = cache.q1[model_type].get()
-        print(" ******* get batch *********")
+        print(f" ******* get batch of size {len(batch)}  *********")
         agent.train(batch, cnt)
         print('one batch trained')
         if cnt % opt.push_freq == 0:
