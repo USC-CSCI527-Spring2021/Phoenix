@@ -98,7 +98,8 @@ class Cache():
 
     def start(self):
         self.p1.start()
-        self.p1.join(10)
+        self.p1.join(15)
+        print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
 
     def end(self):
         self.p1.terminate()
