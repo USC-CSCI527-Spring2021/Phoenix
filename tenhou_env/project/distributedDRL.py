@@ -218,7 +218,7 @@ def worker_rollout(ps, replay_buffer, opt):
 def worker_test(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options    
-    agent = Actor(opt, job="test", buffer=node_buffer)
+    agent = Actor(opt, job="test", buffer=node_buffer[0])
     init_time = time.time()
     save_times = 0
     checkpoint_times = 0
@@ -276,8 +276,8 @@ def get_al_status(node_buffer):
     buffer_cur_size = []
 
     for node_index in range(opt.num_nodes):
-        for i in range(len(model_types)):
-            learner_step, actor_step, cur_size = ray.get(node_buffer[node_index][i].get_counts.remote())
+        for model_type in model_types:
+            learner_step, actor_step, cur_size = ray.get(node_buffer[node_index][model_type].get_counts.remote())
             buffer_learner_step.append(learner_step)
             buffer_actor_step.append(actor_step)
             buffer_cur_size.append(cur_size)
