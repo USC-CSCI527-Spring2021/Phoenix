@@ -218,7 +218,7 @@ def worker_rollout(ps, replay_buffer, opt):
 def worker_test(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options    
-    agent = Actor(opt, job="test", buffer=ReplayBuffer)
+    agent = Actor(opt, job="test", buffer=node_buffer)
     init_time = time.time()
     save_times = 0
     checkpoint_times = 0
