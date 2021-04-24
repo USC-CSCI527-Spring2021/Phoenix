@@ -53,6 +53,8 @@ class Actor:
     def __init__(self, opt, job, buffer):
         self.opt = opt
         self.job = job
+        print("##################")
+        print(type(buffer))
         self.bot_config = BotDefaultConfig()
         self.bot_config.buffer = buffer
 

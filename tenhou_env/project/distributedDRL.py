@@ -26,9 +26,11 @@ class ReplayBuffer:
     def __init__(self, opt, buffer_index, buffer_type):
         self.opt = opt
         self.buffer_type = buffer_type
+        self.buffer_index = buffer_index
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
+        #self.load()
 
     def store(self, obs, rew, pred, act):
         self.buf[self.ptr][:] = [obs, rew, pred, act]
@@ -51,20 +53,21 @@ class ReplayBuffer:
                 'max_size': self.max_size,
                 'learner_steps': self.learner_steps,
                 'actor_steps': self.actor_steps}
-        np.save(self.opt.save_dir + '/' + self.buffer_type, info)
-        print("**** buffer " + self.buffer_type + " saved! *******")
 
-    def load(self, buffer_path):
+        buffer_save_folder = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/'
+
+        with open(buffer_save_folder+f"{self.buffer_type}.pkl", 'wb') as f:
+            pickle.dump(info, f)
+        print(f"**** buffer{self.buffer_index}" + self.buffer_type + " saved! *******")
+
+    def load(self, buffer_path=None):
+
         if not buffer_path:
-            buffer_path = self.opt.save_dir + '/' + self.buffer_type + '.npy'
-        info = np.load(buffer_path)
-        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], \
-                                                                                             info['ptr'], info['size'], \
-                                                                                             info['max_size'], info[
-                                                                                                 'learner_steps'], info[
-                                                                                                 'actor_steps']
-        print("****** buffer " + self.buffer_type + " restored! ******")
-        print("****** buffer " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
+            buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.pkl'
+        info = pickle.load(open(buffer_path, 'rb'))
+        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
+        print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
+        print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
               self.actor_steps, self.learner_steps)
 
 
@@ -98,7 +101,8 @@ class Cache():
 
     def start(self):
         self.p1.start()
-        self.p1.join(10)
+        self.p1.join(15)
+        print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
 
     def end(self):
         self.p1.terminate()
@@ -176,24 +180,33 @@ class ParameterServer:
     def save_weights(self):
         with open(self.opt.save_dir + "/checkpoint/" + "checkpoint_weights.pickle", "wb") as pickle_out:
             pickle.dump(self.weights, pickle_out)
+            print("******* PS saved successfully ********")
 
 
 @ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
-def worker_train(ps, node_buffer, opt, model_type):
+def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
-    agent = Learner(opt, model_type)
-    weights = ray.get(ps.pull.remote(model_type))
-    agent.set_weights(weights)
+
+    agents = {}
+    for model_type in model_types:
+        agent = Learner(opt, model_type)
+        weights = ray.get(ps.pull.remote(model_type))
+        agent.set_weights(weights)
+        agents[model_type] = agent
 
     cache = Cache(node_buffer)
     cache.start()
 
     cnt = 1
     while True:
-        batch = cache.q1[model_type].get()
-        agent.train(batch, cnt)
-        print('one batch trained')
+        for model_type in model_types:
+            if cache.q1[model_type].empty():
+                continue
+            batch = cache.q1[model_type].get()
+            print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
+            agents[model_type].train(batch, cnt)
+            print('one batch trained')
         if cnt % opt.push_freq == 0:
             cache.q2.put(agent.get_weights())
         cnt += 1
@@ -209,13 +222,14 @@ def worker_rollout(ps, replay_buffer, opt):
         weights = ray.get(ps.pull.remote())
         agent.set_weights(weights)
         agent.run()
+        print("******* rollout agent finished a game ******")
 
 
 @ray.remote
 def worker_test(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options    
-    agent = Actor(opt, job="test", buffer=ReplayBuffer)
+    agent = Actor(opt, job="test", buffer=node_buffer[0])      
     init_time = time.time()
     save_times = 0
     checkpoint_times = 0
@@ -227,7 +241,7 @@ def worker_test(ps, node_buffer, opt):
         start_time = time.time()
 
         agent.run()
-
+        print("****** Test agent finished a game *******")
         last_actor_step, last_learner_step, _ = get_al_status(node_buffer)
         actor_step = np.sum(last_actor_step) - np.sum(start_actor_step)
         learner_step = np.sum(last_learner_step) - np.sum(start_learner_step)
@@ -243,6 +257,11 @@ def worker_test(ps, node_buffer, opt):
         print("Ray total resources:", ray.cluster_resources())
         print("available resources:", ray.available_resources())
         print("---------------------------------------------------")
+
+        buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+                            node_index in range(opt.num_nodes)]
+        ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
+        print("saved successfully!!!!!")
 
         total_time = time.time() - init_time
 
@@ -278,7 +297,7 @@ def get_al_status(node_buffer):
             buffer_learner_step.append(learner_step)
             buffer_actor_step.append(actor_step)
             buffer_cur_size.append(cur_size)
-
+    print(max(np.array(buffer_actor_step)))
     return np.array(buffer_actor_step), np.array(buffer_learner_step), np.array(buffer_cur_size)
 
 
@@ -309,6 +328,11 @@ if __name__ == '__main__':
              model_type in model_types})
         print(f"Node{node_index} Experience buffer all set.")
 
+        #create buffer path
+        buffer_save_path = opt.save_dir+f'/buffer/{str(node_index)}/'
+        if not os.path.exists(buffer_save_path):
+            os.mkdir(buffer_save_path)
+
         for i in range(FLAGS.num_workers):
             worker_rollout.remote(node_ps[node_index], node_buffer[node_index], opt)
                                                                                     
@@ -327,8 +351,7 @@ if __name__ == '__main__':
         pickle.dump(nodes_info, pickle_out)
         print("****** save nodes_info ******")
 
-    task_train = [worker_train.remote(node_ps[0], node_buffer, opt, model_type) for
-                  model_type in model_types]
+    task_train = worker_train.remote(node_ps[0], node_buffer, opt)
 
     task_test = worker_test.remote(node_ps[0], node_buffer, opt)
     ray.wait([task_test])

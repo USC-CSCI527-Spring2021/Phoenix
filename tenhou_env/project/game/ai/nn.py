@@ -158,7 +158,7 @@ class Chi:
             self.model = rcpk_model(self.input_shape)
             self.model.set_weights(player.config.weights['chi'])
         # print('###### Chi model initialized #######')
-        self.collector = ExperienceCollector('chi', player.config.buffer)
+        self.collector = ExperienceCollector('chi', player.config.buffer['chi'])
         self.collector.start_episode()
 
     def should_call_chi(self, tile_136, melds_chi):
@@ -215,7 +215,7 @@ class Pon:
             self.model.set_weights(player.config.weights['pon'])
 
         # print('###### Pon model initialized #######')
-        self.collector = ExperienceCollector('pon', player.config.buffer)
+        self.collector = ExperienceCollector('pon', player.config.buffer['pon'])
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
@@ -266,7 +266,7 @@ class Kan:
             self.model.set_weights(player.config.weights['kan'])
 
         # print('###### Kan model initialized #######')
-        self.collector = ExperienceCollector('kan', player.config.buffer)
+        self.collector = ExperienceCollector('kan', player.config.buffer['kan'])
 
     def should_call_kan(self, tile_136, open_kan, from_riichi=False):
         def _can_minkan(tile, closed_hand):
@@ -387,7 +387,7 @@ class Riichi:
             self.model.set_weights(player.config.weights['riichi'])
 
         # print('###### Riichi model initialized #######')
-        self.collector = ExperienceCollector('riichi', player.config.buffer)
+        self.collector = ExperienceCollector('riichi', player.config.buffer['riichi'])
 
     def should_call_riichi(self):
         features = self.getFeature()
@@ -434,7 +434,7 @@ class Discard:
             self.model = discard_model(self.input_shape)
             self.model.set_weights(player.config.weights['discard'])
         # print('###### Discarded model initialized #######')
-        self.collector = ExperienceCollector('discard', player.config.buffer)
+        self.collector = ExperienceCollector('discard', player.config.buffer['discard'])
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi_options=None):
         # discard_options
