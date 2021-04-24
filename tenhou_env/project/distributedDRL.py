@@ -180,22 +180,27 @@ class ParameterServer:
 
 
 @ray.remote(num_cpus=1, num_gpus=0, max_calls=1)  # centralized training
-def worker_train(ps, node_buffer, opt, model_type):
+def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
-    agent = Learner(opt, model_type)
-    weights = ray.get(ps.pull.remote(model_type))
-    agent.set_weights(weights)
+
+    agents = {}
+    for model_type in model_types:
+        agent = Learner(opt, model_type)
+        weights = ray.get(ps.pull.remote(model_type))
+        agent.set_weights(weights)
+        agents[model_type] = agent
 
     cache = Cache(node_buffer)
     cache.start()
 
     cnt = 1
     while True:
-        batch = cache.q1[model_type].get()
-        print(" ******* get batch *********")
-        agent.train(batch, cnt)
-        print('one batch trained')
+        for model_type in model_types:
+            batch = cache.q1[model_type].get()
+            print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
+            agents[model_type].train(batch, cnt)
+            print('one batch trained')
         if cnt % opt.push_freq == 0:
             cache.q2.put(agent.get_weights())
         cnt += 1
@@ -330,8 +335,7 @@ if __name__ == '__main__':
         pickle.dump(nodes_info, pickle_out)
         print("****** save nodes_info ******")
 
-    task_train = [worker_train.remote(node_ps[0], node_buffer, opt, model_type) for
-                  model_type in model_types]
+    task_train = worker_train.remote(node_ps[0], node_buffer, opt)
 
     task_test = worker_test.remote(node_ps[0], node_buffer, opt)
     ray.wait([task_test])
