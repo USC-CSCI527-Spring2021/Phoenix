@@ -29,6 +29,7 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
+        self.load()
 
     def store(self, obs, rew, pred, act):
         self.buf[self.ptr][:] = [obs, rew, pred, act]
@@ -51,12 +52,12 @@ class ReplayBuffer:
                 'max_size': self.max_size,
                 'learner_steps': self.learner_steps,
                 'actor_steps': self.actor_steps}
-        np.save(self.opt.save_dir + '/' + self.buffer_type, info)
+        np.save(self.opt.save_dir + '/buffer/' + self.buffer_type, info)
         print("**** buffer " + self.buffer_type + " saved! *******")
 
-    def load(self, buffer_path):
+    def load(self, buffer_path=None):
         if not buffer_path:
-            buffer_path = self.opt.save_dir + '/' + self.buffer_type + '.npy'
+            buffer_path = self.opt.save_dir + '/buffer/' + self.buffer_type + '.npy'
         info = np.load(buffer_path)
         self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], \
                                                                                              info['ptr'], info['size'], \
