@@ -87,10 +87,10 @@ class Cache():
             q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
 
         while True:
-            for i, model_type in enumerate(model_types):
+            for model_type in model_types:
                 if q1[model_type].qsize() < 10:
                     node_idx = np.random.choice(opt.num_nodes, 1)[0]
-                    q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][i].sample_batch.remote())))
+                    q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
 
             if not q2.empty():
                 keys, values = q2.get()
@@ -261,7 +261,7 @@ def worker_test(ps, node_buffer, opt):
             save_start_time = time.time()
 
             ps_save_op = [node_ps[i].save_weights.remote() for i in range(opt.num_nodes)]
-            buffer_save_op = [node_buffer[node_index][i].save.remote() for i in range(len(model_types)) for
+            buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
                               node_index in range(opt.num_nodes)]
             ray.wait(buffer_save_op + ps_save_op, num_returns=opt.num_nodes * 6)  # 5 models + ps
 
@@ -307,8 +307,9 @@ if __name__ == '__main__':
                                             "." not in f], ""))
         print(f"Node{node_index} Parameter Server all set.")
 
-        node_buffer.append([ReplayBuffer.remote(opt, node_index, model_type) for
-             model_type in model_types])
+        node_buffer.append(
+            {model_type: ReplayBuffer.remote(opt, node_index, model_type) for
+             model_type in model_types})
         print(f"Node{node_index} Experience buffer all set.")
 
         for i in range(FLAGS.num_workers):
