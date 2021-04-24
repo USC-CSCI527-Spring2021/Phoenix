@@ -26,6 +26,7 @@ class ReplayBuffer:
     def __init__(self, opt, buffer_index, buffer_type):
         self.opt = opt
         self.buffer_type = buffer_type
+        self.buffer_index = buffer_index
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
@@ -52,20 +53,20 @@ class ReplayBuffer:
                 'max_size': self.max_size,
                 'learner_steps': self.learner_steps,
                 'actor_steps': self.actor_steps}
-        np.save(self.opt.save_dir + '/buffer/' + self.buffer_type, info)
+        np.save(self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type, info)
         print("**** buffer " + self.buffer_type + " saved! *******")
 
     def load(self, buffer_path=None):
         if not buffer_path:
-            buffer_path = self.opt.save_dir + '/buffer/' + self.buffer_type + '.npy'
-        info = np.load(buffer_path)
+            buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.npy'
+        info = np.load(buffer_path, allow_pickle=True)
         self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], \
                                                                                              info['ptr'], info['size'], \
                                                                                              info['max_size'], info[
                                                                                                  'learner_steps'], info[
                                                                                                  'actor_steps']
-        print("****** buffer " + self.buffer_type + " restored! ******")
-        print("****** buffer " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
+        print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
+        print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
               self.actor_steps, self.learner_steps)
 
 
