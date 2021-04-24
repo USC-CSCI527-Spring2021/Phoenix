@@ -61,14 +61,14 @@ class ReplayBuffer:
         if not os.path.exists(buffer_save_folder):
             os.mkdir(buffer_save_folder)       
 
-        np.save(buffer_save_folder, info)
+        pickle.dump(info, buffer_save_folder+f"{self.buffer_type}.pkl")
         print(f"**** buffer{self.buffer_index}" + self.buffer_type + " saved! *******")
 
     def load(self, buffer_path=None):
 
         if not buffer_path:
-            buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.npy'
-        info = np.load(buffer_path, allow_pickle=True)
+            buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.pkl'
+        info = pickle.load(buffer_path)
         self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
