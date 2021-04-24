@@ -54,11 +54,14 @@ class ReplayBuffer:
                 'learner_steps': self.learner_steps,
                 'actor_steps': self.actor_steps}
 
-        baffer_save_folder = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type
-        if not os.path.exists(baffer_save_folder):
-            os.mkdir(baffer_save_folder)              
-        
-        np.save(self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type, info)
+        buffer_save_folder = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/'
+        if not os.path.exists(buffer_save_folder):
+            os.mkdir(buffer_save_folder)              
+        buffer_save_folder += self.buffer_type
+        if not os.path.exists(buffer_save_folder):
+            os.mkdir(buffer_save_folder)       
+
+        np.save(buffer_save_folder, info)
         print(f"**** buffer{self.buffer_index}" + self.buffer_type + " saved! *******")
 
     def load(self, buffer_path=None):
@@ -66,11 +69,7 @@ class ReplayBuffer:
         if not buffer_path:
             buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.npy'
         info = np.load(buffer_path, allow_pickle=True)
-        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], \
-                                                                                             info['ptr'], info['size'], \
-                                                                                             info['max_size'], info[
-                                                                                                 'learner_steps'], info[
-                                                                                                 'actor_steps']
+        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
               self.actor_steps, self.learner_steps)
