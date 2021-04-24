@@ -55,8 +55,6 @@ class ReplayBuffer:
                 'actor_steps': self.actor_steps}
 
         buffer_save_folder = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/'
-        if not os.path.exists(buffer_save_folder):
-            os.makedirs(buffer_save_folder)       
 
         with open(buffer_save_folder+f"{self.buffer_type}.pkl", 'wb') as f:
             pickle.dump(info, f)
@@ -329,6 +327,11 @@ if __name__ == '__main__':
             {model_type: ReplayBuffer.remote(opt, node_index, model_type) for
              model_type in model_types})
         print(f"Node{node_index} Experience buffer all set.")
+
+        #create buffer path
+        buffer_save_path = opt.save_dir+f'/buffer/{str(node_index)}/'
+        if not os.path.exists(buffer_save_path):
+            os.mkdir(buffer_save_path)
 
         for i in range(FLAGS.num_workers):
             worker_rollout.remote(node_ps[node_index], node_buffer[node_index], opt)
