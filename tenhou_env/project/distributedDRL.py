@@ -30,7 +30,7 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
-        self.load()
+        #self.load()
 
     def store(self, obs, rew, pred, act):
         self.buf[self.ptr][:] = [obs, rew, pred, act]
@@ -61,14 +61,15 @@ class ReplayBuffer:
         if not os.path.exists(buffer_save_folder):
             os.mkdir(buffer_save_folder)       
 
-        pickle.dump(info, buffer_save_folder+f"{self.buffer_type}.pkl")
+        with open(buffer_save_folder+f"{self.buffer_type}.pkl", 'w') as f:
+            pickle.dump(info, f)
         print(f"**** buffer{self.buffer_index}" + self.buffer_type + " saved! *******")
 
     def load(self, buffer_path=None):
 
         if not buffer_path:
             buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.pkl'
-        info = pickle.load(buffer_path)
+        info = pickle.load(open(buffer_path))
         self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
