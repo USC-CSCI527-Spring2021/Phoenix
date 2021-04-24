@@ -193,6 +193,7 @@ def worker_train(ps, node_buffer, opt):
         agents[model_type] = agent
 
     cache = Cache(node_buffer)
+    time.sleep(100)
     cache.start()
 
     cnt = 1
@@ -204,6 +205,8 @@ def worker_train(ps, node_buffer, opt):
             print('one batch trained')
         if cnt % opt.push_freq == 0:
             cache.q2.put(agent.get_weights())
+            print(cache.p1.is_alive())
+            cache.start()
         cnt += 1
 
 
