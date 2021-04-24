@@ -30,7 +30,7 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
-        #self.load()
+        self.load()
 
     def store(self, obs, rew, pred, act):
         self.buf[self.ptr][:] = [obs, rew, pred, act]
@@ -88,12 +88,13 @@ class Cache():
         node_idx = np.random.choice(opt.num_nodes, 1)[0]
         for model_type in model_types:
             q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
-
+            print(f"**** fetched successfully, size {q1[model_type].size()}")
         while True:
             for model_type in model_types:
                 if q1[model_type].qsize() < 10:
                     node_idx = np.random.choice(opt.num_nodes, 1)[0]
                     q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
+                    print(f"**** fetched successfully, size {q1[model_type].size()}")
 
             if not q2.empty():
                 keys, values = q2.get()
