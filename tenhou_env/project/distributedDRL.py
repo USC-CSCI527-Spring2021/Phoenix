@@ -14,6 +14,7 @@ import sys
 from actor_learner import Learner, Actor
 from options import Options
 from game.ai.utils import model_types
+from collections import namedtuple
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
@@ -23,17 +24,18 @@ flags.DEFINE_integer("num_workers", 1, "number of workers")
 
 @ray.remote
 class ReplayBuffer:
+    ExpType = namedtuple('exp', ['states', 'rewards', 'actions', 'importances'])
     def __init__(self, opt, buffer_index, buffer_type):
         self.opt = opt
         self.buffer_type = buffer_type
         self.buffer_index = buffer_index
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
-        self.buf = np.array([[]] * self.max_size)
+        self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
-        self.load()
+        #self.load()
 
-    def store(self, exp):
-        self.buf[self.ptr] = exp
+    def store(self, sample):
+        self.buf[self.ptr] = sample
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
         self.actor_steps += 1
@@ -41,7 +43,7 @@ class ReplayBuffer:
     def sample_batch(self):
         idxs = np.random.randint(0, self.size, size=self.opt.batch_size)
         self.learner_steps += 1
-        return self.buf[idxs]
+        return np.asarray(self.buf)[idxs]
 
     def get_counts(self):
         return self.learner_steps, self.actor_steps, self.size
@@ -101,7 +103,7 @@ class Cache():
             [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        # self.ps_update(self.q1, self.q2, self.node_buffer)
+        #self.ps_update(self.q1, self.q2, self.node_buffer)
         # self.p1.start()
         # self.p1.join(15)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
