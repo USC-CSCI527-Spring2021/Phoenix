@@ -14,7 +14,6 @@ import sys
 from actor_learner import Learner, Actor
 from options import Options
 from game.ai.utils import model_types
-from collections import namedtuple
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
@@ -24,7 +23,6 @@ flags.DEFINE_integer("num_workers", 1, "number of workers")
 
 @ray.remote
 class ReplayBuffer:
-    ExpType = namedtuple('exp', ['states', 'rewards', 'actions', 'importances'])
     def __init__(self, opt, buffer_index, buffer_type):
         self.opt = opt
         self.buffer_type = buffer_type

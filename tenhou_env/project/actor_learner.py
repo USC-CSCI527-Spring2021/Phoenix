@@ -11,7 +11,7 @@ from game.bots_battle.local_client import LocalClient
 from tenhou.client import TenhouClient
 from utils.logger import set_up_logging
 from utils.settings_handler import settings
-
+import ray
 
 class Learner:
     def __init__(self, opt, model_type):
@@ -53,8 +53,6 @@ class Actor:
     def __init__(self, opt, job, buffer):
         self.opt = opt
         self.job = job
-        print("##################")
-        print(type(buffer))
         self.bot_config = BotDefaultConfig()
         self.bot_config.buffer = buffer
 
@@ -114,5 +112,6 @@ class Actor:
             # Write to buffer
             # for one_game_clients in clients:
             print('start write buffer')
-            for client in clients:
-                client.table.player.ai.write_buffer()
+            # for client in clients:
+            print(ray.get(self.bot_config.buffer.get_counts.remote()))
+            clients[0].table.player.ai.write_buffer()
