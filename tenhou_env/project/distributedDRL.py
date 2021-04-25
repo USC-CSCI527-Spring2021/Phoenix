@@ -32,8 +32,8 @@ class ReplayBuffer:
         self.actor_steps, self.learner_steps = 0, 0
         self.load()
 
-    def store(self, obs, rew, pred, act):
-        self.buf[self.ptr][:] = [obs, rew, pred, act]
+    def store(self, sample):
+        self.buf[self.ptr] = sample
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
         self.actor_steps += 1
@@ -41,7 +41,7 @@ class ReplayBuffer:
     def sample_batch(self):
         idxs = np.random.randint(0, self.size, size=self.opt.batch_size)
         self.learner_steps += 1
-        return self.buf[idxs]
+        return np.asarray(self.buf)[idxs]
 
     def get_counts(self):
         return self.learner_steps, self.actor_steps, self.size
@@ -65,7 +65,7 @@ class ReplayBuffer:
         if not buffer_path:
             buffer_path = self.opt.save_dir + f'/buffer/{str(self.buffer_index)}/' + self.buffer_type + '.pkl'
         info = pickle.load(open(buffer_path, 'rb'))
-        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = info['buffer'], info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
+        self.buf, self.ptr, self.size, self.max_size, self.learner_steps, self.actor_steps = np.asarray(info['buffer']), info['ptr'], info['size'], info['max_size'], info['learner_steps'], info['actor_steps']
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " restored! ******")
         print(f"****** buffer{self.buffer_index} " + self.buffer_type + " infos:", self.ptr, self.size, self.max_size,
               self.actor_steps, self.learner_steps)
@@ -88,13 +88,13 @@ class Cache():
         node_idx = np.random.choice(opt.num_nodes, 1)[0]
         for model_type in model_types:
             q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
-            print(f"**** fetched successfully, size {q1[model_type].size()}")
+            print(f"**** fetched successfully, size {q1[model_type].qsize()}")
         # while True:
         for model_type in model_types:
             if q1[model_type].qsize() < 10:
                 node_idx = np.random.choice(opt.num_nodes, 1)[0]
                 q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
-                print(f"**** fetched successfully, size {q1[model_type].size()}")
+                print(f"**** fetched successfully, size {q1[model_type].qsize()}")
 
         if not q2.empty():
             keys, values = q2.get()
@@ -260,10 +260,10 @@ def worker_test(ps, node_buffer, opt):
         print("available resources:", ray.available_resources())
         print("---------------------------------------------------")
 
-        buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
-                            node_index in range(opt.num_nodes)]
-        ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
-        print("saved successfully!!!!!")
+        #buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+        #                    node_index in range(opt.num_nodes)]
+        #ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
+        #print("saved successfully!!!!!")
 
         total_time = time.time() - init_time
 
@@ -299,7 +299,6 @@ def get_al_status(node_buffer):
             buffer_learner_step.append(learner_step)
             buffer_actor_step.append(actor_step)
             buffer_cur_size.append(cur_size)
-    print(max(np.array(buffer_actor_step)))
     return np.array(buffer_actor_step), np.array(buffer_learner_step), np.array(buffer_cur_size)
 
 

@@ -2,6 +2,7 @@ import importlib
 import os
 
 from tensorflow import keras
+import numpy as np
 
 from bots_battle import _set_up_bots_battle_game_logger, main as bot_battle_main
 from game.ai.configs.default import BotDefaultConfig
@@ -11,7 +12,7 @@ from game.bots_battle.local_client import LocalClient
 from tenhou.client import TenhouClient
 from utils.logger import set_up_logging
 from utils.settings_handler import settings
-
+import ray
 
 class Learner:
     def __init__(self, opt, model_type):
@@ -40,8 +41,8 @@ class Learner:
         self.actor.set_weights(weights)
 
     def train(self, batch, cnt):
-        feature, advantage, old_prediction, action = batch
-        actor_loss = self.actor.fit(x=[feature, advantage, old_prediction], y=[action], shuffle=True, epochs=EPOCHS,
+        feature, advantage, old_prediction, action = zip(*batch)
+        actor_loss = self.actor.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
                                     verbose=False)
         # writer
         # self.writer.add_scalar('Actor loss', actor_loss.history['loss'][-1], self.gradient_steps)  
@@ -53,8 +54,6 @@ class Actor:
     def __init__(self, opt, job, buffer):
         self.opt = opt
         self.job = job
-        print("##################")
-        print(type(buffer))
         self.bot_config = BotDefaultConfig()
         self.bot_config.buffer = buffer
 
@@ -114,5 +113,6 @@ class Actor:
             # Write to buffer
             # for one_game_clients in clients:
             print('start write buffer')
-            for client in clients:
-                client.table.player.ai.write_buffer()
+            # for client in clients:
+            print(ray.get([b.get_counts.remote() for b in self.bot_config.buffer.values()]))
+            clients[0].table.player.ai.write_buffer()
