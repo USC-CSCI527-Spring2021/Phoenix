@@ -1,4 +1,9 @@
 import ray
+from collections import namedtuple
+
+
+ExpType = namedtuple('exp', ['states', 'rewards', 'actions', 'importances'])
+
 class ExperienceCollector:
     def __init__(self, model_type, buffer):
         self.model_type = model_type
@@ -35,6 +40,6 @@ class ExperienceCollector:
     
     def to_buffer(self):
         print(f"****** {self.model_type} write to buffer of size{len(self.states)} *****")
-        for sample in list(zip(self.states, self.rewards, self.importances, self.actions)):
-            self.buffer.store.remote(*sample)
+        for sample in zip(self.states, self.rewards, self.importances, self.actions):
+            self.buffer.store.remote(ExpType(*sample))
         self.states, self.rewards, self.actions, self.importances = [], [], [], []
