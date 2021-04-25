@@ -30,7 +30,7 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
-        #self.load()
+        self.load()
 
     def store(self, sample):
         self.buf[self.ptr] = sample
@@ -101,7 +101,7 @@ class Cache():
             [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        #self.ps_update(self.q1, self.q2, self.node_buffer)
+        self.ps_update(self.q1, self.q2, self.node_buffer)
         # self.p1.start()
         # self.p1.join(15)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
@@ -260,10 +260,10 @@ def worker_test(ps, node_buffer, opt):
         print("available resources:", ray.available_resources())
         print("---------------------------------------------------")
 
-        buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
-                            node_index in range(opt.num_nodes)]
-        ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
-        print("saved successfully!!!!!")
+        #buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+        #                    node_index in range(opt.num_nodes)]
+        #ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
+        #print("saved successfully!!!!!")
 
         total_time = time.time() - init_time
 
