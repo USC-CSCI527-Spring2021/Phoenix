@@ -18,7 +18,7 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=10,
+        default=50,
         help='number of times to go through the data, default=10')
     # parser.add_argument(
     #     '--batch-size',
@@ -192,7 +192,7 @@ def main():
             create_or_join("processed_data/{}/".format(args.model_type)) + "train*")
         # tfrecords = tf.io.gfile.glob(
         #     create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
-        dataset = tf.data.TFRecordDataset(tfrecords)
+        dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BUFFER_SIZE, seed=RANDOM_SEED)
         ts = int(preprocess_data.total * TRAIN_SPLIT)
         train_dataset = dataset.take(ts).shuffle(BUFFER_SIZE,
                                                  seed=RANDOM_SEED,
@@ -236,7 +236,9 @@ def main():
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=create_or_join("logs/" + args.model_type + timestamp),
                                         update_freq='batch', histogram_freq=1),
-            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            # tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                                              patience=2, min_lr=0.001),
             keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
             keras.callbacks.LearningRateScheduler(scheduler),
             keras.callbacks.ModelCheckpoint(checkpoint_path,
@@ -247,8 +249,10 @@ def main():
     else:
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-            tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
-            keras.callbacks.EarlyStopping(monitor='accuracy'),
+            # tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                                              patience=2, min_lr=0.001),
+            keras.callbacks.EarlyStopping(monitor='val_accuracy'),
             keras.callbacks.LearningRateScheduler(scheduler),
             keras.callbacks.ModelCheckpoint(checkpoint_path,
                                             monitor='val_accuracy',
@@ -258,6 +262,7 @@ def main():
     try:
         mahjongModel.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
                          class_weight=class_weight,
+                         shuffle=True,
                          validation_steps=1000,
                          use_multiprocessing=True,
                          workers=-1,
@@ -270,6 +275,10 @@ def main():
         print("test loss, test acc:", res)
 
     except KeyboardInterrupt or InterruptedError:
+        print("Evaluate on test data")
+        res = mahjongModel.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
+        print("test loss, test acc:", res)
+
         mahjongModel.save(os.path.join(create_or_join("models"), args.model_type))
         mahjongModel.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
         print('Keyboard Interrupted, Model and weights saved')
