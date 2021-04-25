@@ -30,10 +30,10 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = np.array([[]] * self.max_size)
         self.actor_steps, self.learner_steps = 0, 0
-        self.load()
+        #self.load()
 
     def store(self, obs, rew, pred, act):
-        self.buf[self.ptr][:] = [obs, rew, pred, act]
+        self.buf[self.ptr] = [obs, rew, pred, act]
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
         self.actor_steps += 1
@@ -101,7 +101,7 @@ class Cache():
             [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        self.ps_update(self.q1, self.q2, self.node_buffer)
+        #self.ps_update(self.q1, self.q2, self.node_buffer)
         # self.p1.start()
         # self.p1.join(15)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
