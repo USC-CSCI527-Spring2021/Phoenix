@@ -2,6 +2,7 @@ import importlib
 import os
 
 from tensorflow import keras
+from tensorflow.keras.optimizers import Adam
 import numpy as np
 
 from bots_battle import _set_up_bots_battle_game_logger, main as bot_battle_main
@@ -21,13 +22,15 @@ class Learner:
 
         self.actor = keras.models.load_model(os.path.join(os.getcwd(), 'models', model_type))
 
-        state_input = self.actor.input
+        state_input = keras.Input(self.actor.input.shape[1:])
         advantage = keras.Input(shape=(1,))
-        old_prediction = self.actor.output
+        old_prediction = keras.Input(shape=self.actor.output.shape[1:])
         
+
+
         output = self.actor(state_input)
         self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
-        self.model.compile(optimizer=Adam(lr=(LR)),
+        self.model.compile(optimizer=Adam(learning_rate=LR),
                            loss=[proximal_policy_optimization_loss(
                                advantage=advantage,
                                old_prediction=old_prediction
