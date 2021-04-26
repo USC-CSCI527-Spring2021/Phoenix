@@ -143,7 +143,7 @@ def getGeneralFeature(player, additional_data = None):
         if additional_data and additional_data.has_key("closed_hands_136"):
             closed_hand = additional_data["closed_hands_136"]
         else:
-            closed_hand = player.closed_hand #[tile for tile in player.tiles if tile not in open_hand]
+            closed_hand = player.closed_hand if hasattr(player,"closed_hand") else [] 
         discarded_tiles = player.discards
         
         for val in closed_hand:
