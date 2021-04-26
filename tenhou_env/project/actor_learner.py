@@ -35,7 +35,7 @@ class Learner:
                                advantage=advantage,
                                old_prediction=old_prediction
                            )],
-                           metrics=['accuracy'])
+                           metrics=[tf.keras.metrics.Accuracy(name="accuracy")])
         self.model.summary()
 
     def get_weights(self):
