@@ -146,7 +146,7 @@ def getGeneralFeature(player, additional_data = None):
         if additional_data and "closed_hands_136" in additional_data:
             closed_hand = additional_data["closed_hands_136"]
         else:
-            closed_hand = player.closed_hand  # [tile for tile in player.tiles if tile not in open_hand]
+            closed_hand = player.closed_hand if hasattr(player,"closed_hand") else []
         discarded_tiles = player.discards
 
         for val in closed_hand:
@@ -178,14 +178,12 @@ def getGeneralFeature(player, additional_data = None):
         :param player:
         :return:
         """
-        # if player.config.isOnline:
-        return np.zeros((12, 34))
-        # else:
-        #     return np.concatenate((
-        #         _getPlayerTiles(player.table.get_player(1)),
-        #         _getPlayerTiles(player.table.get_player(2)),
-        #         _getPlayerTiles(player.table.get_player(3))
-        #     ))
+
+        return np.concatenate((
+            _getPlayerTiles(player.table.get_player(1)),
+            _getPlayerTiles(player.table.get_player(2)),
+            _getPlayerTiles(player.table.get_player(3))
+        ))
 
     def _getDoraList(player):
         dora_indicators = player.table.dora_indicators
