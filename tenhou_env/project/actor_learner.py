@@ -34,7 +34,8 @@ class Learner:
                            loss=[proximal_policy_optimization_loss(
                                advantage=advantage,
                                old_prediction=old_prediction
-                           )])
+                           )],
+                           metrics=['accuracy'])
         self.model.summary()
 
     def get_weights(self):
