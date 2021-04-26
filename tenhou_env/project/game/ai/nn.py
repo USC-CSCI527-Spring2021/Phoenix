@@ -12,7 +12,7 @@ from utils.decisions_logger import MeldPrint
 from mahjong.tile import TilesConverter
 from joblib import Parallel, delayed
 # from trainer.models import rcpk_model, discard_model
-
+import time
 
 def getGeneralFeature(player, additional_data = None):
     def canwinbyreplace(player, closed_left_tiles_34, melds, tiles_could_draw, replacelimit):
@@ -260,10 +260,10 @@ class Chi:
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
-        # start_time = time.time()
+        start_time = time.time()
         predictions = self.model.predict(features)
         features[0] = np.zeros((1, 34))
-        # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
+        print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
         
         pidx = np.argmax(predictions[:, 1])
         choice = np.argmax(predictions[pidx])
@@ -560,9 +560,9 @@ class Discard:
             closed_hands_136 = self.player.closed_hand
 
         features = self.getFeature(all_hands_136, closed_hands_136)
-        # start_time = time.time()
+        start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
-        # print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
+        print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
         # print(predictions)
         max_score = 0
         choice = discard_options[0]  # type: tile_136

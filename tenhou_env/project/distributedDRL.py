@@ -30,7 +30,7 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
-        self.load()
+        #self.load()
 
     def store(self, sample):
         self.buf[self.ptr] = sample
@@ -101,7 +101,7 @@ class Cache():
             [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        self.ps_update(self.q1, self.q2, self.node_buffer)
+        #self.ps_update(self.q1, self.q2, self.node_buffer)
         # self.p1.start()
         # self.p1.join(15)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
@@ -201,17 +201,17 @@ def worker_train(ps, node_buffer, opt):
     cache.start()
 
     cnt = 1
-    while True:
-        for model_type in model_types:
-            if cache.q1[model_type].empty():
-                continue
-            batch = cache.q1[model_type].get()
-            print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
-            agents[model_type].train(batch, cnt)
-            print('one batch trained')
-        if cnt % opt.push_freq == 0:
-            cache.q2.put(agent.get_weights())
-        cnt += 1
+    #while True:
+    #    for model_type in model_types:
+    #        if cache.q1[model_type].empty():
+    #            continue
+    #        batch = cache.q1[model_type].get()
+    #        print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
+    #        agents[model_type].train(batch, cnt)
+    #        print('one batch trained')
+    #    if cnt % opt.push_freq == 0:
+    #        cache.q2.put(agent.get_weights())
+    #    cnt += 1
 
 
 @ray.remote
@@ -219,12 +219,12 @@ def worker_rollout(ps, replay_buffer, opt):
 
     from actor_learner import Learner, Actor
     from options import Options
-    agent = Actor(opt, job='worker', buffer=replay_buffer)
-    while True:
-        weights = ray.get(ps.pull.remote())
-        agent.set_weights(weights)
-        agent.run()
-        print("******* rollout agent finished a game ******")
+    #agent = Actor(opt, job='worker', buffer=replay_buffer)
+    #while True:
+    #    weights = ray.get(ps.pull.remote())
+    #    agent.set_weights(weights)
+    #    agent.run()
+    #    print("******* rollout agent finished a game ******")
 
 
 @ray.remote
@@ -260,10 +260,10 @@ def worker_test(ps, node_buffer, opt):
         print("available resources:", ray.available_resources())
         print("---------------------------------------------------")
 
-        #buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
-        #                    node_index in range(opt.num_nodes)]
-        #ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
-        #print("saved successfully!!!!!")
+        buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+                            node_index in range(opt.num_nodes)]
+        ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
+        print("saved successfully!!!!!")
 
         total_time = time.time() - init_time
 
@@ -310,7 +310,8 @@ def get_al_status(node_buffer):
 if __name__ == '__main__':
 
     # ray.init(local_mode=True)  # Local Mode
-    ray.init(address="auto")  #specify cluster address here
+    #ray.init(address="auto")  #specify cluster address here
+    ray.init()
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
