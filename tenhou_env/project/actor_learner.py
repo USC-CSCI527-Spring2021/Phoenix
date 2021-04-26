@@ -20,18 +20,18 @@ class Learner:
 
         self.actor = keras.models.load_model(os.path.join(os.getcwd(), 'models', model_type))
 
-        # state_input = self.actor.input
-        # advantage = keras.Input(shape=(1,))
-        # old_prediction = self.actor.output
-        #
-        # output = self.actor(state_input)
-        # self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
-        # self.model.compile(optimizer=Adam(lr=(LR)),
-        #                    loss=[proximal_policy_optimization_loss(
-        #                        advantage=advantage,
-        #                        old_prediction=old_prediction
-        #                    )])
-        # self.model.summary()
+        state_input = self.actor.input
+        advantage = keras.Input(shape=(1,))
+        old_prediction = self.actor.output
+        
+        output = self.actor(state_input)
+        self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
+        self.model.compile(optimizer=Adam(lr=(LR)),
+                           loss=[proximal_policy_optimization_loss(
+                               advantage=advantage,
+                               old_prediction=old_prediction
+                           )])
+        self.model.summary()
 
     def get_weights(self):
         return self.actor.get_weights()
