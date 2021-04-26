@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import os
-import time
+import random
 
 import numpy as np
 import utils.decisions_constants as log
@@ -9,10 +9,104 @@ from game.ai.exp_buffer import ExperienceCollector
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
+from mahjong.tile import TilesConverter
+from joblib import Parallel, delayed
 # from trainer.models import rcpk_model, discard_model
 
 
-def getGeneralFeature(player, additional_data=None):
+def getGeneralFeature(player, additional_data = None):
+    def canwinbyreplace(player, closed_left_tiles_34, melds, tiles_could_draw, replacelimit):
+        def _draw(player, closed_left_tiles_34, melds, tiles_could_draw, replacelimit):
+            if player.ai.calculate_shanten_or_get_from_cache(closed_left_tiles_34) > replacelimit:
+                return 0
+            result = 0
+            if replacelimit == 0:
+                for idx in range(34):
+                    if tiles_could_draw[idx] > 0:
+                        closed_left_tiles_34[idx] += 1
+                        if player.ai.calculate_shanten_or_get_from_cache(closed_left_tiles_34) == -1:
+                            all_tiles_136 = TilesConverter.to_136_array(closed_left_tiles_34)
+                            for meld in melds:
+                                all_tiles_136.extend(meld.tiles)
+                            ponits = player.ai.calculate_exact_hand_value_or_get_from_cache(idx*4, all_tiles_136)
+                            result = max(result,ponits)
+                        closed_left_tiles_34[idx] -= 1
+
+            else:
+                for idx,count in enumerate(tiles_could_draw):
+                    if count > 0:
+                        tiles_could_draw[idx] -= 1
+                        closed_left_tiles_34[idx] += 1
+                        ponits = _discard(closed_left_tiles_34, melds, tiles_could_draw, replacelimit)
+                        result = max(result,ponits)
+                        closed_left_tiles_34[idx] -= 1
+                        tiles_could_draw[idx] += 1
+            return result
+
+        def _discard(player, closed_left_tiles_34, melds, tiles_could_draw, replacelimit):
+            result = 0
+            for idx,count in enumerate(closed_left_tiles_34):
+                if count > 0:
+                    closed_left_tiles_34[idx] -= 1
+                    replacelimit -= 1
+                    ponits = _draw(closed_left_tiles_34, melds, tiles_could_draw, replacelimit)
+                    result = max(result,ponits)
+                    replacelimit += 1
+                    closed_left_tiles_34[idx] += 1
+            return result
+
+        return _draw(player, closed_left_tiles_34, melds, tiles_could_draw, replacelimit)
+
+    def _getLookAheadFeature(player):
+        # 0 for whether can be discarded
+        # 1 2 3 for shanten
+        # 4 5 6 7 for whether can get 2k 4k 6k 8k points with replacing 3 tiles ---- need review: takes too long!
+        # 8 9 10 for in Shimocha Toimen Kamicha discarded
+        # lookAheadFeature = np.zeros((11, 34))
+        # player_tiles = tiles_state_and_action["player_tiles"]
+        closed_hand_136 = player.closed_hand#player_tiles.get('closed_hand:',[])
+        # open_hands_detail = tiles_state_and_action["open_hands_detail"]
+        melds = player.melds#self.open_hands_detail_to_melds(open_hands_detail)
+        discarded_tiles_136 = player.discards#player_tiles.get('discarded_tiles',[])
+        # player_seat = player.seat#tiles_state_and_action["player_id"]
+        # enemies_tiles_list = tiles_state_and_action["enemies_tiles"]
+        dora_indicators = player.table.dora_indicators#tiles_state_and_action["dora"]
+        # if (len(enemies_tiles_list) == 3):
+        #     enemies_tiles_list.insert(player_seat, player_tiles)
+        tiles_could_draw = np.ones(34) * 4
+        for p in player.table.players:
+            for tile_set in [p.tiles, p.discards]:
+                for tile in tile_set:
+                    tiles_could_draw[tile//4] -= 1
+        for dora_tile in dora_indicators:
+            tiles_could_draw[tile//4] -= 1
+
+        def feature_process(i, closed_hand_136, melds, tiles_could_draw):
+            feature = np.zeros((11, 1))
+            discard_tiles = [x for x in [i*4,i*4+1,i*4+2,i*4+3] if x in closed_hand_136]
+            if len(discard_tiles) != 0 :
+                discard_tile = discard_tiles[0]
+                feature[0] = 1
+                closed_left_tiles_34 = TilesConverter.to_34_array([t for t in closed_hand_136 if t != discard_tile])
+                shanten = player.ai.calculate_shanten_or_get_from_cache(closed_left_tiles_34)
+                for i in range(3):
+                    if shanten <= i:
+                        feature[i+1] = 1
+                maxscore = canwinbyreplace(player, closed_left_tiles_34, melds, tiles_could_draw, replacelimit = 2)
+                scores = [2000, 4000, 6000, 8000]
+                for i in range(4):
+                    if maxscore >= scores[i]:
+                        feature[i+4] = 1
+                for i in range(3):
+                    if discard_tile//4 in [t//4 for t in player.table.get_player(i+1).discards]:
+                        feature[i+8] = 1
+            return feature
+
+        results = Parallel(n_jobs=8)(
+            delayed(feature_process)(i, closed_hand_136, melds, tiles_could_draw)
+            for i in range(34))
+        return np.concatenate(results,axis=1)
+
     def _indicator2dora(dora_indicator):
         dora = dora_indicator // 4
         if dora < 27:  # EAST
@@ -88,9 +182,9 @@ def getGeneralFeature(player, additional_data=None):
             return np.zeros((12, 34))
         else:
             return np.concatenate((
-                _getPlayerTiles(player.players[1]),
-                _getPlayerTiles(player.players[2]),
-                _getPlayerTiles(player.players[3])
+                _getPlayerTiles(player.table.get_player(1)),
+                _getPlayerTiles(player.table.get_player(2)),
+                _getPlayerTiles(player.table.get_player(3))
             ))
 
     def _getDoraList(player):
@@ -136,11 +230,12 @@ def getGeneralFeature(player, additional_data=None):
         ))
 
     return np.concatenate((
-        _getSelfTiles(player),  # (12,34)
-        _getDoraList(player),  # (5,34)
-        _getBoard1(player),  # (5,34)
-        _getEnemiesTiles(player),  # (36,34)
-        _getScoreList1(player)  # (4,34)
+        # _getLookAheadFeature(player), #(11,34)
+        _getSelfTiles(player), #(12,34)
+        _getDoraList(player), #(5,34)
+        _getBoard1(player), #(5,34)
+        _getEnemiesTiles(player), #(36,34)
+        _getScoreList1(player) #(4,34)
     ))
 
 
@@ -165,8 +260,9 @@ class Chi:
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
-        start_time = time.time()
+        # start_time = time.time()
         predictions = self.model.predict(features)
+        features[0] = np.zeros((1, 34))
         # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
         
         pidx = np.argmax(predictions[:, 1])
@@ -315,7 +411,7 @@ class Kan:
                         log.MELD_CALL,
                         "Kan Model choose to " + kan_type,
                         context=[
-                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                            f"Hand: {self.player.format_hand_for_print()}",
                         ],
                     )
                 else:
@@ -323,7 +419,7 @@ class Kan:
                         log.MELD_CALL,
                         "Kan Model choose not to " + kan_type,
                         context=[
-                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                            f"Hand: {self.player.format_hand_for_print()}",
                         ],
                     )
             elif _can_ankan(tile_136, closed_hand):  # AnKan
@@ -334,7 +430,7 @@ class Kan:
                         log.MELD_CALL,
                         "Kan Model choose to " + kan_type,
                         context=[
-                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                            f"Hand: {self.player.format_hand_for_print()}",
                         ],
                     )
                 else:
@@ -342,7 +438,7 @@ class Kan:
                         log.MELD_CALL,
                         "Kan Model choose not to " + kan_type,
                         context=[
-                            f"Hand: {self.player.format_hand_for_print(tile_136)}",
+                            f"Hand: {self.player.format_hand_for_print()}",
                         ],
                     )
             else:
@@ -401,7 +497,7 @@ class Riichi:
 
     def should_call_riichi(self):
         features = self.getFeature()
-        start_time = time.time()
+        # start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         # print("---Riichi inference time:  %s seconds ---" % (time.time() - start_time))
         print(predictions)
@@ -464,10 +560,10 @@ class Discard:
             closed_hands_136 = self.player.closed_hand
 
         features = self.getFeature(all_hands_136, closed_hands_136)
-        start_time = time.time()
+        # start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         # print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
-        print(predictions)
+        # print(predictions)
         max_score = 0
         choice = discard_options[0]  # type: tile_136
         for option in discard_options:
@@ -510,7 +606,7 @@ class GlobalRewardPredictor:
         # embed = np.expand_dims(np.concatenate((init_score, gains, dan, dealer, repeat_dealer, riichi_bets), axis=-1), axis=0)
         # # print('input_shape', embed.shape)
         # assert embed.shape[-2:] == (15, 15)
-        start_time = time.time()
+        # start_time = time.time()
         reward = self.model.predict(features)[0]
         # print("---Global Reward Predictor inference time:  %s seconds ---" % (time.time() - start_time))
         return reward
