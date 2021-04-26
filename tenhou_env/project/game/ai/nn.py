@@ -6,9 +6,12 @@ import random
 import numpy as np
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
+import utils.decisions_constants as log
+from joblib import Parallel, delayed
+from mahjong.tile import TilesConverter
 from utils.decisions_logger import MeldPrint
-from game.ai.exp_buffer import ExperienceCollector
-from game.ai.models import rcpk_model, discard_model
+# from game.ai.exp_buffer import ExperienceCollector
+# from game.ai.models import rcpk_model, discard_model
 
 
 def getGeneralFeature(player, additional_data = None):
@@ -136,11 +139,11 @@ def getGeneralFeature(player, additional_data = None):
         open_hand_feature = np.zeros((4, 34))
         discarded_tiles_feature = np.zeros((4, 34))
 
-        if additional_data and additional_data.has_key("open_hands_136"):
+        if additional_data and "open_hands_136" in additional_data:
             open_hand = additional_data["open_hands_136"]
         else:
             open_hand = [tile for meld in player.melds for tile in meld.tiles]
-        if additional_data and additional_data.has_key("closed_hands_136"):
+        if additional_data and "closed_hands_136" in additional_data:
             closed_hand = additional_data["closed_hands_136"]
         else:
             closed_hand = player.closed_hand if hasattr(player,"closed_hand") else [] 
@@ -170,11 +173,14 @@ def getGeneralFeature(player, additional_data = None):
         return _getPlayerTiles(player) 
 
     def _getEnemiesTiles(player):
-        return np.concatenate((
-            _getPlayerTiles(player.table.get_player(1)),
-            _getPlayerTiles(player.table.get_player(2)),
-            _getPlayerTiles(player.table.get_player(3))
-        ))
+        if not hasattr(player.config, "isOnline"):
+            return np.zeros((36, 34))
+        else:
+            return np.concatenate((
+                _getPlayerTiles(player.table.get_player(1)),
+                _getPlayerTiles(player.table.get_player(2)),
+                _getPlayerTiles(player.table.get_player(3))
+            ))
     
     def _getDoraList(player):  
         dora_indicators = player.table.dora_indicators
@@ -235,27 +241,40 @@ class Chi:
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
-        if 'chi' not in player.config:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['chi'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+        # if 'chi' not in player.config:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['chi'])
         print('###### Chi model initialized #######')
-        self.collector = ExperienceCollector('chi', player.config.buffer)
-        self.collector.start_episode()
+        # self.collector = ExperienceCollector('chi', player.config.buffer)
+        # self.collector.start_episode()
 
     def should_call_chi(self, tile_136, melds_chi):
         features = self.getFeature(melds_chi)
         predictions = self.model.predict(features)
         pidx = np.argmax(predictions[:,1])
         choice = np.argmax(predictions[pidx])
-        actions = np.eye(predictions.shape[-1])[choice]
-        self.collector.record_decision(features, actions, predictions)
+        # actions = np.eye(predictions.shape[-1])[choice]
+        # self.collector.record_decision(features, actions, predictions)
         if choice == 0:
-            print("Chi Model choose not to chi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Chi Model choose not to chi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print()}",
+                ],
+            )
             return False, predictions[pidx][choice], melds_chi[pidx]
         else:
-            print("Chi Model choose to chi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Chi Model choose to chi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print()}",
+                ],
+            )
             return True, predictions[pidx][choice], melds_chi[pidx]
 
     def getFeature(self, melds_chi):
@@ -274,26 +293,40 @@ class Pon:
         self.input_shape = (63, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
-        if 'pon' not in player.config:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['pon'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        #
+        # if 'pon' not in player.config:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['pon'])
 
         print('###### Pon model initialized #######')
-        self.collector = ExperienceCollector('pon', player.config.buffer)
+        # self.collector = ExperienceCollector('pon', player.config.buffer)
 
     def should_call_pon(self, tile_136, is_kamicha_discard):
         features = self.getFeature(tile_136)
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         choice = np.argmax(predictions)
-        actions = np.eye(predictions.shape[-1])[choice]
-        self.collector.record_decision(features, actions, predictions)
+        # actions = np.eye(predictions.shape[-1])[choice]
+        # self.collector.record_decision(features, actions, predictions)
         if choice == 0:
-            print("Pon Model choose not to pon")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Pon Model choose not to pon",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print()}",
+                ],
+            )
             return False, predictions[choice]
         else:
-            print("Pon Model choose to pon")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Pon Model choose to pon",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print()}",
+                ],
+            )
             return True, predictions[choice]
 
     def getFeature(self, tile_136):
@@ -309,14 +342,16 @@ class Kan:
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
-        if 'kan' not in player.config:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['kan'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        #
+        # if 'kan' not in player.config:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['kan'])
 
         print('###### Kan model initialized #######')
-        self.collector = ExperienceCollector('kan', player.config.buffer)
+        # self.collector = ExperienceCollector('kan', player.config.buffer)
 
     def should_call_kan(self, tile_136, open_kan, from_riichi=False):
         def _can_minkan(tile, closed_hand):
@@ -349,16 +384,40 @@ class Kan:
                 kan_type_feature[2] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print()}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print()}",
+                        ],
+                    )
             elif _can_ankan(tile_136, closed_hand):  # AnKan
                 kan_type_feature[1] = 1
                 kan_type = MeldPrint.KAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print()}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print()}",
+                        ],
+                    )
             else:
                 return None
         else: 
@@ -366,13 +425,25 @@ class Kan:
                 kan_type_feature[0] = 1
                 kan_type = MeldPrint.SHOUMINKAN
                 if model_predict:
-                    print("Kan model choose to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print()}",
+                        ],
+                    )
                 else:
-                    print("Kan model choose not to ", kan_type)
+                    self.player.logger.debug(
+                        log.MELD_CALL,
+                        "Kan Model choose not to " + kan_type,
+                        context=[
+                            f"Hand: {self.player.format_hand_for_print()}",
+                        ],
+                    )
             else:
                 return None
-        actions = np.eye(predictions.shape[-1])[model_predict]
-        self.collector.record_decision(features, actions, predictions)
+        # actions = np.eye(predictions.shape[-1])[model_predict]
+        # self.collector.record_decision(features, actions, predictions)
         return kan_type 
 
     def getFeature(self, tile136, kan_type_feature):
@@ -388,26 +459,40 @@ class Riichi:
         self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
-        if 'riichi' not in player.config:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['riichi'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        #
+        # if 'riichi' not in player.config:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['riichi'])
 
         print('###### Riichi model initialized #######')
-        self.collector = ExperienceCollector('riichi', player.config.buffer)
+        # self.collector = ExperienceCollector('riichi', player.config.buffer)
 
     def should_call_riichi(self):
         features = self.getFeature()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         choice = np.argmax(predictions)
-        actions = np.eye(predictions.shape[-1])[choice]
-        self.collector.record_decision(features, actions, predictions)
+        # actions = np.eye(predictions.shape[-1])[choice]
+        # self.collector.record_decision(features, actions, predictions)
         if choice == 0:
-            print("Riichi Model choose not to riichi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Riichi Model choose not to riichi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print()}",
+                ],
+            )
             return False, predictions[choice]
         else:
-            print("Riichi Model choose to riichi")
+            self.player.logger.debug(
+                log.MELD_CALL,
+                "Riichi Model choose to riichi",
+                context=[
+                    f"Hand: {self.player.format_hand_for_print()}",
+                ],
+            )
             return True, predictions[choice]
 
     def getFeature(self):
@@ -421,14 +506,16 @@ class Discard:
         self.input_shape = (16, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        if 'discard' not in player.config:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
-        else:
-            self.model = discard_model(self.input_shape)
-            self.model.set_weights(player.config.weights['discard'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
+        #
+        # if 'discard' not in player.config:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
+        # else:
+        #     self.model = discard_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['discard'])
 
         print('###### Discarded model initialized #######')
-        self.collector = ExperienceCollector('discard', player.config.buffer)
+        # self.collector = ExperienceCollector('discard', player.config.buffer)
 
     def discard_tile(self, all_hands_136=None, closed_hands_136=None, with_riichi_options=None):
         
@@ -452,9 +539,10 @@ class Discard:
             if score > max_score or (score == max_score and is_aka_dora(choice, True)):
                 max_score = score
                 choice = option
-        print("Discarded Model:", "discard", option, "from", closed_hands_136 if closed_hands_136 else self.player.closed_hand)
-        actions = np.eye(predictions.shape[-1])[choice // 4]
-        self.collector.record_decision(features, actions, predictions)
+        self.player.logger.debug(log.DISCARD, context="Discard Model: discard {} from {}"
+                                 .format(choice, closed_hands_136 if closed_hands_136 else self.player.closed_hand))
+        # actions = np.eye(predictions.shape[-1])[choice // 4]
+        # self.collector.record_decision(features, actions, predictions)
         return choice
 
     def getFeature(self, all_hands_136, closed_hands_136):

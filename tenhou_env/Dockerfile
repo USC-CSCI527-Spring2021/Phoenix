@@ -1,12 +1,16 @@
-FROM pypy:3.7-7.3.2-slim
-
-RUN useradd -ms /bin/bash docker-user
+FROM rayproject/ray-ml:latest-cpu
 
 WORKDIR /app/
 
-COPY requirements /requirements
-RUN pip install --no-cache-dir -r /requirements/dev.txt
+COPY requirements.txt /requirements.txt
+COPY config.yaml /config.yaml
 
-COPY ./project .
+RUN pip install --no-cache-dir -r /requirements.txt
+RUN pip install google-api-python-client==1.7.8
 
-USER docker-user
+COPY trainer /trainer
+COPY tenhou_env/project .
+COPY models /models
+RUN export PYTHONPATH=PYTHONPATH:/
+
+USER root

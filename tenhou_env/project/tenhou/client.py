@@ -177,23 +177,23 @@ class TenhouClient(Client):
                         self._send_message(self._pxr_tag())
 
                     # send end game message to api
-                    if settings.TOURNAMENT_API_TOKEN and settings.TOURNAMENT_API_URL:
-                        if "<CHAT" in message:
-                            # uname means that other player sent this message, we don't need to parse it
-                            if not self.decoder.get_attribute_content(message, "uname"):
-                                text = self.decoder.get_attribute_content(message, "text")
-                                if text and text.startswith("#END"):
-                                    try:
-                                        requests.post(
-                                            settings.TOURNAMENT_API_URL,
-                                            data={
-                                                "api_token": settings.TOURNAMENT_API_TOKEN,
-                                                "message": text,
-                                            },
-                                        )
-                                        self.logger.error("Successfully sent end game message")
-                                    except Exception:
-                                        self.logger.error("Can't sent end game message")
+                    # if settings.TOURNAMENT_API_TOKEN and settings.TOURNAMENT_API_URL:
+                    #     if "<CHAT" in message:
+                    #         # uname means that other player sent this message, we don't need to parse it
+                    #         if not self.decoder.get_attribute_content(message, "uname"):
+                    #             text = self.decoder.get_attribute_content(message, "text")
+                    #             if text and text.startswith("#END"):
+                    #                 try:
+                    #                     requests.post(
+                    #                         settings.TOURNAMENT_API_URL,
+                    #                         data={
+                    #                             "api_token": settings.TOURNAMENT_API_TOKEN,
+                    #                             "message": text,
+                    #                         },
+                    #                     )
+                    #                     self.logger.error("Successfully sent end game message")
+                    #                 except Exception:
+                    #                     self.logger.error("Can't sent end game message")
                                         
                 current_time = datetime.datetime.now()
                 time_difference = current_time - start_time
@@ -366,7 +366,7 @@ class TenhouClient(Client):
                 if "<AGARI" in message or "<RYUUKYOKU" in message:
                     gains = self.decoder.parse_gain(message)
                     self.table.gains = gains
-                    self.table.player.ai.collect_experience()     
+                    # self.table.player.ai.collect_experience()
                     self._random_sleep(3, 5)
                     self._send_message("<NEXTREADY />")
 
