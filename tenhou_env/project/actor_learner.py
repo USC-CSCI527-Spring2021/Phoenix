@@ -2,6 +2,7 @@ import importlib
 import os
 
 from tensorflow import keras
+import numpy as np
 
 from bots_battle import _set_up_bots_battle_game_logger, main as bot_battle_main
 from game.ai.configs.default import BotDefaultConfig
@@ -40,8 +41,8 @@ class Learner:
         self.actor.set_weights(weights)
 
     def train(self, batch, cnt):
-        feature, advantage, old_prediction, action = batch
-        actor_loss = self.actor.fit(x=[feature, advantage, old_prediction], y=[action], shuffle=True, epochs=EPOCHS,
+        feature, advantage, old_prediction, action = zip(*batch)
+        actor_loss = self.actor.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
                                     verbose=False)
         # writer
         # self.writer.add_scalar('Actor loss', actor_loss.history['loss'][-1], self.gradient_steps)  
@@ -113,5 +114,5 @@ class Actor:
             # for one_game_clients in clients:
             print('start write buffer')
             # for client in clients:
-            print(ray.get(self.bot_config.buffer.get_counts.remote()))
+            print(ray.get([b.get_counts.remote() for b in self.bot_config.buffer.values()]))
             clients[0].table.player.ai.write_buffer()
