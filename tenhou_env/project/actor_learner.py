@@ -1,6 +1,7 @@
 import importlib
 import os
 
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import numpy as np
