@@ -1,13 +1,16 @@
-FROM tensorflow/tensorflow:2.4.1
-
-RUN useradd -ms /bin/bash docker-user
+FROM rayproject/ray-ml:latest-cpu
 
 WORKDIR /app/
 
-COPY tenhou_env/requirements /requirements
-RUN pip install --no-cache-dir -r /requirements/dev.txt
+COPY requirements.txt /requirements.txt
+COPY config.yaml /config.yaml
+
+RUN pip install --no-cache-dir -r /requirements.txt
+RUN pip install google-api-python-client==1.7.8
 
 COPY trainer /trainer
 COPY tenhou_env/project .
+COPY models /models
+RUN export PYTHONPATH=PYTHONPATH:/
 
-USER docker-user
+USER root

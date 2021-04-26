@@ -11,8 +11,8 @@ from tensorflow.keras.models import Model
 
 from trainer.utils import CHECKPOINT_DIR, create_or_join, RANDOM_SEED
 
+tf.keras.backend.set_image_data_format("channels_last")
 np.random.seed(RANDOM_SEED)
-
 
 def scheduler(epoch, lr):
     '''
@@ -80,7 +80,7 @@ def make_or_restore_model(input_shape, model_type, strategy):
     else:
         checkpoints = [path.join(checkpoint, name) for name in os.listdir(checkpoint)]
 
-    init_model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
+    # init_model = discard_model(input_shape) if model_type == 'discard' else rcpk_model(input_shape)
 
     if checkpoints:
         latest_checkpoint = checkpoint
@@ -133,24 +133,34 @@ def discard_model(input_shape):
     :return: keras model class
     """
     k_input = keras.Input(input_shape)
-    x = Normalization()(k_input)
-
-    for _ in range(3):
-        x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
-    for _ in range(5):
-        x = residual_block(x, 256, _project_shortcut=True)
-        x = residual_block(x, 256, _project_shortcut=True)
-
-    x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
-    x = Flatten()(x)
-    outputs = Dense(34, activation="softmax")(x)
-    # model = keras.applications.ResNet50V2(weights=None, input_shape=(64, 34, 1), classes=34, include_top=True)
-    model = Model(k_input, outputs)
+    # x = Normalization()(k_input)
+    #
+    # for _ in range(3):
+    #     x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
+    # for _ in range(5):
+    #     x = residual_block(x, 256, _project_shortcut=True)
+    #     x = residual_block(x, 256, _project_shortcut=True)
+    #
+    # x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
+    #
+    # x = Flatten()(x)
+    # outputs = Dense(34, activation="softmax")(x)
+    # model = Model(k_input, outputs)
+    model = keras.Sequential()
+    model.add(keras.applications.DenseNet201(weights=None, input_tensor=k_input, input_shape=input_shape))
+    model.add(BatchNormalization())
+    model.add(Dense(512))
+    model.add(Dense(256))
+    model.add(Dense(34, activation="softmax"))
     model.summary()
     model.compile(
-        keras.optimizers.Adam(learning_rate=0.008),
+        keras.optimizers.Adam(learning_rate=1e-4),
         keras.losses.CategoricalCrossentropy(),
-        metrics=keras.metrics.CategoricalAccuracy())
+        metrics=[
+            keras.metrics.CategoricalAccuracy(),
+            keras.metrics.AUC(multi_label=True),
+        ]
+    )
     return model
 
 
@@ -162,30 +172,38 @@ def rcpk_model(input_shape):
     :return: keras model class
     """
     k_input = keras.Input(input_shape)
-    x = Normalization()(k_input)
-    for _ in range(3):
-        x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
-    for _ in range(5):
-        x = residual_block(x, 256, _project_shortcut=True)
-        x = residual_block(x, 256, _project_shortcut=True)
-    for _ in range(3):
-        x = Conv2D(32, (3, 3), padding="same", data_format="channels_last")(x)
-    x = Flatten()(x)
-    x = Dense(1024)(x)
-    x = Dense(256)(x)
-    outputs = Dense(2, activation="softmax")(x)
-
-    model = Model(k_input, outputs)
+    model = keras.Sequential()
+    model.add(keras.applications.DenseNet201(weights=None, input_tensor=k_input, pooling="avg"))
+    # model.add(Conv2D(256, (3, 3), padding="same", data_format="channels_last"))
+    # model.add(Conv2D(32, (3, 3), padding="same", data_format="channels_last"))
+    model.add(BatchNormalization())
+    model.add(Dense(512))
+    model.add(Dense(256))
+    model.add(Dense(2, activation="softmax"))
+    # x = Normalization()(k_input)
+    # for _ in range(3):
+    #     x = Conv2D(256, (3, 3), padding="same", data_format="channels_last")(x)
+    # for _ in range(5):
+    #     x = residual_block(x, 256, _project_shortcut=True)
+    #     x = residual_block(x, 256, _project_shortcut=True)
+    # # for _ in range(3):
+    # # x = Conv2D(32, (3, 3), padding="same", data_format="channels_last")(x)
+    # # x = Conv2D(kernel_size=1, strides=1, filters=1, padding="same")(x)
+    # x = Flatten()(x)
+    # x = Dense(1024)(x)
+    # x = Dense(256)(x)
+    # outputs = Dense(2, activation="softmax")(x)
+    # model = Model(k_input, outputs)
     model.summary()
     model.compile(
-        keras.optimizers.Adam(learning_rate=0.008),
-        keras.losses.BinaryCrossentropy(),
+        keras.optimizers.Adam(learning_rate=1e-4),
+        keras.losses.BinaryCrossentropy(from_logits=True),
         metrics=[
+            keras.metrics.BinaryAccuracy(name='accuracy'),
             keras.metrics.TruePositives(name='tp'),
             keras.metrics.FalsePositives(name='fp'),
             keras.metrics.TrueNegatives(name='tn'),
             keras.metrics.FalseNegatives(name='fn'),
-            keras.metrics.BinaryAccuracy(name='accuracy'),
             keras.metrics.Precision(name='precision'),
             keras.metrics.Recall(name='recall'),
             keras.metrics.AUC(name='auc'),

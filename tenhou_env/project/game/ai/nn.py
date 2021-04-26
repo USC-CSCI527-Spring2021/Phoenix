@@ -6,11 +6,10 @@ import time
 import numpy as np
 import utils.decisions_constants as log
 from game.ai.exp_buffer import ExperienceCollector
-from game.ai.models import rcpk_model, discard_model
 from mahjong.utils import is_aka_dora
 from tensorflow import keras
 from utils.decisions_logger import MeldPrint
-
+# from trainer.models import rcpk_model, discard_model
 
 
 def getGeneralFeature(player, additional_data=None):
@@ -152,11 +151,14 @@ class Chi:
         # self.strategy = 'local'        # fix here
         # self.model = models.make_or_restore_model(self.input_shape, "chi", self.strategy)
         # load models from current working dir
-        if 'chi' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['chi'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+
+        self.model.set_weights(player.config.weights['chi'])
+        # if 'chi' not in player.config.weights:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'chi'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['chi'])
         # print('###### Chi model initialized #######')
         self.collector = ExperienceCollector('chi', player.config.buffer['chi'])
         self.collector.start_episode()
@@ -166,7 +168,7 @@ class Chi:
         start_time = time.time()
         predictions = self.model.predict(features)
         # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
-
+        print(predictions)
         pidx = np.argmax(predictions[:, 1])
         choice = np.argmax(predictions[pidx])
         actions = np.eye(predictions.shape[-1])[choice]
@@ -208,11 +210,13 @@ class Pon:
         self.input_shape = (63, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "pon", self.strategy)
         # load models from current working dir
-        if 'pon' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['pon'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        self.model.set_weights(player.config.weights['pon'])
+        # if 'pon' not in player.config.weights:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'pon'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['pon'])
 
         # print('###### Pon model initialized #######')
         self.collector = ExperienceCollector('pon', player.config.buffer['pon'])
@@ -221,6 +225,7 @@ class Pon:
         features = self.getFeature(tile_136)
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
+        print(predictions)
         # print("---Pon inference time:  %s seconds ---" % (time.time() - start_time))
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
@@ -259,11 +264,13 @@ class Kan:
         # self.strategy = 'local'
         # self.model = models.make_or_restore_model(self.input_shape, "kan", self.strategy)
         # load models from current working dir
-        if 'kan' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['kan'])
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        self.model.set_weights(player.config.weights['kan'])
+        # if 'kan' not in player.config.weights:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'kan'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['kan'])
 
         # print('###### Kan model initialized #######')
         self.collector = ExperienceCollector('kan', player.config.buffer['kan'])
@@ -297,7 +304,7 @@ class Kan:
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
-
+        print(predictions)
         model_predict = np.argmax(predictions)
         if not open_kan:
             if _can_kakan(tile_136, self.player.melds):  # KaKan
@@ -380,11 +387,14 @@ class Riichi:
         self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "riichi", self.strategy)
         # load models from current working dir
-        if 'riichi' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
-        else:
-            self.model = rcpk_model(self.input_shape)
-            self.model.set_weights(player.config.weights['riichi'])
+
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        self.model.set_weights(player.config.weights['riichi'])
+        # if 'riichi' not in player.config.weights:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'riichi'))
+        # else:
+        #     self.model = rcpk_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['riichi'])
 
         # print('###### Riichi model initialized #######')
         self.collector = ExperienceCollector('riichi', player.config.buffer['riichi'])
@@ -394,6 +404,7 @@ class Riichi:
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         # print("---Riichi inference time:  %s seconds ---" % (time.time() - start_time))
+        print(predictions)
         choice = np.argmax(predictions)
         actions = np.eye(predictions.shape[-1])[choice]
         self.collector.record_decision(features, actions, predictions)
@@ -428,11 +439,14 @@ class Discard:
         self.input_shape = (62, 34, 1)
         # self.model = models.make_or_restore_model(self.input_shape, "discard", self.strategy)
         # load models from current working dir
-        if 'discard' not in player.config.weights:
-            self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
-        else:
-            self.model = discard_model(self.input_shape)
-            self.model.set_weights(player.config.weights['discard'])
+
+        self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
+        self.model.set_weights(player.config.weights['discard'])
+        # if 'discard' not in player.config.weights:
+        #     self.model = keras.models.load_model(os.path.join(os.getcwd(), 'models', 'discard'))
+        # else:
+        #     self.model = discard_model(self.input_shape)
+        #     self.model.set_weights(player.config.weights['discard'])
         # print('###### Discarded model initialized #######')
         self.collector = ExperienceCollector('discard', player.config.buffer['discard'])
 
@@ -453,7 +467,7 @@ class Discard:
         start_time = time.time()
         predictions = self.model.predict(np.expand_dims(features, axis=0))[0]
         # print("---Discard inference time:  %s seconds ---" % (time.time() - start_time))
-
+        print(predictions)
         max_score = 0
         choice = discard_options[0]  # type: tile_136
         for option in discard_options:
