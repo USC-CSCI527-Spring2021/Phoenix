@@ -168,11 +168,11 @@ class Chi:
         start_time = time.time()
         predictions = self.model.predict(features)
         # print("---Chi inference time:  %s seconds ---" % (time.time() - start_time))
-        print(predictions)
+        
         pidx = np.argmax(predictions[:, 1])
         choice = np.argmax(predictions[pidx])
         actions = np.eye(predictions.shape[-1])[choice]
-        self.collector.record_decision(features, actions, predictions)
+        self.collector.record_decision(features, actions, predictions[pidx])
         if choice == 0:
             self.player.logger.debug(
                 log.MELD_CALL,

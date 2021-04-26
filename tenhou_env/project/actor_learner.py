@@ -37,6 +37,7 @@ class Learner:
                                old_prediction=old_prediction
                            )],
                            metrics=[tf.keras.metrics.Accuracy(name="accuracy")])
+        print(f"{model_type} model for learner created")
         self.model.summary()
 
     def get_weights(self):
@@ -47,6 +48,12 @@ class Learner:
 
     def train(self, batch, cnt):
         feature, advantage, old_prediction, action = zip(*batch)
+
+        feature = np.asarray(feature)
+        advantage = np.asarray(advantage)
+        old_prediction = np.asarray(old_prediction)
+        action = np.asarray(action)
+        print(f"batch shape: feature:{feature.shape}, advantage:{advantage.shape}")
         actor_loss = self.actor.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
                                     verbose=False)
         # writer
