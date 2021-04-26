@@ -220,7 +220,7 @@ def getGeneralFeature(player, additional_data = None):
         ))
 
     return np.concatenate((        
-        _getLookAheadFeature(player), #(11,34)
+        # _getLookAheadFeature(player), #(11,34)
         _getSelfTiles(player), #(12,34)
         _getDoraList(player), #(5,34)
         _getBoard1(player), #(5,34)
