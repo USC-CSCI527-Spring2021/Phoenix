@@ -178,14 +178,14 @@ def getGeneralFeature(player, additional_data = None):
         :param player:
         :return:
         """
-        if player.config.isOnline:
-            return np.zeros((12, 34))
-        else:
-            return np.concatenate((
-                _getPlayerTiles(player.table.get_player(1)),
-                _getPlayerTiles(player.table.get_player(2)),
-                _getPlayerTiles(player.table.get_player(3))
-            ))
+        # if player.config.isOnline:
+        return np.zeros((12, 34))
+        # else:
+        #     return np.concatenate((
+        #         _getPlayerTiles(player.table.get_player(1)),
+        #         _getPlayerTiles(player.table.get_player(2)),
+        #         _getPlayerTiles(player.table.get_player(3))
+        #     ))
 
     def _getDoraList(player):
         dora_indicators = player.table.dora_indicators
