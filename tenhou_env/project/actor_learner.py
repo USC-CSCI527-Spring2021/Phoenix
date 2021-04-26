@@ -1,7 +1,9 @@
 import importlib
 import os
 
+import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras.optimizers import Adam
 import numpy as np
 
 from bots_battle import _set_up_bots_battle_game_logger, main as bot_battle_main
@@ -21,18 +23,22 @@ class Learner:
 
         self.actor = keras.models.load_model(os.path.join(os.getcwd(), 'models', model_type))
 
-        # state_input = self.actor.input
-        # advantage = keras.Input(shape=(1,))
-        # old_prediction = self.actor.output
-        #
-        # output = self.actor(state_input)
-        # self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
-        # self.model.compile(optimizer=Adam(lr=(LR)),
-        #                    loss=[proximal_policy_optimization_loss(
-        #                        advantage=advantage,
-        #                        old_prediction=old_prediction
-        #                    )])
-        # self.model.summary()
+        state_input = keras.Input(self.actor.input.shape[1:])
+        advantage = keras.Input(shape=(1,))
+        old_prediction = keras.Input(shape=self.actor.output.shape[1:])
+        
+
+
+        output = self.actor(state_input)
+        self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
+        self.model.compile(optimizer=Adam(learning_rate=LR),
+                           loss=[proximal_policy_optimization_loss(
+                               advantage=advantage,
+                               old_prediction=old_prediction
+                           )],
+                           metrics=[tf.keras.metrics.Accuracy(name="accuracy")])
+        print(f"{model_type} model for learner created")
+        self.model.summary()
 
     def get_weights(self):
         return self.actor.get_weights()
@@ -42,6 +48,12 @@ class Learner:
 
     def train(self, batch, cnt):
         feature, advantage, old_prediction, action = zip(*batch)
+
+        feature = np.asarray(feature)
+        advantage = np.asarray(advantage)
+        old_prediction = np.asarray(old_prediction)
+        action = np.asarray(action)
+        print(f"batch shape: feature:{feature.shape}, advantage:{advantage.shape}")
         actor_loss = self.actor.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
                                     verbose=False)
         # writer
