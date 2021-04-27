@@ -41,7 +41,6 @@ class Learner:
                            )],
                            metrics=[tf.keras.metrics.Accuracy(name="accuracy")],
                            experimental_run_tf_function=False)
-        print(f"{model_type} model for learner created")
 
     def get_weights(self):
         return self.actor.get_weights()
