@@ -257,10 +257,10 @@ def worker_test(ps, node_buffer, opt):
         print("available resources:", ray.available_resources())
         print("---------------------------------------------------")
 
-        buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
-                            node_index in range(opt.num_nodes)]
-        ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
-        print("saved successfully!!!!!")
+        # buffer_save_op = [node_buffer[node_index][model_type].save.remote() for model_type in model_types for
+        #                     node_index in range(opt.num_nodes)]
+        # ray.wait(buffer_save_op, num_returns=opt.num_nodes*5)
+        # print("saved successfully!!!!!")
 
         total_time = time.time() - init_time
 
