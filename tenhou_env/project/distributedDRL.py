@@ -98,9 +98,9 @@ class Cache():
                     q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
                     print(f"**** fetched successfully, size {q1[model_type].qsize()}")
 
-        if not q2.empty():
-            keys, values = q2.get()
-            [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
+            if not q2.empty():
+                keys, values = q2.get()
+                [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
         # self.ps_update(self.q1, self.q2, self.node_buffer)
@@ -189,24 +189,24 @@ def worker_train(ps, node_buffer, opt):
 
     agents = {}
     for model_type in model_types:
-       agent = Learner(opt, model_type)
-       weights = ray.get(ps.pull.remote(model_type))
-       agent.set_weights(weights)
-       agents[model_type] = agent
+        agent = Learner(opt, model_type)
+        weights = ray.get(ps.pull.remote(model_type))
+        agent.set_weights(weights)
+        agents[model_type] = agent
 
     cache = Cache(node_buffer)
     cache.start()
 
     cnt = 1
     while True:
-       for model_type in model_types:
-           if cache.q1[model_type].empty():
-               continue
-           batch = cache.q1[model_type].get()
-           agents[model_type].train(batch, cnt)
-       if cnt % opt.push_freq == 0:
-           cache.q2.put(agent.get_weights())
-       cnt += 1
+        for model_type in model_types:
+            if cache.q1[model_type].empty():
+                continue
+            batch = cache.q1[model_type].get()
+            agents[model_type].train(batch, cnt)
+            if cnt % opt.push_freq == 0:
+                cache.q2.put(agents[model_type].get_weights())
+            cnt += 1
 
 
 @ray.remote
@@ -216,10 +216,10 @@ def worker_rollout(ps, replay_buffer, opt):
     from options import Options
     agent = Actor(opt, job='worker', buffer=replay_buffer)
     while True:
-       weights = ray.get(ps.pull.remote())
-       agent.set_weights(weights)
-       agent.run()
-       print("******* rollout agent finished a game ******")
+        weights = ray.get(ps.pull.remote())
+        agent.set_weights(weights)
+        agent.run()
+        print("******* rollout agent finished a game ******")
 
 
 @ray.remote

@@ -52,7 +52,7 @@ class Options:
 
         self.summary_dir = ROOT_DIR + '/tboard_ray'  # Directory for storing tensorboard summary results
         self.save_dir = ROOT_DIR   # Directory for storing trained model
-        self.save_interval = int(5e5)
+        self.save_interval = int(1)
 
         self.log_dir = self.summary_dir + "/" + str(datetime.datetime.now()) + "-workers_num:" + \
                        str(self.num_workers)
