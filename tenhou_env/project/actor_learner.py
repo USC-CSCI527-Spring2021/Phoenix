@@ -6,6 +6,7 @@ from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import numpy as np
 
+
 from bots_battle import _set_up_bots_battle_game_logger, main as bot_battle_main
 from game.ai.configs.default import BotDefaultConfig
 from game.ai.utils import *
@@ -18,6 +19,8 @@ import ray
 
 class Learner:
     def __init__(self, opt, model_type):
+        from tensorflow.python.framework.ops import disable_eager_execution
+        disable_eager_execution()
         self.opt = opt
         self.model_type = model_type
 
@@ -36,7 +39,8 @@ class Learner:
                                advantage=advantage,
                                old_prediction=old_prediction
                            )],
-                           metrics=[tf.keras.metrics.Accuracy(name="accuracy")])
+                           metrics=[tf.keras.metrics.Accuracy(name="accuracy")],
+                           experimental_run_tf_function=False)
         print(f"{model_type} model for learner created")
 
     def get_weights(self):
@@ -53,9 +57,9 @@ class Learner:
         old_prediction = np.asarray(old_prediction)
         action = np.asarray(action)
         print(f"batch shape: feature:{feature.shape}, advantage:{advantage.shape}")
-        actor_loss = self.model.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
+        hist = self.model.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
                                     verbose=False)
-        print(f"epoch: {cnt}, actor loss: {actor_loss}")
+        print(f"epoch: {cnt}, actor loss: {sum(hist.loss) / len(hist.loss)}")
         # writer
         # self.writer.add_scalar('Actor loss', actor_loss.history['loss'][-1], self.gradient_steps)  
         if cnt % 500 == 0:
