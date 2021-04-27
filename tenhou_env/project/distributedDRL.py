@@ -10,6 +10,8 @@ import numpy as np
 import ray
 import tensorflow as tf
 import sys
+from tensorflow.python.framework.ops import disable_eager_execution
+disable_eager_execution()
 
 from actor_learner import Learner, Actor
 from options import Options
@@ -309,6 +311,9 @@ if __name__ == '__main__':
     # ray.init(local_mode=True)  # Local Mode
     #ray.init(address="auto")  #specify cluster address here
     ray.init()
+
+
+
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
