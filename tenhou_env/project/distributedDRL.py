@@ -203,9 +203,7 @@ def worker_train(ps, node_buffer, opt):
            if cache.q1[model_type].empty():
                continue
            batch = cache.q1[model_type].get()
-           print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
            agents[model_type].train(batch, cnt)
-           print('one batch trained')
        if cnt % opt.push_freq == 0:
            cache.q2.put(agent.get_weights())
        cnt += 1
@@ -234,9 +232,7 @@ def worker_test(ps, node_buffer, opt):
     checkpoint_times = 0
 
     while True:
-        print("start pulling weights")
         weights = ray.get(ps.get_weights.remote())
-        print("finished pulling weights")
         agent.set_weights(weights)
         start_actor_step, start_learner_step, _ = get_al_status(node_buffer)
         start_time = time.time()
