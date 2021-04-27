@@ -82,38 +82,36 @@ class Cache():
         self.node_buffer = node_buffer
         self.q1 = {k: multiprocessing.Queue(12) for k in model_types}       #store sample batch
         self.q2 = multiprocessing.Queue(3)                                  #store weights
-        # self.p1 = multiprocessing.Process(target=self.ps_update, args=(self.q1, self.q2, self.node_buffer))
-        # self.p1.daemon = True
+        self.p1 = multiprocessing.Process(target=self.ps_update, args=(self.q1, self.q2, self.node_buffer))
+        self.p1.daemon = True
+
+        #init cache
+        node_idx = np.random.choice(opt.num_nodes, 1)[0]
+        for model_type in model_types:
+            self.q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
+        print(f"successfully initialized cache")
 
     def ps_update(self, q1, q2, node_buffer):
         print('os.pid of put_data():', os.getpid())
 
-        # node_idx = np.random.choice(opt.num_nodes, 1)[0]
-        # for model_type in model_types:
-        #     q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
-        #     print(f"**** fetched successfully, size {q1[model_type].qsize()}")
-        # while True:
-        for model_type in model_types:
-            while q1[model_type].qsize() < 10:
-                node_idx = np.random.choice(opt.num_nodes, 1)[0]
-                q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
-                print(f"**** fetched successfully, size {q1[model_type].qsize()}")
+        while True:
+            for model_type in model_types:
+                while q1[model_type].qsize() < 10:
+                    node_idx = np.random.choice(opt.num_nodes, 1)[0]
+                    q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
+                    print(f"**** fetched successfully, size {q1[model_type].qsize()}")
 
-        if not q2.empty():
-            keys, values = q2.get()
-            [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
+            if not q2.empty():
+                keys, values = q2.get()
+                [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        self.update()
-        # self.p1.start()
-        # self.p1.join(15)
+        self.p1.start()
+        self.p1.join(10)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
 
-    def update(self):
-        self.ps_update(self.q1, self.q2, self.node_buffer)
-
-    # def end(self):
-    #     self.p1.terminate()
+    def end(self):
+        self.p1.terminate()
 
 
 @ray.remote
@@ -210,7 +208,6 @@ def worker_train(ps, node_buffer, opt):
             agents[model_type].train(batch, cnt)
             if cnt % opt.push_freq == 0:
                 cache.q2.put(agents[model_type].get_weights())
-                cache.update()
             cnt += 1
 
 
