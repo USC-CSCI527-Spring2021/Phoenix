@@ -9,7 +9,7 @@ class Options:
         # parameters set
         self.num_nodes = num_nodes
         self.num_workers = num_workers
-        self.num_games = 1
+        self.num_games = 5
         self.num_learners = 1
 
         self.push_freq = 20
@@ -36,7 +36,7 @@ class Options:
         # if self.weights_file:
         #     self.start_steps = self.buffer_size
 
-        self.lr = 1e-3
+        self.lr = 1e-5
         self.polyak = 0.995
 
         self.batch_size = 128

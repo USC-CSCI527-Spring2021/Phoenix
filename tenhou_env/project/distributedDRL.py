@@ -19,8 +19,9 @@ from game.ai.utils import model_types
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
-flags.DEFINE_integer("num_nodes", 1, "number of nodes")
+flags.DEFINE_integer("num_nodes", 13, "number of nodes")
 flags.DEFINE_integer("num_workers", 1, "number of workers")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 @ray.remote
@@ -309,8 +310,8 @@ def get_al_status(node_buffer):
 if __name__ == '__main__':
 
     # ray.init(local_mode=True)  # Local Mode
-    #ray.init(address="auto")  #specify cluster address here
-    ray.init()
+    ray.init(address="auto")  #specify cluster address here
+    # ray.init()
 
 
 
