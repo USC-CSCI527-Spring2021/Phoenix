@@ -4,12 +4,10 @@ import os
 from time import sleep
 
 import dill as pickle
-import kerastuner as kt
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from trainer.models import make_or_restore_model, scheduler, hypertune
+from trainer.models import make_or_restore_model, scheduler
 
 
 def argument_parse():
@@ -20,8 +18,8 @@ def argument_parse():
     parser.add_argument(
         '--num-epochs',
         type=int,
-        default=1,
-        help='number of times to go through the data, default=5000')
+        default=50,
+        help='number of times to go through the data, default=10')
     # parser.add_argument(
     #     '--batch-size',
     #     default=128,
@@ -97,7 +95,7 @@ class History(keras.callbacks.Callback):
             self.history.setdefault(k, []).append(v)
 
 
-if __name__ == "__main__":
+def main():
     # https://drive.google.com/uc\?id\=1iZpWSXRF9NlrLLwtxujLkAXk4k9KUgUN
     # f = h5py.File('logs_parser/discarded_model_dataset_sum_2021.hdf5', 'r')
     # states = f.get('hands')
@@ -107,7 +105,7 @@ if __name__ == "__main__":
     os.system("/sbin/ldconfig -N -v $(sed 's/:/ /g' <<< $LD_LIBRARY_PATH) | grep libcupti")
 
     args = argument_parse()
-    from trainer.utils import CHECKPOINT_DIR, BATCH_SIZE, create_or_join, RANDOM_SEED
+    from trainer.utils import CHECKPOINT_DIR, BATCH_SIZE, create_or_join, RANDOM_SEED, TRAIN_SPLIT
 
     tf.random.set_seed(RANDOM_SEED)
 
@@ -137,6 +135,7 @@ if __name__ == "__main__":
 
         BATCH_SIZE_PER_REPLICA = BATCH_SIZE
         BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
+        print("Total Batch Size:", BATCH_SIZE)
         # task_type, task_id = (strategy.cluster_resolver.task_type,
         #                       strategy.cluster_resolver.task_id)
         # write_model_path = write_filepath(os.path.join(create_or_join("models")), task_type, task_id)
@@ -145,7 +144,6 @@ if __name__ == "__main__":
         os.environ["TF_KERAS_RUNNING_REMOTELY"] = args.job_dir
         print("Start Training in Local")
         strategy = "local"
-
 
     # tfc.run(import kerastuner as kt
     #     entry_point=None,
@@ -161,122 +159,132 @@ if __name__ == "__main__":
     #     job_labels={"job": "discard_model"},
     #     stream_logs=True,
     # )
-    def count_class(counts, batch):
-        _, labels = list(batch)
-        for l in labels:
-            print(list(l))
-
-            if np.argmax(l) == 1:
-                counts[1] += 1
-            else:
-                counts[0] += 1
-        return counts
-
+    # def count_class(counts, batch):
+    #     _, labels = list(batch)
+    #     for l in labels:
+    #         print(list(l))
+    #
+    #         if np.argmax(l) == 1:
+    #             counts[1] += 1
+    #         else:
+    #             counts[0] += 1
+    #     return counts
 
     checkpoint_path = create_or_join(os.path.join(CHECKPOINT_DIR, args.model_type))
     log_path = create_or_join("logs/" + args.model_type + timestamp)
     meta = tf.io.gfile.GFile(create_or_join('processed_data/{}/{}_meta'.format(args.model_type, args.model_type)), 'rb')
     preprocess_data = pickle.load(meta)
 
-
     def read_tfrecord(serialized_example):
-        example = tf.io.parse_example(serialized_example, preprocess_data.input_feature_spec)
+        example = tf.io.parse_single_example(serialized_example, preprocess_data.input_feature_spec)
         features = example['features']
         labels = example['labels']
         return features, labels
-
 
     class_weight = None
     num_classes = len(preprocess_data.classes_distribution)
     if args.class_weight:
         class_weight = {}
         for i in range(num_classes):
-            class_weight[i] = preprocess_data.total / (num_classes * preprocess_data.classes_distribution[i])
+            class_weight[i] = (1 / preprocess_data.classes_distribution[i]) * preprocess_data.total / 2.0
         print('Weight for classes:', class_weight)
-        train_tfrecords = tf.io.gfile.glob(
-            create_or_join("processed_data/{}/".format(args.model_type)) + "train-dataset*")
-        val_tfrecords = tf.io.gfile.glob(create_or_join("processed_data/{}/".format(args.model_type)) + "eval-dataset*")
+        tfrecords = tf.io.gfile.glob(
+            create_or_join("processed_data/{}/".format(args.model_type)) + "train*")
+        # tfrecords = tf.io.gfile.glob(
+        #     create_or_join("processed_data/{}/".format(args.model_type)) + "*-dataset*")
+        dataset = tf.data.TFRecordDataset(tfrecords).shuffle(BUFFER_SIZE, seed=RANDOM_SEED)
+        ts = int(preprocess_data.total * TRAIN_SPLIT)
+        train_dataset = dataset.take(ts).shuffle(BUFFER_SIZE,
+                                                 seed=RANDOM_SEED,
+                                                 reshuffle_each_iteration=True).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
+        test_dataset = dataset.skip(ts).take((preprocess_data.total - ts) // 2).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
+        val_dataset = dataset.skip(ts + ((preprocess_data.total - ts) // 2)).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
     else:
         # oversampling
         train_tfrecords = tf.io.gfile.glob(
             create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "train-dataset*")
         val_tfrecords = tf.io.gfile.glob(
             create_or_join("with_oversampling_data/{}/".format(args.model_type)) + "eval-dataset*")
+        train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE,
+                                                                         seed=RANDOM_SEED).batch(
+            BATCH_SIZE)
+        val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
+            .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
-    train_dataset = tf.data.TFRecordDataset(train_tfrecords).map(read_tfrecord) \
-        .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    val_dataset = tf.data.TFRecordDataset(val_tfrecords).map(read_tfrecord) \
-        .prefetch(buffer_size=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
-
-    if args.hypertune:
-        tuner = kt.Hyperband(
-            hypermodel=hypertune,
-            objective='val_categorical_accuracy',
-            max_epochs=500,
-            factor=2,
-            hyperband_iterations=5,
-            distribution_strategy=tf.distribute.MirroredStrategy(),
-            directory=create_or_join("hyper_results_dir"),
-            project_name='mahjong')
-        print("hypertune: {}".format(args.model_type))
-        tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                     validation_steps=1000,
-                     callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
+    # if args.hypertune:
+    #     tuner = kt.Hyperband(
+    #         hypermodel=hypertune,
+    #         objective='val_categorical_accuracy',
+    #         max_epochs=500,
+    #         factor=2,
+    #         hyperband_iterations=5,
+    #         distribution_strategy=tf.distribute.MirroredStrategy(),
+    #         directory=create_or_join("hyper_results_dir"),
+    #         project_name='mahjong')
+    #     print("hypertune: {}".format(args.model_type))
+    #     tuner.search(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+    #                  validation_steps=1000,
+    #                  callbacks=[keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy')])
+    # else:
+    input_shape = tuple(list(train_dataset.take(1))[0][0].shape[1:])
+    mahjongModel = make_or_restore_model(input_shape, args.model_type, strategy)
+    if args.model_type == 'discard':
+        callbacks = [
+            keras.callbacks.TensorBoard(log_dir=create_or_join("logs/" + args.model_type + timestamp),
+                                        update_freq='batch', histogram_freq=1),
+            # tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                                              patience=2, min_lr=0.001),
+            keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
+            keras.callbacks.LearningRateScheduler(scheduler),
+            keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                            monitor='val_categorical_accuracy',
+                                            save_freq=1000,
+                                            ),
+        ]
     else:
-        input_shape = list(train_dataset.take(1))[0][0].shape[1:]
-        if args.model_type == 'discard':
-            model = make_or_restore_model(input_shape, args.model_type, strategy)
-            callbacks = [
-                keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
-                keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy'),
-                keras.callbacks.LearningRateScheduler(scheduler),
-                keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                monitor='val_categorical_accuracy',
-                                                save_freq=5000,
-                                                )
-            ]
-        else:
-            # if args.model_type == 'chi':
-            #     input_shape = (74, 34, 1)
-            # elif args.model_type == 'pon':
-            #     input_shape = (74, 34, 1)
-            #     # types = 1
-            #     # generator = FG.PonFeatureGenerator()
-            # elif args.model_type == 'kan':
-            #     input_shape = (77, 34, 1)
-            #     # types = 2
-            # elif args.model_type == 'riichi':
-            #     input_shape = (73, 34, 1)
-            # types = 3
-            model = make_or_restore_model(input_shape, args.model_type, strategy)
-            callbacks = [
-                keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
-                tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
-                keras.callbacks.EarlyStopping(monitor='accuracy'),
-                keras.callbacks.LearningRateScheduler(scheduler),
-                keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                monitor='val_accuracy',
-                                                save_freq=1000,
-                                                ),
-            ]
-        try:
-            model.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
-                      steps_per_epoch=3,
-                      class_weight=class_weight,
-                      validation_steps=1000,
-                      use_multiprocessing=True,
-                      workers=-1,
-                      callbacks=callbacks)
-        except KeyboardInterrupt:
-            model.save(os.path.join(create_or_join("models"), args.model_type))
-            model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
-            print('Keyboard Interrupted, Model and weights saved')
-            import sys
+        callbacks = [
+            keras.callbacks.TensorBoard(log_dir=log_path, update_freq='batch', histogram_freq=1),
+            # tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=create_or_join("model_backup")),
+            keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                                              patience=2, min_lr=0.001),
+            keras.callbacks.EarlyStopping(monitor='val_accuracy'),
+            keras.callbacks.LearningRateScheduler(scheduler),
+            keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                            monitor='val_accuracy',
+                                            save_freq=1000,
+                                            ),
+        ]
+    try:
+        mahjongModel.fit(train_dataset, epochs=args.num_epochs, validation_data=val_dataset,
+                         class_weight=class_weight,
+                         shuffle=True,
+                         validation_steps=1000,
+                         use_multiprocessing=True,
+                         workers=-1,
+                         callbacks=callbacks)
 
-            sys.exit(0)
-        model.save(os.path.join(create_or_join("models"), args.model_type))
-        model.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        mahjongModel.save(os.path.join(create_or_join("models"), args.model_type))
+        mahjongModel.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        print("Evaluate on test data")
+        res = mahjongModel.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
+        print("test loss, test acc:", res)
+
+    except KeyboardInterrupt or InterruptedError:
+        print("Evaluate on test data")
+        res = mahjongModel.evaluate(test_dataset, batch_size=BATCH_SIZE, verbose=1)
+        print("test loss, test acc:", res)
+
+        mahjongModel.save(os.path.join(create_or_join("models"), args.model_type))
+        mahjongModel.save_weights(create_or_join(f"models_weights/{args.model_type}/"))
+        print('Keyboard Interrupted, Model and weights saved')
+        import sys
+        sys.exit(0)
+
         # save_model(os.path.join(create_or_join("models"), args.model_type), model)
 
         # if not args.cloud_train:
@@ -297,3 +305,7 @@ if __name__ == "__main__":
     #     if not _is_chief(task_type, task_id):
     #         tf.io.gfile.rmtree(os.path.dirname(write_model_path))
     # sys.stdout.close()
+
+
+if __name__ == "__main__":
+    main()

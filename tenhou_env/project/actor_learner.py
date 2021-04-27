@@ -1,6 +1,6 @@
 import importlib
 import os
-
+import datetime
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
@@ -29,11 +29,10 @@ class Learner:
         state_input = keras.Input(self.actor.input.shape[1:])
         advantage = keras.Input(shape=(1,))
         old_prediction = keras.Input(shape=self.actor.output.shape[1:])
-        
-
 
         output = self.actor(state_input)
         self.model = keras.Model(inputs=[state_input, advantage, old_prediction], outputs=[output])
+
         self.model.compile(optimizer=Adam(learning_rate=LR),
                            loss=[proximal_policy_optimization_loss(
                                advantage=advantage,
@@ -56,8 +55,9 @@ class Learner:
         old_prediction = np.asarray(old_prediction)
         action = np.asarray(action)
         print(f"batch shape: feature:{feature.shape}, advantage:{advantage.shape}")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         hist = self.model.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
-                                    verbose=False)
+                              callbacks=[keras.callbacks.TensorBoard(log_dir=self.opt.save_dir+"/logs/learner_model_"+timestamp, update_freq='batch', histogram_freq=1)], verbose=False)
         print(f"epoch: {cnt}, actor loss: {sum(hist['loss']) / len(hist['loss'])}")
         # writer
         # self.writer.add_scalar('Actor loss', actor_loss.history['loss'][-1], self.gradient_steps)  
