@@ -190,15 +190,15 @@ def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
 
-    agents = {}
-    for model_type in model_types:
-        agent = Learner(opt, model_type)
-        weights = ray.get(ps.pull.remote(model_type))
-        agent.set_weights(weights)
-        agents[model_type] = agent
+    #agents = {}
+    #for model_type in model_types:
+    #    agent = Learner(opt, model_type)
+    #    weights = ray.get(ps.pull.remote(model_type))
+    #    agent.set_weights(weights)
+    #    agents[model_type] = agent
 
-    cache = Cache(node_buffer)
-    cache.start()
+    #cache = Cache(node_buffer)
+    #cache.start()
 
     cnt = 1
     #while True:
@@ -237,7 +237,9 @@ def worker_test(ps, node_buffer, opt):
     checkpoint_times = 0
 
     while True:
+        print("start pulling weights")
         weights = ray.get(ps.get_weights.remote())
+        print("finished pulling weights")
         agent.set_weights(weights)
         start_actor_step, start_learner_step, _ = get_al_status(node_buffer)
         start_time = time.time()
