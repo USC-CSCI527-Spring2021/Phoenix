@@ -19,4 +19,4 @@ RUN pip install google-api-python-client==1.7.8
 COPY models ./models
 RUN export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
 
-USER ray
+USER root

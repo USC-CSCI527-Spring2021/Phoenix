@@ -171,7 +171,8 @@ setup_commands:
 head_setup_commands:
 #  - pip install google-api-python-client==1.7.8
 #  - export GOOGLE_APPLICATION_CREDENTIALS="/home/ray/bingling.json"
-#  - export PYTHONPATH=PYTHONPATH:/Phoenix
+  - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
+  - python setup.py install
 #  - git fetch && git checkout experiment_RL && git pull
   - sudo chmod 0777 /home/ray/*
 
@@ -181,6 +182,8 @@ worker_setup_commands:
 #  - pip install google-api-python-client==1.7.8
 #  - export GOOGLE_APPLICATION_CREDENTIALS="/home/ray/bingling.json"
 #  - git fetch && git checkout experiment_RL && git pull
+  - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
+  - python setup.py install
   - sudo chmod 0777 /home/ray/*
 #  - cd Phoenix && git fetch && git checkout experiment_RL
 
