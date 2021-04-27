@@ -12,7 +12,7 @@ class Options:
         self.num_games = 1
         self.num_learners = 1
 
-        self.push_freq = 100
+        self.push_freq = 20
 
         self.gamma = 0.99
 
