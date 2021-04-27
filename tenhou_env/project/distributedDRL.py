@@ -91,21 +91,21 @@ class Cache():
         for model_type in model_types:
             q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
             print(f"**** fetched successfully, size {q1[model_type].qsize()}")
-        # while True:
-        for model_type in model_types:
-            if q1[model_type].qsize() < 10:
-                node_idx = np.random.choice(opt.num_nodes, 1)[0]
-                q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
-                print(f"**** fetched successfully, size {q1[model_type].qsize()}")
+        while True:
+            for model_type in model_types:
+                if q1[model_type].qsize() < 10:
+                    node_idx = np.random.choice(opt.num_nodes, 1)[0]
+                    q1[model_type].put(copy.deepcopy(ray.get(node_buffer[node_idx][model_type].sample_batch.remote())))
+                    print(f"**** fetched successfully, size {q1[model_type].qsize()}")
 
         if not q2.empty():
             keys, values = q2.get()
             [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        self.ps_update(self.q1, self.q2, self.node_buffer)
-        # self.p1.start()
-        # self.p1.join(15)
+        # self.ps_update(self.q1, self.q2, self.node_buffer)
+        self.p1.start()
+        self.p1.join(15)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
 
     def end(self):
