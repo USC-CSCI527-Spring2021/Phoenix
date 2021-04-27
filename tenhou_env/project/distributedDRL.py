@@ -30,7 +30,7 @@ class ReplayBuffer:
         self.ptr, self.size, self.max_size = 0, 0, opt.buffer_size
         self.buf = [[]] * self.max_size
         self.actor_steps, self.learner_steps = 0, 0
-        #self.load()
+        self.load()
 
     def store(self, sample):
         self.buf[self.ptr] = sample
@@ -101,7 +101,7 @@ class Cache():
             [node_ps[i].push.remote(keys, values) for i in range(opt.num_nodes)]
 
     def start(self):
-        #self.ps_update(self.q1, self.q2, self.node_buffer)
+        self.ps_update(self.q1, self.q2, self.node_buffer)
         # self.p1.start()
         # self.p1.join(15)
         print(f"#######******* size of qsize {[self.q1[model_type].qsize() for model_type in model_types]} ******#####")
@@ -138,11 +138,6 @@ class ParameterServer:
 
         if not checkpoint_path:
             checkpoint_path = opt.save_dir + "/checkpoint"
-
-        # if opt.recover:
-        #     with open(checkpoint_path + "/checkpoint_weights.pickle", "rb") as pickle_in:
-        #         self.weights = pickle.load(pickle_in)
-        #         print("****** weights restored! ******")
 
         if weights_files:
             assert len(weights_files) == 6, f"only {len(weights_files)} model files, need 6"
@@ -190,28 +185,28 @@ def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
 
-    #agents = {}
-    #for model_type in model_types:
-    #    agent = Learner(opt, model_type)
-    #    weights = ray.get(ps.pull.remote(model_type))
-    #    agent.set_weights(weights)
-    #    agents[model_type] = agent
+    agents = {}
+    for model_type in model_types:
+       agent = Learner(opt, model_type)
+       weights = ray.get(ps.pull.remote(model_type))
+       agent.set_weights(weights)
+       agents[model_type] = agent
 
-    #cache = Cache(node_buffer)
-    #cache.start()
+    cache = Cache(node_buffer)
+    cache.start()
 
     cnt = 1
-    #while True:
-    #    for model_type in model_types:
-    #        if cache.q1[model_type].empty():
-    #            continue
-    #        batch = cache.q1[model_type].get()
-    #        print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
-    #        agents[model_type].train(batch, cnt)
-    #        print('one batch trained')
-    #    if cnt % opt.push_freq == 0:
-    #        cache.q2.put(agent.get_weights())
-    #    cnt += 1
+    while True:
+       for model_type in model_types:
+           if cache.q1[model_type].empty():
+               continue
+           batch = cache.q1[model_type].get()
+           print(f" ******* get batch of size {len(batch)} for model {model_type} *********")
+           agents[model_type].train(batch, cnt)
+           print('one batch trained')
+       if cnt % opt.push_freq == 0:
+           cache.q2.put(agent.get_weights())
+       cnt += 1
 
 
 @ray.remote
@@ -219,12 +214,12 @@ def worker_rollout(ps, replay_buffer, opt):
 
     from actor_learner import Learner, Actor
     from options import Options
-    #agent = Actor(opt, job='worker', buffer=replay_buffer)
-    #while True:
-    #    weights = ray.get(ps.pull.remote())
-    #    agent.set_weights(weights)
-    #    agent.run()
-    #    print("******* rollout agent finished a game ******")
+    agent = Actor(opt, job='worker', buffer=replay_buffer)
+    while True:
+       weights = ray.get(ps.pull.remote())
+       agent.set_weights(weights)
+       agent.run()
+       print("******* rollout agent finished a game ******")
 
 
 @ray.remote
