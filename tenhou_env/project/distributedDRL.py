@@ -4,11 +4,14 @@ import multiprocessing
 import os
 import pickle
 import time
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import keras
 import numpy as np
 import ray
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
 import sys
 from tensorflow.python.framework.ops import disable_eager_execution
 disable_eager_execution()
@@ -21,7 +24,6 @@ flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
 flags.DEFINE_integer("num_nodes", 13, "number of nodes")
 flags.DEFINE_integer("num_workers", 1, "number of workers")
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 @ray.remote

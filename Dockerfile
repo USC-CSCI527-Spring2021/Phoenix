@@ -1,6 +1,7 @@
 FROM rayproject/ray-ml:latest-cpu
 
 WORKDIR /home/ray/
+USER root
 RUN git clone https://github.com/USC-CSCI527-Spring2021/Phoenix.git && cd Phoenix && git fetch && git checkout experiment_RL
 #
 #COPY requirements.txt ./requirements.txt
@@ -11,6 +12,8 @@ RUN git clone https://github.com/USC-CSCI527-Spring2021/Phoenix.git && cd Phoeni
 WORKDIR /home/ray/Phoenix
 RUN pip install --no-cache-dir -r ./requirements.txt
 RUN pip install google-api-python-client==1.7.8
+RUN python setup.py install
+#RUN chmod 644 /home/ray/
 #
 #COPY extract_features ./extract_features
 #COPY logs_parser ./logs_parser
@@ -18,5 +21,5 @@ RUN pip install google-api-python-client==1.7.8
 #COPY tenhou_env/project ./tenhou_env/project
 COPY models ./models
 RUN export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
+#RUN chmod 400 /home/ray/ray_bootstrap_key.pem
 
-USER root
