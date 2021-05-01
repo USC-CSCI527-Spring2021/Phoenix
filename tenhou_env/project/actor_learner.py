@@ -58,7 +58,7 @@ class Learner:
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         hist = self.model.fit(x=[np.asarray(feature), np.asarray(advantage), np.asarray(old_prediction)], y=[np.asarray(action)], shuffle=True, epochs=EPOCHS,
                               callbacks=[keras.callbacks.TensorBoard(log_dir=self.opt.save_dir+"/logs/learner_model_"+timestamp, update_freq='batch', histogram_freq=1)], verbose=False)
-        print(f"epoch: {cnt}, actor loss: {sum(hist['loss']) / len(hist['loss'])}")
+        # print(f"epoch: {cnt}, actor loss: {sum(hist['loss']) / len(hist['loss'])}")
         # writer
         # self.writer.add_scalar('Actor loss', actor_loss.history['loss'][-1], self.gradient_steps)  
         if cnt % 500 == 0:
