@@ -9,7 +9,7 @@ class Options:
         # parameters set
         self.num_nodes = num_nodes
         self.num_workers = num_workers
-        self.num_games = 5
+        self.num_games = 10
         self.num_learners = 1
 
         self.push_freq = 20
@@ -20,7 +20,7 @@ class Options:
         # self.weights_file = weights_file
 
         self.recover = False
-        self.checkpoint_freq = 21600  # 21600s = 6h
+        self.checkpoint_freq = 10800  # 21600s = 6h 10800=3h
 
         # gpu memory fraction
         self.gpu_fraction = 0.3
