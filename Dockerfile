@@ -13,6 +13,7 @@ WORKDIR /home/ray/Phoenix
 RUN pip install --no-cache-dir -r ./requirements.txt
 RUN pip install google-api-python-client==1.7.8
 RUN python setup.py install
+
 #RUN chmod 644 /home/ray/
 #
 #COPY extract_features ./extract_features
@@ -22,4 +23,6 @@ RUN python setup.py install
 COPY models ./models
 RUN export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
 #RUN chmod 400 /home/ray/ray_bootstrap_key.pem
-
+RUN pip uninstall mahjong
+WORKDIR /home/ray/Phoenix/tenhou_env
+RUN pip install -r requirements/lint.txt

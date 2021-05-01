@@ -258,7 +258,7 @@ class GameManager:
                 # but our hand doesn't contain any yaku
                 # in that case we can't call ron
                 if not current_client.player.in_riichi:
-                    result = current_client.player.ai.estimate_hand_value_or_get_from_cache(
+                    result = current_client.player.ai._estimate_hand_value_or_get_from_cache(
                         drawn_tile_34, is_tsumo=True, is_rinshan=current_client.is_rinshan
                     )
                     can_win = result.error is None
@@ -574,7 +574,7 @@ class GameManager:
         # but our hand doesn't contain any yaku
         # in that case we can't call ron
         if not client.player.in_riichi:
-            result = client.player.ai.estimate_hand_value_or_get_from_cache(
+            result = client.player.ai._estimate_hand_value_or_get_from_cache(
                 win_tile // 4,
                 is_tsumo=False,
                 is_chankan=is_chankan,
