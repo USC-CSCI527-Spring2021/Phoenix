@@ -23,7 +23,7 @@ from game.ai.utils import model_types
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
 flags.DEFINE_integer("num_nodes", 1, "number of nodes")
-flags.DEFINE_integer("num_workers", 3, "number of workers")
+flags.DEFINE_integer("num_workers", 10, "number of workers")
 
 
 @ray.remote
@@ -186,7 +186,7 @@ class ParameterServer:
             print("******* PS saved successfully ********")
 
 
-@ray.remote(num_cpus=2, num_gpus=0, max_calls=1)  # centralized training
+@ray.remote(num_cpus=6, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
@@ -213,7 +213,7 @@ def worker_train(ps, node_buffer, opt):
             cnt += 1
 
 
-@ray.remote(num_cpus=2)
+@ray.remote(num_cpus=3)
 def worker_rollout(ps, replay_buffer, opt):
 
     from actor_learner import Learner, Actor
