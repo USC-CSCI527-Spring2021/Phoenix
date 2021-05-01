@@ -154,8 +154,6 @@ initialization_commands: [ ]
 # List of shell commands to run to set up nodes.
 setup_commands:
   - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
-  -
-  - chmod 777 /home/ray/ray_bootstrap_config.yaml
 #  - sudo apt install -y curl
 #  - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 #  - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
@@ -171,22 +169,24 @@ setup_commands:
 
 # Custom commands that will be run on the head node after common setup.
 head_setup_commands:
+  - sudo chown ray /home/ray/ray_bootstrap_key.pem
+  - sudo chown ray /home/ray/ray_bootstrap_config.yaml
 #  - pip install google-api-python-client==1.7.8
 #  - export GOOGLE_APPLICATION_CREDENTIALS="/home/ray/bingling.json"
-  - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
-  - python setup.py install
+#  - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
+#  - python setup.py install
 #  - git fetch && git checkout experiment_RL && git pull
-  - chmod 400 /home/ray/ray_bootstrap_key.pem
+#  - chmod 400 /home/ray/ray_bootstrap_key.pem
 
 
 # Custom commands that will be run on worker nodes after common setup.
-worker_setup_commands:
+worker_setup_commands: []
 #  - pip install google-api-python-client==1.7.8
 #  - export GOOGLE_APPLICATION_CREDENTIALS="/home/ray/bingling.json"
 #  - git fetch && git checkout experiment_RL && git pull
 #  - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
 #  - python setup.py install
-  - chmod 400 /home/ray/ray_bootstrap_key.pem
+#  - chmod 400 /home/ray/ray_bootstrap_key.pem
 #  - cd Phoenix && git fetch && git checkout experiment_RL
 
 # Command to start ray on the head node. You don't need to change this.

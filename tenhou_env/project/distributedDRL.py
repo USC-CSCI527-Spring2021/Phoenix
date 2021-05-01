@@ -22,7 +22,7 @@ from game.ai.utils import model_types
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
-flags.DEFINE_integer("num_nodes", 1, "number of nodes")
+flags.DEFINE_integer("num_nodes", 9, "number of nodes")
 flags.DEFINE_integer("num_workers", 1, "number of workers")
 
 
