@@ -22,8 +22,8 @@ from game.ai.utils import model_types
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
-flags.DEFINE_integer("num_nodes", 16, "number of nodes")
-flags.DEFINE_integer("num_workers", 1, "number of workers")
+flags.DEFINE_integer("num_nodes", 5, "number of nodes")
+flags.DEFINE_integer("num_workers", 8, "number of workers")
 
 
 @ray.remote
@@ -116,7 +116,7 @@ class Cache():
         self.p1.terminate()
 
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class ParameterServer:
     """
     One PS contains 1 or 4 clients weights
@@ -186,7 +186,7 @@ class ParameterServer:
             print("******* PS saved successfully ********")
 
 
-@ray.remote(num_cpus=10, num_gpus=0, max_calls=1)  # centralized training
+@ray.remote(num_cpus=5, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
