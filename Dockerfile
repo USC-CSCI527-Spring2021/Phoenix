@@ -23,6 +23,3 @@ RUN python setup.py install
 COPY models ./models
 RUN export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
 #RUN chmod 400 /home/ray/ray_bootstrap_key.pem
-RUN pip uninstall mahjong
-WORKDIR /home/ray/Phoenix/tenhou_env
-RUN pip install -r requirements/lint.txt
