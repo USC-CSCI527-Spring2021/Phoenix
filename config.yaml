@@ -174,8 +174,8 @@ setup_commands:
 head_setup_commands:
   - sudo chown ray /home/ray/ray_bootstrap_key.pem
   - sudo chown ray /home/ray/ray_bootstrap_config.yaml
-  - export RAYLET_PERFTOOLS_PATH=/usr/lib/x86_64-linux-gnu/libprofiler.so
-  - export RAYLET_PERFTOOLS_LOGFILE=/tmp/pprof.out
+#  - export RAYLET_PERFTOOLS_PATH=/usr/lib/x86_64-linux-gnu/libprofiler.so
+#  - export RAYLET_PERFTOOLS_LOGFILE=/tmp/pprof.out
 #  - pip install google-api-python-client==1.7.8
 #  - export GOOGLE_APPLICATION_CREDENTIALS="/home/ray/bingling.json"
 #  - export PYTHONPATH=PYTHONPATH:/home/ray/Phoenix
