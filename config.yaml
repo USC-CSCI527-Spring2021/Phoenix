@@ -185,7 +185,9 @@ head_setup_commands:
 
 
 # Custom commands that will be run on worker nodes after common setup.
-worker_setup_commands: []
+worker_setup_commands:
+  - sudo chown ray /home/ray/ray_bootstrap_key.pem
+  - sudo chown ray /home/ray/ray_bootstrap_config.yaml
 #  - pip install google-api-python-client==1.7.8
 #  - export GOOGLE_APPLICATION_CREDENTIALS="/home/ray/bingling.json"
 #  - git fetch && git checkout experiment_RL && git pull

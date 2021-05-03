@@ -29,9 +29,7 @@ flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
 flags.DEFINE_integer("num_nodes", 1, "number of nodes")
 flags.DEFINE_integer("num_workers", 3, "number of workers")
-pg = placement_group([{"CPU": 16}, {"CPU": 4}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
-# Wait until placement group is created.
-ray.get(pg.ready())
+
 
 @ray.remote
 class ReplayBuffer:
@@ -314,6 +312,9 @@ def get_al_status(node_buffer):
 #         self.num_workers = num_workers
 
 if __name__ == '__main__':
+    pg = placement_group([{"CPU": 16}, {"CPU": 4}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
+    # Wait until placement group is created.
+    ray.get(pg.ready())
 
     # ray.init(local_mode=True)  # Local Mode
     ray.init(address="auto")  #specify cluster address here
