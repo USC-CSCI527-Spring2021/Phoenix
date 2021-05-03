@@ -217,6 +217,41 @@ class Phoenix:
         self.hand_cache_shanten[key] = result
         return result
 
+    def estimate_hand_value_or_get_from_cache(
+        self, win_tile_34, tiles=None, call_riichi=False, is_tsumo=False, is_rinshan=False, is_chankan=False
+    ):
+        win_tile_136 = win_tile_34 * 4
+
+        # we don't need to think, that our waiting is aka dora
+        if win_tile_136 in AKA_DORA_LIST:
+            win_tile_136 += 1
+
+        if not tiles:
+            tiles = self.player.tiles[:]
+        else:
+            tiles = tiles[:]
+
+        tiles += [win_tile_136]
+
+        config = HandConfig(
+            is_riichi=call_riichi,
+            player_wind=self.player.player_wind,
+            round_wind=self.player.table.round_wind_tile,
+            is_tsumo=is_tsumo,
+            is_rinshan=is_rinshan,
+            is_chankan=is_chankan,
+            options=OptionalRules(
+                has_aka_dora=self.player.table.has_aka_dora,
+                has_open_tanyao=self.player.table.has_open_tanyao,
+                has_double_yakuman=False,
+            ),
+            tsumi_number=self.player.table.count_of_honba_sticks,
+            kyoutaku_number=self.player.table.count_of_riichi_sticks,
+        )
+
+        return self._estimate_hand_value_or_get_from_cache(
+            win_tile_136, tiles, call_riichi, is_tsumo, 0, config, is_rinshan, is_chankan
+        )
 
     def calculate_exact_hand_value_or_get_from_cache(
         self,
