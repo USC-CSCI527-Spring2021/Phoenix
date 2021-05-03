@@ -19,16 +19,11 @@ disable_eager_execution()
 from actor_learner import Learner, Actor
 from options import Options
 from game.ai.utils import model_types
-from ray.util.placement_group import (
-    placement_group,
-    placement_group_table,
-    remove_placement_group
-)
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
-flags.DEFINE_integer("num_nodes", 16, "number of nodes")
-flags.DEFINE_integer("num_workers", 3, "number of workers")
+flags.DEFINE_integer("num_nodes", 4, "number of nodes")
+flags.DEFINE_integer("num_workers", 8, "number of workers")
 
 
 @ray.remote
@@ -191,7 +186,7 @@ class ParameterServer:
             print("******* PS saved successfully ********")
 
 
-@ray.remote(num_cpus=6, num_gpus=0, max_calls=1)  # centralized training
+@ray.remote(num_cpus=5, num_gpus=0, max_calls=1)  # centralized training
 def worker_train(ps, node_buffer, opt):
     from actor_learner import Learner, Actor
     from options import Options
@@ -218,7 +213,7 @@ def worker_train(ps, node_buffer, opt):
             cnt += 1
 
 
-@ray.remote(num_cpus=1)
+@ray.remote(num_cpus=2)
 def worker_rollout(ps, replay_buffer, opt):
 
     from actor_learner import Learner, Actor
@@ -316,9 +311,8 @@ if __name__ == '__main__':
     # ray.init(local_mode=True)  # Local Mode
     ray.init(address="auto")  #specify cluster address here
     # ray.init()
-    pg = placement_group([{"CPU": 1}, {"CPU": 6}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
-    # Wait until placement group is created.
-    ray.get(pg.ready())
+
+
 
     node_ps = []
     node_buffer = []
@@ -327,22 +321,15 @@ if __name__ == '__main__':
     # optref = ray.put(opt)
     for node_index in range(FLAGS.num_nodes):
         node_ps.append(
-            ParameterServer.options(
-                placement_group=pg,
-                placement_group_bundle_index=0
-            ).remote(opt, node_index, [f'{os.getcwd()}/{f}' for f in
+            ParameterServer.remote(opt, node_index,
+                                        [f'{os.getcwd()}/{f}' for f in
                                             glob.glob('models/*') if
                                             "." not in f], ""))
-
         print(f"Node{node_index} Parameter Server all set.")
 
         node_buffer.append(
-            {model_type: ReplayBuffer.options(
-                placement_group=pg,
-                placement_group_bundle_index=0
-            ).remote(opt, node_index, model_type) for
+            {model_type: ReplayBuffer.remote(opt, node_index, model_type) for
              model_type in model_types})
-
         print(f"Node{node_index} Experience buffer all set.")
 
         #create buffer path
@@ -350,11 +337,8 @@ if __name__ == '__main__':
         if not os.path.exists(buffer_save_path):
             os.mkdir(buffer_save_path)
 
-        for i in range(FLAGS.num_workers if node_index == 0 else 1):
-            worker_rollout.options(
-                placement_group=pg,
-                placement_group_bundle_index=0
-            ).remote(node_ps[node_index], node_buffer[node_index], opt)
+        for i in range(FLAGS.num_workers):
+            worker_rollout.remote(node_ps[node_index], node_buffer[node_index], opt)
                                                                                     
             time.sleep(0.19)
         print(f"Node{node_index} roll out worker all up.")
@@ -371,13 +355,7 @@ if __name__ == '__main__':
         pickle.dump(nodes_info, pickle_out)
         print("****** save nodes_info ******")
 
-    task_train = worker_train.options(
-                placement_group=pg,
-                placement_group_bundle_index=1
-            ).remote(node_ps[0], node_buffer, opt)
+    task_train = worker_train.remote(node_ps[0], node_buffer, opt)
 
-    task_test = worker_test.options(
-                placement_group=pg,
-                placement_group_bundle_index=0
-            ).remote(node_ps[0], node_buffer, opt)
+    task_test = worker_test.remote(node_ps[0], node_buffer, opt)
     ray.wait([task_test])
