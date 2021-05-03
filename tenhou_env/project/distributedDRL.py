@@ -312,14 +312,14 @@ def get_al_status(node_buffer):
 #         self.num_workers = num_workers
 
 if __name__ == '__main__':
-    pg = placement_group([{"CPU": 16}, {"CPU": 4}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
 
     # ray.init(local_mode=True)  # Local Mode
     ray.init(address="auto")  #specify cluster address here
     # ray.init()
+    pg = placement_group([{"CPU": 16}, {"CPU": 4}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
     # Wait until placement group is created.
     ray.get(pg.ready())
-    
+
     node_ps = []
     node_buffer = []
     opt = Options(FLAGS.num_nodes, FLAGS.num_workers)
