@@ -316,7 +316,7 @@ if __name__ == '__main__':
     # ray.init(local_mode=True)  # Local Mode
     ray.init(address="auto")  #specify cluster address here
     # ray.init()
-    pg = placement_group([{"CPU": 16}, {"CPU": 4}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
+    pg = placement_group([{"CPU": 1}, {"CPU": 6}], strategy="STRICT_SPREAD", lifetime="detached", name="mahjong")
     # Wait until placement group is created.
     ray.get(pg.ready())
 
@@ -329,7 +329,7 @@ if __name__ == '__main__':
         node_ps.append(
             ParameterServer.options(
                 placement_group=pg,
-                placement_group_bundle_index=0 if node_index == 0 else 1
+                placement_group_bundle_index=0
             ).remote(opt, node_index, [f'{os.getcwd()}/{f}' for f in
                                             glob.glob('models/*') if
                                             "." not in f], ""))
@@ -339,7 +339,7 @@ if __name__ == '__main__':
         node_buffer.append(
             {model_type: ReplayBuffer.options(
                 placement_group=pg,
-                placement_group_bundle_index=0 if node_index == 0 else 1
+                placement_group_bundle_index=0
             ).remote(opt, node_index, model_type) for
              model_type in model_types})
 
@@ -353,7 +353,7 @@ if __name__ == '__main__':
         for i in range(FLAGS.num_workers if node_index == 0 else 1):
             worker_rollout.options(
                 placement_group=pg,
-                placement_group_bundle_index=0 if node_index == 0 else 1
+                placement_group_bundle_index=0
             ).remote(node_ps[node_index], node_buffer[node_index], opt)
                                                                                     
             time.sleep(0.19)
@@ -373,7 +373,7 @@ if __name__ == '__main__':
 
     task_train = worker_train.options(
                 placement_group=pg,
-                placement_group_bundle_index=0
+                placement_group_bundle_index=1
             ).remote(node_ps[0], node_buffer, opt)
 
     task_test = worker_test.options(
