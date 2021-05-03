@@ -27,7 +27,7 @@ from ray.util.placement_group import (
 
 flags = tf.compat.v1.flags
 FLAGS = tf.compat.v1.flags.FLAGS
-flags.DEFINE_integer("num_nodes", 1, "number of nodes")
+flags.DEFINE_integer("num_nodes", 16, "number of nodes")
 flags.DEFINE_integer("num_workers", 3, "number of workers")
 
 
