@@ -348,7 +348,7 @@ if __name__ == '__main__':
         if not os.path.exists(buffer_save_path):
             os.mkdir(buffer_save_path)
 
-        for i in range(FLAGS.num_workers):
+        for i in range(FLAGS.num_workers if node_index == 0 else 1):
             worker_rollout.options(
                 placement_group=pg,
                 placement_group_bundle_index=0 if node_index == 0 else 1
