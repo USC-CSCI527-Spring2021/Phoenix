@@ -4,7 +4,7 @@ import numpy as np
 import utils.decisions_constants as log
 from game.ai.hand_builder import HandBuilder
 from game.ai.nn import Chi, Pon, Kan, Riichi, Discard, GlobalRewardPredictor
-from mahjong.constants import DISPLAY_WINDS
+from mahjong.constants import DISPLAY_WINDS, AKA_DORA_LIST
 from mahjong.hand_calculating.divider import HandDivider
 from mahjong.hand_calculating.hand import HandCalculator
 from mahjong.hand_calculating.hand_config import HandConfig, OptionalRules
