@@ -181,6 +181,8 @@ class ParameterServer:
 
     # save weights to disk
     def save_weights(self):
+        if not os.path.exists(self.opt.save_dir + "/checkpoint/"):
+            os.mkdir(self.opt.save_dir + "/checkpoint/")
         with open(self.opt.save_dir + "/checkpoint/" + "checkpoint_weights.pickle", "wb") as pickle_out:
             pickle.dump(self.weights, pickle_out)
             print("******* PS saved successfully ********")
