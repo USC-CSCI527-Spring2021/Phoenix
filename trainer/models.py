@@ -148,6 +148,7 @@ def discard_model(input_shape):
     # model = Model(k_input, outputs)
     model = keras.Sequential()
     model.add(keras.applications.DenseNet201(weights=None, input_tensor=k_input, input_shape=input_shape))
+    model.add(BatchNormalization())
     model.add(Dense(512))
     model.add(Dense(256))
     model.add(Dense(34, activation="softmax"))

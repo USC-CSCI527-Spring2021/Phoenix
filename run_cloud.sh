@@ -87,7 +87,7 @@ run gcloud ai-platform jobs submit training $TYPE_model_`date +"%Y%m%d_%H%M"` \
   --region us-central1 \
   --python-version 3.7 \
   --runtime-version 2.4 \
-  --job-dir "gs://mahjong-final/" \
+  --job-dir "gs://final-csci527/" \
   --config trainer/config.yaml \
   --stream-logs \
   -- \
