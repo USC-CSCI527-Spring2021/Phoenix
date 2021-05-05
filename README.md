@@ -21,9 +21,11 @@ You will have to convert it to csv format
 
 ### Common Issue
 Q. No "calculate_shanten" in phoenix_main 
+
 A. istall right version of mahjong. Try ```cd tenhou_env & pip install requirements/lint.txt```
 
 Q. Trainer not found
+
 A. Install phoenix or add root path to PYTHONPATH. ```python setup.py Install```
 
 ### Known Issue
